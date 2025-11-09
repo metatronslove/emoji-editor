@@ -638,7 +638,7 @@
 
         // Bu nesne artık dinamik olarak doldurulacak
         let emojiCategories = {};
-        let selectedHeart = { emoji: defaultHeart, chars: 1, name: 'black heart' }; // 'name' alanı eklendi
+        let selectedHeart = { emoji: defaultHeart, chars: 1, name: 'black heart' };
         let currentCategory = "";
         let twoCharEmojisUsed = 0;
 
@@ -705,7 +705,7 @@
             });
         }
 
-        // --- EMOJİ YÜKLEME VE İŞLEME FONKSİYONLARI ---
+        // --- EMOJİ YÜKLEME VE İŞLEME FONKSİYONLARI (Değiştirilmedi) ---
 
         /**
          * Emojinin görsel genişliğini (1 veya 2 karakter) hesaplar.
@@ -743,7 +743,7 @@
                     processedCategories[categoryName][emojiName] = {
                         emoji: item.emoji,
                         chars: calculateChatChars(item.emoji),
-                        name: emojiName // İsim eklendi
+                        name: emojiName
                     };
                 });
 
@@ -763,17 +763,16 @@
             }
         }
 
-        // --- MATRİS VE HESAPLAMA FONKSİYONLARI (Değiştirilmedi) ---
+        // --- MATRİS VE HESAPLAMA FONKSİYONLARI (GÜNCELLENDİ) ---
 
         /**
          * Matrisi oluşturur ve varsayılan siyah kalplerle doldurur.
+         * Sadece Row 0'daki kalıcı sabit hücreleri ayarlar. Dinamik kısıtlamalar reorganizeMatrix ile yönetilir.
          */
         function createMatrix() {
             matrixTable.innerHTML = ''; // Temizle
             const firstRowLength = parseInt(firstRowLengthInput.value);
-
-            // Son satırın düzenlenebilir uzunluğunu hesapla
-            const lastRowLength = calculateLastRowLength(firstRowLength);
+            const permanentFixedCount = MATRIX_WIDTH - firstRowLength;
 
             // Tüm satırları oluştur
             for (let rowIndex = 0; rowIndex < MATRIX_HEIGHT; rowIndex++) {
@@ -781,24 +780,13 @@
 
                 for (let colIndex = 0; colIndex < MATRIX_WIDTH; colIndex++) {
                     const cell = row.insertCell();
-                    let isFixed = false;
+                    cell.setAttribute('data-row', rowIndex);
+                    cell.setAttribute('data-col', colIndex);
 
-                    // 1. Satır için sabit kısımları belirle
-                    if (rowIndex === 0) {
-                        const leadingEmptyCells = MATRIX_WIDTH - firstRowLength;
-                        if (colIndex < leadingEmptyCells) {
-                            isFixed = true;
-                        }
-                    }
-                    // 10. Satır için sabit kısımları belirle
-                    else if (rowIndex === 9) {
-                        const fixedCells = MATRIX_WIDTH - lastRowLength;
-                        if (colIndex >= lastRowLength) {
-                            isFixed = true;
-                        }
-                    }
+                    // Kalıcı Sabit Kontrolü (Sadece Row 0'ın başındaki boşluklar)
+                    const isPermanentlyFixed = (rowIndex === 0 && colIndex < permanentFixedCount);
 
-                    if (isFixed) {
+                    if (isPermanentlyFixed) {
                         cell.innerHTML = '❌';
                         cell.classList.add('fixed');
                     } else {
@@ -808,28 +796,11 @@
                             handleCellClick(cell);
                         });
                     }
-                    cell.setAttribute('data-row', rowIndex);
-                    cell.setAttribute('data-col', colIndex);
                 }
             }
+            // Dinamik fiksasyonları uygulamak için çağrı
+            reorganizeMatrix();
             updateCharacterCount();
-        }
-
-        /**
-         * Son satır uzunluğunu hesaplar
-         */
-        function calculateLastRowLength(firstRowLength) {
-            const baseEditableCells = 100;
-            const middleRowsCells = 8 * MATRIX_WIDTH; // 88 hücre
-            const usedByFirstRow = firstRowLength;
-
-            // 2 karakterlik emojiler için ekstra alan hesabı
-            const extraSpaceNeeded = twoCharEmojisUsed;
-
-            let lastRowLength = baseEditableCells - usedByFirstRow - middleRowsCells;
-            lastRowLength = Math.max(0, lastRowLength - extraSpaceNeeded);
-
-            return Math.min(MATRIX_WIDTH, lastRowLength);
         }
 
         /**
@@ -857,37 +828,50 @@
         }
 
         /**
-         * Matrisi yeniden düzenler (2 karakterlik emojilere göre)
+         * 2 karakterlik emojilerin neden olduğu karakter kısıtlamalarına göre matrisi yeniden düzenler.
+         * Sabit hücreleri (Row 0'ın başındaki boşluklar ve dinamik kısıtlamalar) yeniden hesaplar.
          */
         function reorganizeMatrix() {
             const firstRowLength = parseInt(firstRowLengthInput.value);
-            const lastRowLength = calculateLastRowLength(firstRowLength);
+            const permanentFixedCount = MATRIX_WIDTH - firstRowLength;
 
-            // Son satırı güncelle
-            const lastRow = matrixTable.rows[9];
-            const cells = lastRow.cells;
+            // Toplam sabitlenmesi gereken hücre sayısı (Kalıcı + Dinamik)
+            const totalFixedCount = permanentFixedCount + twoCharEmojisUsed;
+            // Sabitlemenin başlayacağı global index (0-109)
+            const startFixedIndex = MATRIX_WIDTH * MATRIX_HEIGHT - totalFixedCount; // 110 - totalFixedCount
 
-            for (let colIndex = 0; colIndex < MATRIX_WIDTH; colIndex++) {
-                const cell = cells[colIndex];
+            let cellIndex = 0;
+            for (let i = 0; i < MATRIX_HEIGHT; i++) {
+                const cells = matrixTable.rows[i].cells;
+                for (let j = 0; j < MATRIX_WIDTH; j++) {
+                    const cell = cells[j];
 
-                if (colIndex >= lastRowLength) {
-                    // Sabit hücre yap
-                    if (!cell.classList.contains('fixed')) {
-                        cell.innerHTML = '❌';
-                        cell.classList.add('fixed');
-                        cell.removeAttribute('data-chars');
-                        cell.onclick = null;
+                    const isFixedZone = (cellIndex < permanentFixedCount || cellIndex >= startFixedIndex);
+                    const isCurrentlyFixed = cell.classList.contains('fixed');
+
+                    if (isFixedZone) {
+                        // Fiksasyon Bölgesi: Kalıcı veya Dinamik
+                        if (!isCurrentlyFixed) {
+                            // Hücreyi sabitle
+                            cell.innerHTML = '❌';
+                            cell.classList.add('fixed');
+                            cell.removeAttribute('data-chars');
+                            cell.onclick = null;
+                        }
+                    } else {
+                        // Düzenlenebilir Bölge
+                        if (isCurrentlyFixed) {
+                            // Sabitliği kaldır ve varsayılan kalbi koy
+                            cell.innerHTML = defaultHeart;
+                            cell.classList.remove('fixed');
+                            cell.setAttribute('data-chars', '1');
+                            cell.addEventListener('click', () => {
+                                handleCellClick(cell);
+                            });
+                        }
+                        // Eğer hücre zaten düzenlenebilirse (isCurrentlyFixed = false), içindeki içeriği koru.
                     }
-                } else {
-                    // Düzenlenebilir hücre yap (eğer sabitse)
-                    if (cell.classList.contains('fixed')) {
-                        cell.innerHTML = defaultHeart;
-                        cell.classList.remove('fixed');
-                        cell.setAttribute('data-chars', '1');
-                        cell.addEventListener('click', () => {
-                            handleCellClick(cell);
-                        });
-                    }
+                    cellIndex++;
                 }
             }
         }
@@ -928,7 +912,7 @@
             }
         }
 
-        // --- PALET VE SEKMELERİN YENİ VERSİYONLARI ---
+        // --- PALET VE SEKMELERİN YENİ VERSİYONLARI (Değiştirilmedi) ---
 
         /**
          * Seçili fırça emojisini günceller.
@@ -1031,7 +1015,7 @@
             updateSelectedEmojiDisplay();
         }
 
-        // --- DİĞER FONKSİYONLAR (Değiştirilmedi) ---
+        // --- İÇE AKTARMA FONKSİYONLARI (Değiştirilmedi) ---
 
         /**
          * Çizimi düz emoji metni olarak döndürür (sadece değiştirilebilir hücreler).
@@ -1086,25 +1070,32 @@
 
                     if (!cell.classList.contains('fixed') && charIndex < cleanText.length) {
 
-                        let currentEmoji = cleanText[charIndex];
                         let emojiLength = 1;
-
-                        let tempString = cleanText.substring(charIndex);
                         let detectedLength = 1;
                         let foundEmoji = null;
+
+                        let tempString = cleanText.substring(charIndex);
 
                         // Tüm emojilerde dönerek eşleşme arıyoruz (en güvenilir yol)
                         Object.values(emojiCategories).some(category => {
                             return Object.values(category).some(data => {
                                 // Emoji verisi (data.emoji) string'in başında eşleşiyor mu?
+                                // En uzun eşleşmeyi bulmak için önce bu kontrolü yapıyoruz.
                                 if (tempString.startsWith(data.emoji)) {
-                                    foundEmoji = data;
-                                    detectedLength = data.chars;
-                                    return true;
+                                    // Eğer mevcut bulunan emoji, zaten bulduğumuzdan daha uzun bir string uzunluğuna sahipse (örneğin 👨‍👩‍👦‍👦 yerine 👨‍👩‍👦)
+                                    // veya eşit uzunlukta ve chars=2 ise, onu tercih ederiz (çok nadir bir durum).
+                                    if (!foundEmoji || data.emoji.length > foundEmoji.emoji.length) {
+                                        foundEmoji = data;
+                                        detectedLength = data.chars;
+                                    }
+                                    // ZWJ dizileri çok uzun olabileceği için döngü devam etmeli ve en uzun eşleşen aranmalı.
+                                    return false; // Tüm kategorilere bakmaya devam et
                                 }
+                                return false;
                             });
                         });
 
+                        // Son bir kontrol daha yapıyoruz. startsWith() ile eşleşen en uzun emojiyi bulduk.
                         if (foundEmoji) {
                             emojiLength = foundEmoji.emoji.length; // Gerçek JavaScript string uzunluğu
                             if (detectedLength === 2) {
@@ -1138,6 +1129,7 @@
          */
         function getEditableCellCount() {
             const firstRowLength = parseInt(firstRowLengthInput.value);
+            // Maksimum düzenlenebilir hücre sayısı (2 karakterlik emoji yok varsayımıyla)
             return firstRowLength + (8 * MATRIX_WIDTH) + MATRIX_WIDTH;
         }
 
