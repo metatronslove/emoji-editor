@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalp Emoji Piksel Sanatı Editörü</title>
+    <style>
+        /* GENEL VE RESET */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        h2 {
+            color: #007bff;
+            margin-bottom: 25px;
+            font-weight: 600;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* KONTROL ALANI STİLLERİ */
+        #controls {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #controls label {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        #controls input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+            width: 60px;
+        }
+
+        #controls button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        #controls #updateMatrixButton {
+            background-color: #28a745;
+            color: white;
+        }
+
+        #controls #updateMatrixButton:hover {
+            background-color: #218838;
+        }
+
+        #controls #copyButton, #controls #importButton {
+            background-color: #007bff;
+            color: white;
+        }
+
+        #controls #copyButton:hover, #controls #importButton:hover {
+            background-color: #0056b3;
+        }
+
+        #controls #saveButton, #controls #loadButton {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        #controls #saveButton:hover, #controls #loadButton:hover {
+            background-color: #e0a800;
+        }
+
+        #controls #clearButton {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        #controls #clearButton:hover {
+            background-color: #c82333;
+        }
+
+        /* PALET STİLLERİ */
+        #palette {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        #palette strong {
+            display: block;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        #color-options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .color-option {
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border: 3px solid transparent;
+            border-radius: 6px;
+            transition: transform 0.1s, border-color 0.2s;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            background-color: #f0f0f0;
+        }
+
+        .selected-color {
+            border-color: #007bff;
+            background-color: #e9f5ff;
+            transform: scale(1.1);
+        }
+
+        /* MATRİS STİLLERİ */
+        #matrix-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        #matrix {
+            border-collapse: collapse;
+            table-layout: fixed;
+            background-color: #fff;
+            border: 4px solid #333;
+            border-radius: 5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin: 0 auto;
+        }
+
+        #matrix td {
+            width: 35px;
+            height: 35px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 20px;
+            cursor: pointer;
+            border: 1px solid #eee;
+            transition: background-color 0.1s;
+            position: relative;
+        }
+
+        #matrix td:hover {
+            background-color: #f8f8f8;
+        }
+
+        /* SABİT KISIMLAR İÇİN STİL */
+        .fixed {
+            cursor: not-allowed !important;
+            background-color: #d1d1d1 !important;
+            color: #aaa;
+            border: 1px solid #ddd;
+        }
+
+        /* KULLANIM KILAVUZU */
+        .manual {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 800px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .manual h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .manual ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .manual li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .manual .highlight {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #ffc107;
+            margin: 10px 0;
+        }
+
+        /* RESPONSIVE DÜZENLEMELER */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            #controls {
+                padding: 15px;
+                gap: 8px;
+            }
+
+            #controls button {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+
+            #matrix td {
+                width: 30px;
+                height: 30px;
+                font-size: 18px;
+            }
+
+            .color-option {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #controls > * {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+
+            #matrix td {
+                width: 25px;
+                height: 25px;
+                font-size: 16px;
+            }
+
+            .color-option {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Kalp Emoji Sanat Editörü</h2>
+
+    <div class="manual">
+        <h3>📖 YouTube Sohbeti İçin Kullanım Kılavuzu</h3>
+
+        <div class="highlight">
+            <strong>🎯 ÖNEMLİ:</strong> İlk satır uzunluğunu doğru belirlemek için aşağıdaki adımları izleyin:
+        </div>
+
+        <ol>
+            <li><strong>Çizime başlamadan önce</strong> "Panoya Kopyala" butonuna basın</li>
+            <li>YouTube sohbet kutusuna <strong>100 adet siyah kalp yapıştırın</strong> (🖤)</li>
+            <li>Bu mesajı <strong>gönderin</strong> ve sohbette görünmesini bekleyin</li>
+            <li>Gönderdiğiniz mesajda, <strong>nickname'inizin yanında görünen kalp sayısını sayın</strong></li>
+            <li>Bu sayıyı "İlk Satır Uzunluğu" olarak ayarlayın</li>
+            <li>Artık çiziminizi yapmaya başlayabilirsiniz!</li>
+        </ol>
+
+        <p><strong>💡 İpucu:</strong> İlk satır uzunluğu, YouTube sohbetinde nickname'inizin yanında görünecek kalp sayısını belirler. Doğru ayarlandığında çiziminiz nickname'inizin hemen yanında başlayacaktır.</p>
+    </div>
+
+    <div id="controls">
+        <label for="firstRowLength">İlk Satır Uzunluğu (0-11):</label>
+        <input type="number" id="firstRowLength" value="6" min="0" max="11">
+        <button id="updateMatrixButton">Matrisi Güncelle</button>
+        <button id="copyButton">Panoya Kopyala</button>
+        <button id="importButton">Panodan İçe Aktar</button>
+        <button id="saveButton">Çizimi Kaydet</button>
+        <input type="file" id="fileInput" accept=".txt" style="display: none;">
+        <button id="loadButton">Dosya Aç</button>
+        <button id="clearButton">Temizle</button>
+    </div>
+
+    <div id="palette">
+        <strong>Fırça Rengi Seçin:</strong>
+        <div id="color-options-container">
+            <!-- Renk seçenekleri JavaScript ile eklenecek -->
+        </div>
+    </div>
+
+    <div id="matrix-container">
+        <table id="matrix">
+            <!-- Matris JavaScript ile oluşturulacak -->
+        </table>
+    </div>
+
+    <script>
+        // --- TEMEL TANIMLAMALAR ---
+        const MATRIX_WIDTH = 11;
+        const MATRIX_HEIGHT = 10;
+        const TOTAL_EDITABLE_CELLS = 100; // Toplam düzenlenebilir hücre sayısı
+
+        // TAM EMOJİ PALETİ
+        const heartPalette = {
+            // KALPLER (Tüm renkler)
+            'Siyah Kalp': '🖤', 'Beyaz Kalp': '🤍', 'Kırmızı Kalp': '❤️',
+            'Turuncu Kalp': '🧡', 'Sarı Kalp': '💛', 'Yeşil Kalp': '💚',
+            'Mavi Kalp': '💙', 'Mor Kalp': '💜', 'Kahverengi Kalp': '🤎',
+            'Gri Kalp': '🩶', 'Açık Mavi Kalp': '🩵', 'Pembe Kalp': '🩷',
+            'Parlak Pembe Kalp': '💖', 'Kırık Kalp': '💔', 'Atan Kalp': '💗',
+            'Dönen Kalpler': '💞', 'İki Kalp': '💕', 'Kalpli Ok': '💘',
+            'Sarı Kalp': '💛', 'Mavi Kalp': '💙',
+
+            // KARELER (Tüm renkler)
+            'Siyah Kare': '⬛', 'Beyaz Kare': '⬜', 'Kırmızı Kare': '🟥',
+            'Turuncu Kare': '🟧', 'Sarı Kare': '🟨', 'Yeşil Kare': '🟩',
+            'Mavi Kare': '🟦', 'Mor Kare': '🟪', 'Kahverengi Kare': '🟫',
+
+            // DAİRELER (Tüm renkler)
+            'Kırmızı Daire': '🔴', 'Turuncu Daire': '🟠', 'Sarı Daire': '🟡',
+            'Yeşil Daire': '🟢', 'Mavi Daire': '🔵', 'Mor Daire': '🟣',
+            'Kahverengi Daire': '🟤', 'Siyah Daire': '⚫', 'Beyaz Daire': '⚪',
+
+            // DİĞER ŞEKİLLER
+            'Kırmızı Üçgen': '🔺', 'Mavi Elmas': '🔷', 'Turuncu Elmas': '🔶',
+            'Sarı Yıldız': '⭐', 'Parlak Yıldız': '🌟',
+
+            // SEMBOLLER
+            'Ateş': '🔥', 'Yıldırım': '⚡', 'Kar Tanesi': '❄️',
+            'Güneş': '☀️', 'Bulut': '☁️', 'Yıldız': '★',
+
+            // BOŞLUK
+            'Boşluk': '❌'
+        };
+
+        const defaultHeart = heartPalette['Siyah Kalp'];
+        let selectedHeart = defaultHeart;
+
+        // --- DOM ELEMENTLERİ ---
+        const firstRowLengthInput = document.getElementById('firstRowLength');
+        const updateMatrixButton = document.getElementById('updateMatrixButton');
+        const matrixTable = document.getElementById('matrix');
+        const colorOptionsContainer = document.getElementById('color-options-container');
+        const copyButton = document.getElementById('copyButton');
+        const importButton = document.getElementById('importButton');
+        const saveButton = document.getElementById('saveButton');
+        const loadButton = document.getElementById('loadButton');
+        const fileInput = document.getElementById('fileInput');
+        const clearButton = document.getElementById('clearButton');
+
+        // --- FONKSİYONLAR ---
+
+        /**
+         * Matrisi oluşturur ve varsayılan siyah kalplerle doldurur.
+         */
+        function createMatrix() {
+            matrixTable.innerHTML = ''; // Temizle
+            const firstRowLength = parseInt(firstRowLengthInput.value); // Dinamik uzunluk
+
+            // Son satırın düzenlenebilir uzunluğunu hesapla (toplam düzenlenebilir hücre sayısı sabit)
+            const lastRowLength = TOTAL_EDITABLE_CELLS - firstRowLength - (8 * MATRIX_WIDTH);
+
+            // Tüm satırları oluştur
+            for (let rowIndex = 0; rowIndex < MATRIX_HEIGHT; rowIndex++) {
+                const row = matrixTable.insertRow();
+
+                for (let colIndex = 0; colIndex < MATRIX_WIDTH; colIndex++) {
+                    const cell = row.insertCell();
+                    let isFixed = false;
+
+                    // 1. Satır için sabit kısımları belirle
+                    if (rowIndex === 0) {
+                        const leadingEmptyCells = MATRIX_WIDTH - firstRowLength;
+                        if (colIndex < leadingEmptyCells) {
+                            isFixed = true;
+                        }
+                    }
+                    // 10. Satır için sabit kısımları belirle
+                    else if (rowIndex === 9) {
+                        const leadingEditableCells = lastRowLength;
+                        if (colIndex >= leadingEditableCells) {
+                            isFixed = true;
+                        }
+                    }
+
+                    if (isFixed) {
+                        cell.innerHTML = heartPalette['Boşluk'];
+                        cell.classList.add('fixed');
+                    } else {
+                        cell.innerHTML = defaultHeart;
+                        cell.addEventListener('click', () => {
+                            cell.innerHTML = selectedHeart;
+                        });
+                    }
+                    cell.setAttribute('data-row', rowIndex);
+                    cell.setAttribute('data-col', colIndex);
+                }
+            }
+        }
+
+        /**
+         * Palet seçeneklerini oluşturur.
+         */
+        function createPalette() {
+            colorOptionsContainer.innerHTML = ''; // Temizle
+
+            // Tüm emoji seçeneklerini ekle
+            Object.entries(heartPalette).forEach(([name, emoji]) => {
+                const span = document.createElement('span');
+                span.className = 'color-option';
+                span.innerHTML = emoji;
+                span.title = name;
+                span.setAttribute('data-color', name);
+
+                // Seçim işlevi
+                span.addEventListener('click', () => {
+                    // Önceki seçimi kaldır
+                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected-color'));
+                    // Yeni seçimi ayarla
+                    selectedHeart = emoji;
+                    span.classList.add('selected-color');
+                });
+
+                colorOptionsContainer.appendChild(span);
+            });
+
+            // Varsayılan siyah kalbi başlangıçta seçili yap
+            const defaultOption = colorOptionsContainer.querySelector('[data-color="Siyah Kalp"]');
+            if (defaultOption) {
+                defaultOption.classList.add('selected-color');
+            }
+        }
+
+        /**
+         * Değiştirilebilir hücre sayısını hesaplar
+         */
+        function getEditableCellCount() {
+            const firstRowLength = parseInt(firstRowLengthInput.value);
+            const lastRowLength = TOTAL_EDITABLE_CELLS - firstRowLength - (8 * MATRIX_WIDTH);
+
+            return firstRowLength + (8 * MATRIX_WIDTH) + lastRowLength;
+        }
+
+        /**
+         * Çizimi düz emoji metni olarak döndürür (sadece değiştirilebilir hücreler).
+         * @param {boolean} formatted - True ise yeni satırlarla döndürür.
+         * @returns {string} Emoji dizisi.
+         */
+        function getDrawingText(formatted = false) {
+            let result = [];
+            const rows = matrixTable.rows;
+
+            for (let i = 0; i < rows.length; i++) {
+                let rowText = '';
+                const cells = rows[i].cells;
+
+                for (let j = 0; j < cells.length; j++) {
+                    // Sadece değiştirilebilir hücreleri dahil et
+                    if (!cells[j].classList.contains('fixed')) {
+                        rowText += cells[j].innerHTML;
+                    }
+                }
+
+                if (rowText) { // Boş satırları ekleme
+                    result.push(rowText);
+                }
+            }
+
+            return formatted ? result.join('\n') : result.join('');
+        }
+
+        /**
+         * Çizimi matrise uygular (sadece değiştirilebilir hücrelere).
+         * @param {string} text - Düz emoji metni.
+         */
+        function applyDrawingText(text) {
+            // Toplam değiştirilebilir hücre sayısını hesapla
+            const requiredLength = getEditableCellCount();
+
+            // Tüm boşluk ve yeni satır karakterlerini kaldırıp sadece emojileri bırak
+            const cleanText = text.replace(/[\s\n\r]/g, '');
+
+            if (cleanText.length !== requiredLength) {
+                alert(`Hata: İçe aktarılan metin ${requiredLength} karakter uzunluğunda olmalı. Gelen uzunluk: ${cleanText.length}.`);
+                return;
+            }
+
+            let charIndex = 0;
+            const rows = matrixTable.rows;
+
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].cells;
+
+                for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j];
+
+                    // Sadece sabit olmayan hücrelere değişiklik yapma izni ver
+                    if (!cell.classList.contains('fixed')) {
+                         cell.innerHTML = cleanText[charIndex];
+                         charIndex++;
+                    }
+                }
+            }
+        }
+
+        // --- OLAY DİNLEYİCİLERİ (Buton İşlevleri) ---
+
+        // Matrisi Güncelle butonu
+        updateMatrixButton.addEventListener('click', () => {
+            if (confirm("İlk satır uzunluğunu değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?")) {
+                createMatrix();
+            }
+        });
+
+        // Panoya Kopyala
+        copyButton.addEventListener('click', async () => {
+            const drawingText = getDrawingText(false);
+            try {
+                await navigator.clipboard.writeText(drawingText);
+                alert('Çizim panoya başarıyla kopyalandı! (Değiştirilebilir pikseller dahil edildi)\n\nYouTube sohbetine yapıştırarak nickname uzunluğunuzu test edebilirsiniz.');
+            } catch (err) {
+                console.error('Kopyalama başarısız:', err);
+                alert('Kopyalama başarısız oldu. Lütfen konsolu kontrol edin.');
+            }
+        });
+
+        // Panodan İçe Aktar
+        importButton.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                applyDrawingText(text);
+                alert('Çizim panodan başarıyla içe aktarıldı! (Sadece değiştirilebilir pikseller güncellendi)');
+            } catch (err) {
+                console.error('İçe aktarma başarısız:', err);
+                alert('İçe aktarma başarısız oldu. Panonuzda geçerli bir çizim metni olduğundan emin olun.');
+            }
+        });
+
+        // Kaydet
+        saveButton.addEventListener('click', () => {
+            const drawingText = getDrawingText(true);
+            const blob = new Blob([drawingText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kalp_emoji_cizimi.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('Çizim "kalp_emoji_cizimi.txt" olarak kaydedildi! (Sadece değiştirilebilir pikseller)');
+        });
+
+        // Dosya Aç
+        loadButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    applyDrawingText(text);
+                    alert('Çizim dosyadan başarıyla yüklendi! (Sadece değiştirilebilir pikseller güncellendi)');
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Temizle
+        clearButton.addEventListener('click', () => {
+            if (confirm("Mevcut çizimi temizlemek istediğinizden emin misiniz?")) {
+                createMatrix();
+            }
+        });
+
+        // --- BAŞLANGIÇ ---
+        document.addEventListener('DOMContentLoaded', () => {
+            createMatrix();
+            createPalette();
+        });
+    </script>
+</body>
+</html>
