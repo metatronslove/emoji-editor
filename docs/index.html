@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalp Emoji Piksel Sanatı Editörü</title>
+    <title>Tam Emoji Sanat Editörü</title>
     <style>
         /* GENEL VE RESET */
         * {
@@ -29,6 +29,107 @@
             font-weight: 600;
             text-align: center;
             width: 100%;
+        }
+
+        /* BİLDİRİM SİSTEMİ */
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        #notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        #notification.success {
+            background-color: #28a745;
+        }
+
+        #notification.warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        #notification.error {
+            background-color: #dc3545;
+        }
+
+        #notification.info {
+            background-color: #17a2b8;
+        }
+
+        /* ONAY MODAL */
+        #confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #confirm-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.confirm {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .modal-btn.confirm:hover {
+            background-color: #c82333;
+        }
+
+        .modal-btn.cancel {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .modal-btn.cancel:hover {
+            background-color: #5a6268;
         }
 
         /* KONTROL ALANI STİLLERİ */
@@ -106,6 +207,28 @@
             background-color: #c82333;
         }
 
+        /* BİLGİ PANELİ */
+        #info-panel {
+            background-color: #e7f3ff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            border-left: 4px solid #007bff;
+        }
+
+        #info-panel .char-count {
+            font-weight: 600;
+            color: #007bff;
+        }
+
+        #info-panel .warning {
+            color: #dc3545;
+            font-weight: 500;
+        }
+
         /* PALET STİLLERİ */
         #palette {
             margin-bottom: 25px;
@@ -115,13 +238,79 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             width: 100%;
             max-width: 800px;
-            text-align: center;
         }
 
         #palette strong {
             display: block;
             margin-bottom: 15px;
             color: #555;
+            text-align: center;
+        }
+
+        /* SEÇİLİ EMOJİ EKRANI */
+        #selected-emoji-display {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        #current-brush-emoji {
+            font-size: 36px;
+            margin-right: 10px;
+            line-height: 1;
+        }
+
+        #selected-emoji-display span {
+            font-weight: 600;
+            color: #007bff;
+        }
+
+        /* SEKME STİLLERİ */
+        #category-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .category-tab {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .category-tab:hover {
+            background: #e9ecef;
+        }
+
+        .category-tab.active {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+
+        /* EMOJİ KONTEYNER STİLLERİ */
+        #emoji-container {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            background: white;
         }
 
         #color-options-container {
@@ -145,6 +334,7 @@
             justify-content: center;
             width: 44px;
             height: 44px;
+            position: relative;
         }
 
         .color-option:hover {
@@ -156,6 +346,27 @@
             border-color: #007bff;
             background-color: #e9f5ff;
             transform: scale(1.1);
+        }
+
+        .two-char-emoji {
+            border: 2px dashed #ff6b6b;
+        }
+
+        .two-char-emoji::after {
+            content: "2";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
         }
 
         /* MATRİS STİLLERİ */
@@ -238,6 +449,30 @@
             margin: 10px 0;
         }
 
+        /* KAYDIRMA ÇUBUĞU STİLLERİ */
+        #emoji-container::-webkit-scrollbar,
+        #category-tabs::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        #emoji-container::-webkit-scrollbar-track,
+        #category-tabs::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        #emoji-container::-webkit-scrollbar-thumb,
+        #category-tabs::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        #emoji-container::-webkit-scrollbar-thumb:hover,
+        #category-tabs::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
         /* RESPONSIVE DÜZENLEMELER */
         @media (max-width: 768px) {
             body {
@@ -265,6 +500,22 @@
                 height: 40px;
                 font-size: 20px;
             }
+
+            .category-tab {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
+            #emoji-container {
+                max-height: 200px;
+            }
+
+            #notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
         }
 
         @media (max-width: 480px) {
@@ -289,12 +540,34 @@
                 height: 36px;
                 font-size: 18px;
             }
+
+            #category-tabs {
+                gap: 4px;
+            }
+
+            .category-tab {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <h2>Kalp Emoji Sanat Editörü</h2>
+    <div id="notification"></div>
+
+    <div id="confirm-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Emin misiniz?</h3>
+            <p id="modal-message">Bu işlem geri alınamaz.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn confirm" id="modal-confirm">Evet</button>
+                <button class="modal-btn cancel" id="modal-cancel">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <h2>Tam Emoji Sanat Editörü</h2>
 
     <div class="manual">
         <h3>📖 YouTube Sohbeti İçin Kullanım Kılavuzu</h3>
@@ -315,6 +588,11 @@
         <p><strong>💡 İpucu:</strong> İlk satır uzunluğu, YouTube sohbetinde nickname'inizin yanında görünecek kalp sayısını belirler. Doğru ayarlandığında çiziminiz nickname'inizin hemen yanında başlayacaktır.</p>
     </div>
 
+    <div id="info-panel">
+        <span class="char-count">Kullanılan Karakter: <span id="currentChars">0</span>/200</span>
+        <span id="charWarning" class="warning" style="display: none;"> - ⚠️ 2 karakterlik emoji kullanıyorsunuz!</span>
+    </div>
+
     <div id="controls">
         <label for="firstRowLength">İlk Satır Uzunluğu (0-11):</label>
         <input type="number" id="firstRowLength" value="6" min="0" max="11">
@@ -329,82 +607,173 @@
 
     <div id="palette">
         <strong>Fırça Rengi Seçin:</strong>
-        <div id="color-options-container">
-            <!-- Renk seçenekleri JavaScript ile eklenecek -->
+
+        <div id="selected-emoji-display">
+            <span style="font-weight: normal;">Seçili Emoji:</span>
+            <span id="current-brush-emoji">🖤</span>
+            <span id="current-brush-name"> (black heart)</span>
+        </div>
+
+        <div id="category-tabs">
+            </div>
+
+        <div id="emoji-container">
+            <div id="color-options-container">
+                </div>
         </div>
     </div>
 
     <div id="matrix-container">
         <table id="matrix">
-            <!-- Matris JavaScript ile oluşturulacak -->
-        </table>
+            </table>
     </div>
 
     <script>
         // --- TEMEL TANIMLAMALAR ---
         const MATRIX_WIDTH = 11;
         const MATRIX_HEIGHT = 10;
-        const TOTAL_EDITABLE_CELLS = 100; // Toplam düzenlenebilir hücre sayısı
+        const MAX_CHARACTERS = 200; // YouTube karakter limiti
+        const EMOJI_JSON_URL = 'emoji.json'; // Aynı dizindeki dosya adı
+        const defaultHeart = '🖤';
 
-        // TAM EMOJİ PALETİ
-        const heartPalette = {
-            // KALPLER (Tüm renkler)
-            'Siyah Kalp': '🖤', 'Beyaz Kalp': '🤍', 'Kırmızı Kalp': '❤️',
-            'Turuncu Kalp': '🧡', 'Sarı Kalp': '💛', 'Yeşil Kalp': '💚',
-            'Mavi Kalp': '💙', 'Mor Kalp': '💜', 'Kahverengi Kalp': '🤎',
-            'Gri Kalp': '🩶', 'Açık Mavi Kalp': '🩵', 'Pembe Kalp': '🩷',
-            'Parlak Pembe Kalp': '💖', 'Kırık Kalp': '💔', 'Atan Kalp': '💗',
-            'Dönen Kalpler': '💞', 'İki Kalp': '💕', 'Kalpli Ok': '💘',
-            'Sarı Kalp': '💛', 'Mavi Kalp': '💙',
-
-            // KARELER (Tüm renkler)
-            'Siyah Kare': '⬛', 'Beyaz Kare': '⬜', 'Kırmızı Kare': '🟥',
-            'Turuncu Kare': '🟧', 'Sarı Kare': '🟨', 'Yeşil Kare': '🟩',
-            'Mavi Kare': '🟦', 'Mor Kare': '🟪', 'Kahverengi Kare': '🟫',
-
-            // DAİRELER (Tüm renkler)
-            'Kırmızı Daire': '🔴', 'Turuncu Daire': '🟠', 'Sarı Daire': '🟡',
-            'Yeşil Daire': '🟢', 'Mavi Daire': '🔵', 'Mor Daire': '🟣',
-            'Kahverengi Daire': '🟤', 'Siyah Daire': '⚫', 'Beyaz Daire': '⚪',
-
-            // DİĞER ŞEKİLLER
-            'Kırmızı Üçgen': '🔺', 'Mavi Elmas': '🔷', 'Turuncu Elmas': '🔶',
-            'Sarı Yıldız': '⭐', 'Parlak Yıldız': '🌟',
-
-            // SEMBOLLER
-            'Ateş': '🔥', 'Yıldırım': '⚡', 'Kar Tanesi': '❄️',
-            'Güneş': '☀️', 'Bulut': '☁️', 'Yıldız': '★',
-
-            // BOŞLUK
-            'Boşluk': '❌'
-        };
-
-        const defaultHeart = heartPalette['Siyah Kalp'];
-        let selectedHeart = defaultHeart;
+        // Bu nesne artık dinamik olarak doldurulacak
+        let emojiCategories = {};
+        let selectedHeart = { emoji: defaultHeart, chars: 1, name: 'black heart' }; // 'name' alanı eklendi
+        let currentCategory = "";
+        let twoCharEmojisUsed = 0;
 
         // --- DOM ELEMENTLERİ ---
         const firstRowLengthInput = document.getElementById('firstRowLength');
         const updateMatrixButton = document.getElementById('updateMatrixButton');
         const matrixTable = document.getElementById('matrix');
         const colorOptionsContainer = document.getElementById('color-options-container');
+        const categoryTabsContainer = document.getElementById('category-tabs');
         const copyButton = document.getElementById('copyButton');
         const importButton = document.getElementById('importButton');
         const saveButton = document.getElementById('saveButton');
         const loadButton = document.getElementById('loadButton');
         const fileInput = document.getElementById('fileInput');
         const clearButton = document.getElementById('clearButton');
+        const currentCharsSpan = document.getElementById('currentChars');
+        const charWarningSpan = document.getElementById('charWarning');
+        const notification = document.getElementById('notification');
+        const confirmModal = document.getElementById('confirm-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalConfirm = document.getElementById('modal-confirm');
+        const modalCancel = document.getElementById('modal-cancel');
 
-        // --- FONKSİYONLAR ---
+        // YENİ ELEMANLAR
+        const currentBrushEmoji = document.getElementById('current-brush-emoji');
+        const currentBrushName = document.getElementById('current-brush-name');
+
+
+        // --- BİLDİRİM VE MODAL SİSTEMİ (Değiştirilmedi) ---
+
+        /**
+         * Bildirim gösterir
+         */
+        function showNotification(message, type = 'info', duration = 3000) {
+            notification.textContent = message;
+            notification.className = '';
+            notification.classList.add(type);
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        /**
+         * Onay modalını gösterir
+         */
+        function showConfirm(title, message) {
+            return new Promise((resolve) => {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                confirmModal.classList.add('show');
+
+                modalConfirm.onclick = () => {
+                    confirmModal.classList.remove('show');
+                    resolve(true);
+                };
+
+                modalCancel.onclick = () => {
+                    confirmModal.classList.remove('show');
+                    resolve(false);
+                };
+            });
+        }
+
+        // --- EMOJİ YÜKLEME VE İŞLEME FONKSİYONLARI ---
+
+        /**
+         * Emojinin görsel genişliğini (1 veya 2 karakter) hesaplar.
+         */
+        function calculateChatChars(emojiString) {
+            // Bayraklar ve ZWJ (Zero Width Joiner) kombinasyonları genellikle 2 görsel genişliktedir.
+            if (emojiString.length > 2) {
+                return 2;
+            }
+            // Tekil emojiler (kalpler, yüzler vb.) 1 görsel genişliktedir.
+            return 1;
+        }
+
+        /**
+         * Harici JSON dosyasını yükler ve emojiCategories nesnesini doldurur.
+         */
+        async function loadEmojis() {
+            try {
+                const response = await fetch(EMOJI_JSON_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP Hata kodu: ${response.status}`);
+                }
+                const rawEmojis = await response.json();
+
+                let processedCategories = {};
+
+                rawEmojis.forEach(item => {
+                    const categoryName = item.category || "Uncategorized";
+                    const emojiName = item.description || item.names[0];
+
+                    if (!processedCategories[categoryName]) {
+                        processedCategories[categoryName] = {};
+                    }
+
+                    processedCategories[categoryName][emojiName] = {
+                        emoji: item.emoji,
+                        chars: calculateChatChars(item.emoji),
+                        name: emojiName // İsim eklendi
+                    };
+                });
+
+                emojiCategories = processedCategories;
+
+                // İlk kategoriyi ayarla (en çok emojisi olan kategori)
+                const sortedCategories = Object.keys(emojiCategories).sort((a, b) =>
+                    Object.keys(emojiCategories[b]).length - Object.keys(emojiCategories[a]).length
+                );
+                currentCategory = sortedCategories[0];
+
+                showNotification(`✅ ${rawEmojis.length} adet emoji başarıyla yüklendi!`, 'success');
+
+            } catch (error) {
+                console.error("Emoji yükleme hatası:", error);
+                showNotification('❌ Emoji yüklenemedi. "emoji.json" dosyasının mevcut ve doğru formatta olduğundan emin olun.', 'error', 8000);
+            }
+        }
+
+        // --- MATRİS VE HESAPLAMA FONKSİYONLARI (Değiştirilmedi) ---
 
         /**
          * Matrisi oluşturur ve varsayılan siyah kalplerle doldurur.
          */
         function createMatrix() {
             matrixTable.innerHTML = ''; // Temizle
-            const firstRowLength = parseInt(firstRowLengthInput.value); // Dinamik uzunluk
+            const firstRowLength = parseInt(firstRowLengthInput.value);
 
-            // Son satırın düzenlenebilir uzunluğunu hesapla (toplam düzenlenebilir hücre sayısı sabit)
-            const lastRowLength = TOTAL_EDITABLE_CELLS - firstRowLength - (8 * MATRIX_WIDTH);
+            // Son satırın düzenlenebilir uzunluğunu hesapla
+            const lastRowLength = calculateLastRowLength(firstRowLength);
 
             // Tüm satırları oluştur
             for (let rowIndex = 0; rowIndex < MATRIX_HEIGHT; rowIndex++) {
@@ -423,74 +792,249 @@
                     }
                     // 10. Satır için sabit kısımları belirle
                     else if (rowIndex === 9) {
-                        const leadingEditableCells = lastRowLength;
-                        if (colIndex >= leadingEditableCells) {
+                        const fixedCells = MATRIX_WIDTH - lastRowLength;
+                        if (colIndex >= lastRowLength) {
                             isFixed = true;
                         }
                     }
 
                     if (isFixed) {
-                        cell.innerHTML = heartPalette['Boşluk'];
+                        cell.innerHTML = '❌';
                         cell.classList.add('fixed');
                     } else {
                         cell.innerHTML = defaultHeart;
+                        cell.setAttribute('data-chars', '1');
                         cell.addEventListener('click', () => {
-                            cell.innerHTML = selectedHeart;
+                            handleCellClick(cell);
                         });
                     }
                     cell.setAttribute('data-row', rowIndex);
                     cell.setAttribute('data-col', colIndex);
                 }
             }
+            updateCharacterCount();
         }
 
         /**
-         * Palet seçeneklerini oluşturur.
+         * Son satır uzunluğunu hesaplar
+         */
+        function calculateLastRowLength(firstRowLength) {
+            const baseEditableCells = 100;
+            const middleRowsCells = 8 * MATRIX_WIDTH; // 88 hücre
+            const usedByFirstRow = firstRowLength;
+
+            // 2 karakterlik emojiler için ekstra alan hesabı
+            const extraSpaceNeeded = twoCharEmojisUsed;
+
+            let lastRowLength = baseEditableCells - usedByFirstRow - middleRowsCells;
+            lastRowLength = Math.max(0, lastRowLength - extraSpaceNeeded);
+
+            return Math.min(MATRIX_WIDTH, lastRowLength);
+        }
+
+        /**
+         * Hücre tıklama işleyicisi
+         */
+        function handleCellClick(cell) {
+            if (cell.classList.contains('fixed')) return;
+
+            const previousChars = parseInt(cell.getAttribute('data-chars') || '1');
+            const newChars = selectedHeart.chars;
+
+            // Karakter değişimini güncelle
+            if (previousChars === 2 && newChars === 1) {
+                twoCharEmojisUsed--;
+            } else if (previousChars === 1 && newChars === 2) {
+                twoCharEmojisUsed++;
+            }
+
+            cell.innerHTML = selectedHeart.emoji;
+            cell.setAttribute('data-chars', newChars.toString());
+
+            // Matrisi yeniden düzenle (sabit hücre sayısını güncelle)
+            reorganizeMatrix();
+            updateCharacterCount();
+        }
+
+        /**
+         * Matrisi yeniden düzenler (2 karakterlik emojilere göre)
+         */
+        function reorganizeMatrix() {
+            const firstRowLength = parseInt(firstRowLengthInput.value);
+            const lastRowLength = calculateLastRowLength(firstRowLength);
+
+            // Son satırı güncelle
+            const lastRow = matrixTable.rows[9];
+            const cells = lastRow.cells;
+
+            for (let colIndex = 0; colIndex < MATRIX_WIDTH; colIndex++) {
+                const cell = cells[colIndex];
+
+                if (colIndex >= lastRowLength) {
+                    // Sabit hücre yap
+                    if (!cell.classList.contains('fixed')) {
+                        cell.innerHTML = '❌';
+                        cell.classList.add('fixed');
+                        cell.removeAttribute('data-chars');
+                        cell.onclick = null;
+                    }
+                } else {
+                    // Düzenlenebilir hücre yap (eğer sabitse)
+                    if (cell.classList.contains('fixed')) {
+                        cell.innerHTML = defaultHeart;
+                        cell.classList.remove('fixed');
+                        cell.setAttribute('data-chars', '1');
+                        cell.addEventListener('click', () => {
+                            handleCellClick(cell);
+                        });
+                    }
+                }
+            }
+        }
+
+        /**
+         * Karakter sayısını günceller
+         */
+        function updateCharacterCount() {
+            let totalChars = 0;
+            const rows = matrixTable.rows;
+
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].cells;
+                for (let j = 0; j < cells.length; j++) {
+                    if (!cells[j].classList.contains('fixed')) {
+                        const chars = parseInt(cells[j].getAttribute('data-chars') || '1');
+                        totalChars += chars;
+                    }
+                }
+            }
+
+            currentCharsSpan.textContent = totalChars;
+
+            // Uyarı göster/gizle
+            if (twoCharEmojisUsed > 0) {
+                charWarningSpan.style.display = 'inline';
+                charWarningSpan.textContent = ` - ⚠️ ${twoCharEmojisUsed} adet 2 karakterlik emoji kullanıyorsunuz!`;
+            } else {
+                charWarningSpan.style.display = 'none';
+            }
+
+            // Limit aşımı uyarısı
+            if (totalChars > MAX_CHARACTERS) {
+                currentCharsSpan.style.color = '#dc3545';
+                charWarningSpan.innerHTML += ' <strong>⚠️ LIMIT AŞILDI!</strong>';
+            } else {
+                currentCharsSpan.style.color = '#007bff';
+            }
+        }
+
+        // --- PALET VE SEKMELERİN YENİ VERSİYONLARI ---
+
+        /**
+         * Seçili fırça emojisini günceller.
+         */
+        function updateSelectedEmojiDisplay() {
+            currentBrushEmoji.textContent = selectedHeart.emoji;
+            currentBrushName.textContent = ` (${selectedHeart.name})`;
+
+            // Tüm emoji seçeneklerinin 'selected-color' sınıfını kaldır
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected-color'));
+
+            // Yeni seçilen emojiyi bul ve işaretle
+            const activeOption = document.querySelector(`[data-color="${selectedHeart.name}"][data-category-name="${currentCategory}"]`);
+            if (activeOption) {
+                 activeOption.classList.add('selected-color');
+            }
+        }
+
+
+        /**
+         * Kategori sekmelerini oluşturur.
+         */
+        function createCategoryTabs() {
+            categoryTabsContainer.innerHTML = ''; // Temizle
+
+            // Her kategori için bir sekme oluştur
+            Object.keys(emojiCategories).forEach(categoryName => {
+                const tabButton = document.createElement('button');
+                tabButton.className = 'category-tab';
+                tabButton.textContent = `${categoryName} (${Object.keys(emojiCategories[categoryName]).length})`;
+                tabButton.setAttribute('data-category', categoryName);
+
+                // Aktif kategoriyi işaretle
+                if (categoryName === currentCategory) {
+                    tabButton.classList.add('active');
+                }
+
+                // Tıklama olayı
+                tabButton.addEventListener('click', () => {
+                    // Önceki aktif sekme sınıfını kaldır
+                    document.querySelectorAll('.category-tab').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    // Yeni aktif sekme sınıfını ekle
+                    tabButton.classList.add('active');
+                    // Kategoriyi değiştir
+                    currentCategory = categoryName;
+                    // Emoji paletini güncelle
+                    createPalette();
+                });
+
+                categoryTabsContainer.appendChild(tabButton);
+            });
+        }
+
+        /**
+         * Emoji paletini oluşturur (seçili kategoriye göre).
          */
         function createPalette() {
             colorOptionsContainer.innerHTML = ''; // Temizle
 
-            // Tüm emoji seçeneklerini ekle
-            Object.entries(heartPalette).forEach(([name, emoji]) => {
+            if (!currentCategory || !emojiCategories[currentCategory]) {
+                return;
+            }
+
+            const emojisToShow = emojiCategories[currentCategory];
+
+            // Seçili kategorideki tüm emojileri ekle
+            Object.entries(emojisToShow).forEach(([name, emojiData]) => {
                 const span = document.createElement('span');
                 span.className = 'color-option';
-                span.innerHTML = emoji;
-                span.title = name;
-                span.setAttribute('data-color', name);
 
-                // Seçim işlevi
+                // 2 karakterlik emoji uyarısı
+                if (emojiData.chars === 2) {
+                    span.classList.add('two-char-emoji');
+                }
+
+                span.innerHTML = emojiData.emoji;
+                span.title = `${name} (${emojiData.chars} karakter)`;
+                span.setAttribute('data-color', name);
+                span.setAttribute('data-chars', emojiData.chars.toString());
+                span.setAttribute('data-category-name', currentCategory); // Yeni: Seçim takibi için kategori adı
+
+                // Seçili emojiyse işaretle
+                if (emojiData.emoji === selectedHeart.emoji && emojiData.name === selectedHeart.name) {
+                     span.classList.add('selected-color');
+                }
+
+                // Tıklama işlevi
                 span.addEventListener('click', () => {
-                    // Önceki seçimi kaldır
-                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected-color'));
-                    // Yeni seçimi ayarla
-                    selectedHeart = emoji;
-                    span.classList.add('selected-color');
+                    // Seçili emojiyi ayarla
+                    selectedHeart = emojiData;
+                    updateSelectedEmojiDisplay();
                 });
 
                 colorOptionsContainer.appendChild(span);
             });
 
-            // Varsayılan siyah kalbi başlangıçta seçili yap
-            const defaultOption = colorOptionsContainer.querySelector('[data-color="Siyah Kalp"]');
-            if (defaultOption) {
-                defaultOption.classList.add('selected-color');
-            }
+            // Eğer seçili kalp, yeni kategoriye taşındıysa veya varsayılan değilse, tekrar işaretle.
+            updateSelectedEmojiDisplay();
         }
 
-        /**
-         * Değiştirilebilir hücre sayısını hesaplar
-         */
-        function getEditableCellCount() {
-            const firstRowLength = parseInt(firstRowLengthInput.value);
-            const lastRowLength = TOTAL_EDITABLE_CELLS - firstRowLength - (8 * MATRIX_WIDTH);
-
-            return firstRowLength + (8 * MATRIX_WIDTH) + lastRowLength;
-        }
+        // --- DİĞER FONKSİYONLAR (Değiştirilmedi) ---
 
         /**
          * Çizimi düz emoji metni olarak döndürür (sadece değiştirilebilir hücreler).
-         * @param {boolean} formatted - True ise yeni satırlarla döndürür.
-         * @returns {string} Emoji dizisi.
          */
         function getDrawingText(formatted = false) {
             let result = [];
@@ -516,20 +1060,20 @@
         }
 
         /**
-         * Çizimi matrise uygular (sadece değiştirilebilir hücrelere).
-         * @param {string} text - Düz emoji metni.
+         * Çizimi matrise uygular (2 karakterlik emoji desteği ile)
          */
         function applyDrawingText(text) {
-            // Toplam değiştirilebilir hücre sayısını hesapla
-            const requiredLength = getEditableCellCount();
-
-            // Tüm boşluk ve yeni satır karakterlerini kaldırıp sadece emojileri bırak
             const cleanText = text.replace(/[\s\n\r]/g, '');
+            const editableCellCount = getEditableCellCount();
 
-            if (cleanText.length !== requiredLength) {
-                alert(`Hata: İçe aktarılan metin ${requiredLength} karakter uzunluğunda olmalı. Gelen uzunluk: ${cleanText.length}.`);
-                return;
+            // Matrisin hücre sayısından daha fazla karakter varsa hata ver
+            if (cleanText.length > editableCellCount) {
+                 showNotification(`Hata: İçe aktarılan metin en fazla ${editableCellCount} görsel karaktere eşdeğer olmalı. Lütfen matrisi temizleyin veya boyutları güncelleyin.`, 'error', 5000);
+                 return false;
             }
+
+            // 2 karakterlik emoji sayısını sıfırla
+            twoCharEmojisUsed = 0;
 
             let charIndex = 0;
             const rows = matrixTable.rows;
@@ -540,33 +1084,95 @@
                 for (let j = 0; j < cells.length; j++) {
                     const cell = cells[j];
 
-                    // Sadece sabit olmayan hücrelere değişiklik yapma izni ver
-                    if (!cell.classList.contains('fixed')) {
-                         cell.innerHTML = cleanText[charIndex];
-                         charIndex++;
+                    if (!cell.classList.contains('fixed') && charIndex < cleanText.length) {
+
+                        let currentEmoji = cleanText[charIndex];
+                        let emojiLength = 1;
+
+                        let tempString = cleanText.substring(charIndex);
+                        let detectedLength = 1;
+                        let foundEmoji = null;
+
+                        // Tüm emojilerde dönerek eşleşme arıyoruz (en güvenilir yol)
+                        Object.values(emojiCategories).some(category => {
+                            return Object.values(category).some(data => {
+                                // Emoji verisi (data.emoji) string'in başında eşleşiyor mu?
+                                if (tempString.startsWith(data.emoji)) {
+                                    foundEmoji = data;
+                                    detectedLength = data.chars;
+                                    return true;
+                                }
+                            });
+                        });
+
+                        if (foundEmoji) {
+                            emojiLength = foundEmoji.emoji.length; // Gerçek JavaScript string uzunluğu
+                            if (detectedLength === 2) {
+                                twoCharEmojisUsed += 1; // Görsel genişlik 2
+                            }
+                        } else {
+                            // Listedeki emojilerle eşleşmezse, tek karakter olarak kabul et
+                            emojiLength = 1;
+                            detectedLength = 1;
+                        }
+
+                        cell.innerHTML = cleanText.substring(charIndex, charIndex + emojiLength);
+                        cell.setAttribute('data-chars', detectedLength.toString());
+                        charIndex += emojiLength;
+
+                    } else if (!cell.classList.contains('fixed') && charIndex >= cleanText.length) {
+                        // Geri kalan boşlukları varsayılan kalp ile doldur
+                        cell.innerHTML = defaultHeart;
+                        cell.setAttribute('data-chars', '1');
                     }
                 }
             }
+
+            reorganizeMatrix();
+            updateCharacterCount();
+            return true;
         }
 
-        // --- OLAY DİNLEYİCİLERİ (Buton İşlevleri) ---
+        /**
+         * Değiştirilebilir hücre sayısını hesaplar
+         */
+        function getEditableCellCount() {
+            const firstRowLength = parseInt(firstRowLengthInput.value);
+            return firstRowLength + (8 * MATRIX_WIDTH) + MATRIX_WIDTH;
+        }
+
+        // --- OLAY DİNLEYİCİLERİ (Değiştirilmedi) ---
 
         // Matrisi Güncelle butonu
-        updateMatrixButton.addEventListener('click', () => {
-            if (confirm("İlk satır uzunluğunu değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?")) {
+        updateMatrixButton.addEventListener('click', async () => {
+            const confirmed = await showConfirm(
+                "Matrisi Güncelle",
+                "İlk satır uzunluğunu değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?"
+            );
+
+            if (confirmed) {
+                twoCharEmojisUsed = 0;
                 createMatrix();
+                showNotification('Matris başarıyla güncellendi!', 'success');
             }
         });
 
         // Panoya Kopyala
         copyButton.addEventListener('click', async () => {
             const drawingText = getDrawingText(false);
+            const totalChars = parseInt(currentCharsSpan.textContent);
+
+            if (totalChars > MAX_CHARACTERS) {
+                showNotification(`⚠️ UYARI: Çiziminiz ${totalChars} karakter içeriyor (limit: ${MAX_CHARACTERS}). YouTube'da kesilebilir.`, 'warning', 4000);
+                return;
+            }
+
             try {
                 await navigator.clipboard.writeText(drawingText);
-                alert('Çizim panoya başarıyla kopyalandı! (Değiştirilebilir pikseller dahil edildi)\n\nYouTube sohbetine yapıştırarak nickname uzunluğunuzu test edebilirsiniz.');
+                showNotification(`✅ Çizim panoya kopyalandı! (${totalChars}/${MAX_CHARACTERS} karakter)`, 'success');
             } catch (err) {
                 console.error('Kopyalama başarısız:', err);
-                alert('Kopyalama başarısız oldu. Lütfen konsolu kontrol edin.');
+                showNotification('❌ Kopyalama başarısız oldu. Lütfen tarayıcı izinlerini kontrol edin.', 'error');
             }
         });
 
@@ -574,11 +1180,12 @@
         importButton.addEventListener('click', async () => {
             try {
                 const text = await navigator.clipboard.readText();
-                applyDrawingText(text);
-                alert('Çizim panodan başarıyla içe aktarıldı! (Sadece değiştirilebilir pikseller güncellendi)');
+                if (applyDrawingText(text)) {
+                    showNotification('✅ Çizim panodan başarıyla içe aktarıldı!', 'success');
+                }
             } catch (err) {
                 console.error('İçe aktarma başarısız:', err);
-                alert('İçe aktarma başarısız oldu. Panonuzda geçerli bir çizim metni olduğundan emin olun.');
+                showNotification('❌ İçe aktarma başarısız oldu. Panonuzda geçerli bir çizim metni olduğundan emin olun.', 'error');
             }
         });
 
@@ -589,12 +1196,12 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'kalp_emoji_cizimi.txt';
+            a.download = 'emoji_cizimi.txt';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            alert('Çizim "kalp_emoji_cizimi.txt" olarak kaydedildi! (Sadece değiştirilebilir pikseller)');
+            showNotification('💾 Çizim başarıyla kaydedildi!', 'success');
         });
 
         // Dosya Aç
@@ -608,24 +1215,57 @@
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const text = e.target.result;
-                    applyDrawingText(text);
-                    alert('Çizim dosyadan başarıyla yüklendi! (Sadece değiştirilebilir pikseller güncellendi)');
+                    if (applyDrawingText(text)) {
+                        showNotification('✅ Çizim dosyadan başarıyla yüklendi!', 'success');
+                    }
                 };
                 reader.readAsText(file);
+                // Input'u temizle
+                event.target.value = '';
             }
         });
 
         // Temizle
-        clearButton.addEventListener('click', () => {
-            if (confirm("Mevcut çizimi temizlemek istediğinizden emin misiniz?")) {
+        clearButton.addEventListener('click', async () => {
+            const confirmed = await showConfirm(
+                "Çizimi Temizle",
+                "Mevcut çizimi temizlemek istediğinizden emin misiniz?"
+            );
+
+            if (confirmed) {
+                twoCharEmojisUsed = 0;
                 createMatrix();
+                showNotification('🧹 Çizim temizlendi!', 'success');
             }
         });
 
         // --- BAŞLANGIÇ ---
-        document.addEventListener('DOMContentLoaded', () => {
-            createMatrix();
-            createPalette();
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Emojileri yükle ve işle
+            await loadEmojis();
+
+            // 2. Arayüzü başlat (Sıra önemlidir!)
+            if (Object.keys(emojiCategories).length > 0) {
+                // Siyah kalp emojisini default olarak bul ve ayarla
+                Object.values(emojiCategories).some(category => {
+                    return Object.values(category).some(data => {
+                        if (data.emoji === defaultHeart) {
+                            selectedHeart = data;
+                            return true;
+                        }
+                    });
+                });
+
+                // Seçili emoji ekranını başlat
+                updateSelectedEmojiDisplay();
+
+                createMatrix();
+                createCategoryTabs();
+                createPalette();
+                showNotification('🎨 Tüm Emoji Kategorileri Yüklendi! Başlayın.', 'info', 3000);
+            } else {
+                showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
+            }
         });
     </script>
 </body>
