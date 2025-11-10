@@ -532,7 +532,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.0 (Dinamik Maliyet Hesabı)</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.1 (Stabil)</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -614,7 +614,7 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMA VE SABİTLER (V6.0 DİNAMİK MALİYET) ---
+        // --- TEMEL TANIMLAMA VE SABİTLER (V6.1 DİNAMİK MALİYET) ---
         const DEFAULT_MATRIX_WIDTH = 11;
         const SP_BS_MATRIX_WIDTH = 10;
         const MATRIX_HEIGHT = 20; // Yükseklik 20'de tutulur
@@ -633,7 +633,7 @@
 
         // Ayırıcı karakterlerin char ve name bilgileri (length artık dinamik hesaplanacak)
         let SEPARATOR_MAP = {
-            'none': { char: '', length: 0, name: 'Hiçbiri' }, // length: 0 sabit kalacak
+            'none': { char: '', length: 0, name: 'Hiçbiri' },
             'ZWNJ': { char: '\u200C', name: 'ZWNJ' },
             'ZWSP': { char: '\u200B', name: 'ZWSP' },
             'ZWJ': { char: '\u200D', name: 'ZWJ' },
@@ -654,16 +654,19 @@
         };
 
         /**
-         * SEPARATOR_MAP'teki ayırıcıların karakter maliyetlerini dinamik olarak hesaplar (V6.0 Düzeltmesi).
+         * SEPARATOR_MAP'teki ayırıcıların karakter maliyetlerini dinamik olarak hesaplar.
          */
         function calculateSeparatorCharCosts() {
+            const separatorSelect = document.getElementById('separator-select');
+
             for (const key in SEPARATOR_MAP) {
                 if (SEPARATOR_MAP.hasOwnProperty(key) && key !== 'none') {
                     const separator = SEPARATOR_MAP[key];
-                    // length'i, char'ın gerçek karakter maliyetiyle güncelle (string.length)
+                    // length'i, char'ın gerçek karakter maliyetiyle güncelle
                     separator.length = calculateChatChars(separator.char);
+
                     // Dropdown metnini maliyetle güncelle
-                    const option = document.querySelector(`#separator-select option[value="${key}"]`);
+                    const option = separatorSelect.querySelector(`option[value="${key}"]`);
                     if (option) {
                          option.textContent = `${separator.name} (${separator.length} Karakter)`;
                     }
@@ -671,7 +674,7 @@
             }
         }
 
-        // --- DİĞER TEMEL DEĞİŞKENLER (Aynı kaldı) ---
+        // --- DİĞER TEMEL DEĞİŞKENLER ---
         let emojiCategories = {};
         let selectedHeart = { emoji: defaultHeart, chars: 0, name: 'black heart' };
         let currentCategory = "";
@@ -738,6 +741,7 @@
         async function loadEmojis() {
              try {
                 // Bu kodun, projenizde 'emoji.json' dosyasının bulunduğunu varsaydığını unutmayın.
+                // Gerçek bir uygulamada, fetch yerine emoji verilerini doğrudan buraya gömmeniz gerekebilir.
                 const response = await fetch(EMOJI_JSON_URL);
                 if (!response.ok) {
                     throw new Error(`HTTP Hata kodu: ${response.status}`);
@@ -747,7 +751,8 @@
                 let processedCategories = {};
 
                 rawEmojis.forEach(item => {
-                    const categoryName = item.category || "Uncategorized";
+                    // Kategori ismini düzenle (İlk harf büyük, diğerleri küçük)
+                    const categoryName = (item.category || "Diğer").charAt(0).toUpperCase() + (item.category || "Diğer").slice(1);
                     const emojiName = item.description || item.names[0];
 
                     if (!processedCategories[categoryName]) {
@@ -765,10 +770,20 @@
 
                 emojiCategories = processedCategories;
 
+                // Başlangıçta en çok emojisi olan kategoriyi seç
                 const sortedCategories = Object.keys(emojiCategories).sort((a, b) =>
                     Object.keys(emojiCategories[b]).length - Object.keys(emojiCategories[a]).length
                 );
                 currentCategory = sortedCategories[0];
+
+                // Başlangıç emojisini güncel, doğru maliyetli objeyle eşleştir
+                const heartData = Object.values(emojiCategories)
+                    .flatMap(Object.values)
+                    .find(data => data.emoji === defaultHeart);
+
+                if (heartData) {
+                    selectedHeart = heartData;
+                }
 
                 showNotification(`✅ ${rawEmojis.length} adet emoji başarıyla yüklendi ve maliyetleri hesaplandı!`, 'success');
 
@@ -792,30 +807,15 @@
             let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
             let totalEditableCount = editableCells.length;
 
-            // Satır sayısı, editableCells'in anlık satır sayısına göre hesaplanır
-            const actualRows = Array.from(new Set(editableCells.map(cell => cell.parentNode))).length;
-
-            // Ayırıcı Maliyetini Hesapla (Tüm editable hücrelerin ayırıcı maliyeti)
-            // Toplam ayırıcı: Her satırda (Width - 1) * RowCount
-            const rowWidth = currentMatrixWidth - (parseInt(firstRowLengthInput.value) || 0); // Düzenlenebilir sütun sayısı
-            // Bir satırdaki ayırıcı sayısı: Emojilerin bir eksiği (satır genişliği > 0 olmalı)
-            const separatorsPerRow = rowWidth > 0 ? rowWidth - 1 : 0;
-
-            // Kırpma işlemi satır bazında olmadığı için, ayırıcı maliyetini sadece
-            // kırpılmayan emojilerin arasına eklenen toplam ayırıcı sayısı üzerinden hesaplamak gerekir.
-
-            // Ayırıcı için kalan bütçeyi bulalım.
-            // En kötü senaryo: max 200 karakter.
-
-            // Emojiler için kalan bütçe (Önce ayırıcı maliyetini tahmin et, sonra emojileri yerleştir)
-            // Ayırıcı maliyetinin kesinleştirilmesi, kaç emoji yerleştirildiğine bağlıdır.
+            const rawFirstRowLength = parseInt(firstRowLengthInput.value) || 0;
+            const rowWidth = currentMatrixWidth - rawFirstRowLength; // Düzenlenebilir sütun sayısı (Örn: 11-6 = 5)
 
             let clippedCount = 0;
 
             // Kırpmadan önce tüm kırpma işaretlerini temizle
             editableCells.forEach(cell => cell.classList.remove('clipped'));
 
-            let currentEmojiIndex = 0;
+            let currentEditableCellIndex = 0;
             let currentRow = -1;
             let emojisInCurrentRow = 0;
 
@@ -827,17 +827,19 @@
                 // Yeni satıra geçiş kontrolü
                 if (newRowIndex !== currentRow) {
                     currentRow = newRowIndex;
-                    emojisInCurrentRow = 0;
+                    emojisInCurrentRow = 0; // Yeni satırda emoji sayısı sıfırlanır
                 }
 
                 // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
                 let separatorCost = 0;
+                // Ayırıcı sadece ilk emojiden sonra (emojisInCurrentRow > 0) ve satır sonu değilse konur.
                 if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < rowWidth)) {
                     // Bu, bir önceki emoji ile bu emoji arasına konulacak ayırıcı maliyetidir.
                     separatorCost = selectedSeparator.length;
                 }
 
                 // Hücrenin maliyeti (Drawn state'e göre)
+                // data-chars, createMatrix veya handleCellClick'te ayarlanır.
                 const emojiCost = parseInt(cell.getAttribute('data-chars') || '1');
 
                 // Toplam maliyet (Emoji + Ayırıcı)
@@ -868,10 +870,9 @@
             const totalOutputCharCount = totalEmojiCharCost;
 
             return {
-                totalEmojiCharCost: totalEmojiCharCost, // Bu artık Emoji + Ayırıcı maliyetidir
+                totalEmojiCharCost: totalOutputCharCount,
                 totalEmojis: totalEmojis,
                 multiCharEmojisUsed,
-                separatorCharCost: totalOutputCharCost - (totalEmojiCharCost - (totalEmojis - 1) * selectedSeparator.length), // Ayırıcılar hariç sadece emoji maliyeti
                 clippedCount: clippedCount,
                 totalOutputCharCount: totalOutputCharCount,
             };
@@ -892,8 +893,9 @@
             }
             firstRowLengthInput.setAttribute('max', currentMatrixWidth.toString());
 
-            const permanentFixedCount = currentMatrixWidth - firstRowLength;
-            const defaultHeartChars = calculateChatChars(defaultHeart);
+            // Sabit hücre sayısı (Nickname'e karşılık gelen kısım)
+            const permanentFixedCount = firstRowLength;
+            const defaultHeartChars = selectedHeart.chars; // Başlangıç emojisi maliyetini kullan
 
             for (let rowIndex = 0; rowIndex < MATRIX_HEIGHT; rowIndex++) {
                 const row = matrixTable.insertRow();
@@ -903,18 +905,21 @@
                     cell.setAttribute('data-row', rowIndex);
                     cell.setAttribute('data-col', colIndex);
 
-                    const isPermanentlyFixed = (rowIndex === 0 && colIndex < permanentFixedCount);
+                    const isPermanentlyFixed = (colIndex < permanentFixedCount);
 
                     if (isPermanentlyFixed) {
                         cell.innerHTML = '❌';
                         cell.classList.add('fixed');
                         cell.setAttribute('data-chars', '0'); // Maliyet 0
                     } else {
-                        cell.innerHTML = defaultHeart;
+                        // Çizilebilir alan başlangıçta varsayılan emojiyle dolar
+                        cell.innerHTML = selectedHeart.emoji;
                         cell.setAttribute('data-chars', defaultHeartChars.toString());
                         cell.addEventListener('click', () => {
                             handleCellClick(cell);
                         });
+                        // Kırpma sınıfını temizle
+                        cell.classList.remove('clipped');
                     }
                 }
             }
@@ -952,7 +957,7 @@
 
             // Eğer ayırıcı kullanılıyorsa, ayırıcı maliyeti göster
             if (selectedSeparator.length > 0 && stats.totalEmojis > 0) {
-                const totalSeparators = stats.totalEmojis - 1; // Toplam emoji sayısı - 1
+                const totalSeparators = stats.totalEmojis > 0 ? stats.totalEmojis - 1 : 0;
                 const separatorCharCost = totalSeparators * selectedSeparator.length;
 
                 warningText += `${selectedSeparator.name} (${separatorCharCost} Karakter Maliyeti) kullanılıyor.`;
@@ -977,7 +982,7 @@
             }
         }
 
-        // --- PALET VE SEKMELER (Aynı kaldı) ---
+        // --- PALET VE SEKMELER ---
 
         function updateSelectedEmojiDisplay() {
             currentBrushEmoji.textContent = selectedHeart.emoji;
@@ -1058,7 +1063,7 @@
             updateSelectedEmojiDisplay();
         }
 
-        // --- İÇE/DIŞA AKTARMA FONKSİYONLARI (Aynı kaldı) ---
+        // --- İÇE/DIŞA AKTARMA FONKSİYONLARI ---
 
         /**
          * Çizimi düz emoji metni olarak döndürür. Sadece kırpılmamış (non-clipped) hücreleri dahil eder.
@@ -1074,6 +1079,7 @@
                 let emojisInRow = [];
                 const cells = rows[i].cells;
                 let isRowClipped = false;
+                let rowHasEmoji = false;
 
                 for (let j = 0; j < cells.length; j++) {
                     const cell = cells[j];
@@ -1086,12 +1092,14 @@
 
                     if (!cell.classList.contains('fixed')) {
                         emojisInRow.push(cell.innerHTML);
+                        rowHasEmoji = true;
                     }
                 }
 
                 // Satır çıktıda yer alacak emojiler içeriyorsa ekle
-                if (emojisInRow.length > 0 && !isRowClipped) {
+                if (rowHasEmoji && !isRowClipped) {
                     let rowText = emojisInRow.join(separator);
+                    // formatted=true ise her satırı ayrı tut
                     result.push(rowText);
                 }
 
@@ -1106,6 +1114,7 @@
         }
 
         function applyDrawingText(text) {
+            // Txt dosyasından yüklenen metin satır sonlarını içerebilir. Tüm whitespace'i kaldır.
             const textWithoutLineBreaks = text.replace(/[\s\n\r]/g, '');
 
             // 1. Ayırıcıyı tespit et
@@ -1127,10 +1136,10 @@
 
             // 3. Matrisi yeniden oluştur (Offset'i ve matris boyutunu ayarlamak için)
             // Bu aynı zamanda dinamik maliyet hesaplaması sayesinde ayırıcı maliyetini de güncelleyecektir.
-            const statsBeforeRebuild = calculateAndClip(matrixTable.querySelectorAll('td')); // Geçici istatistik al
+            // createMatrix, currentMatrixWidth'i yeni ayırıcıya göre ayarlar ve matrisi temizler.
             createMatrix();
 
-            showNotification(`Ayırıcı ${SEPARATOR_MAP[detectedSeparatorKey].name} olarak otomatik algılandı. Matris yeniden oluşturuluyor...`, 'info');
+            //showNotification(`Ayırıcı ${SEPARATOR_MAP[detectedSeparatorKey].name} olarak otomatik algılandı. Matris yeniden oluşturuluyor...`, 'info');
 
             // 4. Ayırıcıyı temizle
             const selectedSeparator = SEPARATOR_MAP[detectedSeparatorKey];
@@ -1144,15 +1153,17 @@
             let charIndex = 0;
             const allCells = matrixTable.querySelectorAll('td');
 
+            // Sadece çizilebilir hücreleri al
             let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
             let totalEditableCount = editableCells.length;
 
             let currentTotalCharCost = 0;
-            const defaultHeartChars = calculateChatChars(defaultHeart);
+            const defaultHeartChars = selectedHeart.chars; // Varsayılan maliyeti kullan
 
             let currentRow = -1;
             let emojisInCurrentRow = 0;
-            const rowWidth = currentMatrixWidth - (parseInt(firstRowLengthInput.value) || 0);
+            const rawFirstRowLength = parseInt(firstRowLengthInput.value) || 0;
+            const rowWidth = currentMatrixWidth - rawFirstRowLength; // Düzenlenebilir sütun sayısı
 
             for (let i = 0; i < totalEditableCount; i++) {
                 const cell = editableCells[i];
@@ -1167,7 +1178,7 @@
                 // Metin bittiği an veya bütçe aşıldığı an kırpmaya başla
                 if (charIndex >= cleanText.length) {
                     // Kalan boş hücreleri default emoji ile doldur
-                    cell.innerHTML = defaultHeart;
+                    cell.innerHTML = selectedHeart.emoji;
                     cell.setAttribute('data-chars', defaultHeartChars.toString());
                     cell.classList.remove('clipped');
                     continue;
@@ -1177,6 +1188,7 @@
                 let emojiLength = 1;
                 let detectedCharCost = 1;
                 let foundEmoji = null;
+                let charContent = tempString.substring(0, 1);
 
                 // En uzun eşleşen emojiyi bul
                 for (const data of allEmojis) {
@@ -1184,15 +1196,16 @@
                         foundEmoji = data;
                         emojiLength = data.emoji.length;
                         detectedCharCost = data.chars;
+                        charContent = data.emoji;
                         break;
                     }
                 }
 
                 if (!foundEmoji) {
                     // Emoji değilse/Bulunamazsa, ilk karakteri al
-                    emojiLength = 1;
                     // Bulunan tek karakterin maliyetini hesapla
-                    detectedCharCost = calculateChatChars(tempString.substring(0, 1));
+                    detectedCharCost = calculateChatChars(charContent);
+                    // length 1 olarak kalır
                 }
 
                 // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
@@ -1206,7 +1219,7 @@
                 // BÜTÇE KONTROLÜ
                 if (currentTotalCharCost + combinedCost <= MAX_CHARACTERS) {
                     // Bütçe dahilinde
-                    cell.innerHTML = cleanText.substring(charIndex, charIndex + emojiLength);
+                    cell.innerHTML = charContent;
                     cell.setAttribute('data-chars', detectedCharCost.toString());
                     cell.classList.remove('clipped');
                     currentTotalCharCost += combinedCost;
@@ -1217,7 +1230,7 @@
                     // Kalan hücreleri kırpma döngüsü
                     for(let j = i; j < totalEditableCount; j++) {
                         editableCells[j].classList.add('clipped');
-                        editableCells[j].innerHTML = defaultHeart; // Kırpılanları default emojiye çevir
+                        editableCells[j].innerHTML = selectedHeart.emoji; // Kırpılanları default emojiye çevir
                         editableCells[j].setAttribute('data-chars', defaultHeartChars.toString());
                     }
                     break;
@@ -1235,12 +1248,17 @@
             return true;
         }
 
-        // --- OLAY DİNLEYİCİLERİ (Aynı kaldı) ---
+        // --- OLAY DİNLEYİCİLERİ ---
+
+        firstRowLengthInput.addEventListener('input', () => {
+             // Sadece matrisi güncelleme butonuna basıldığında matrix yeniden çizilir.
+        });
+
 
         updateMatrixButton.addEventListener('click', async () => {
             const confirmed = await showConfirm(
                 "Matrisi Güncelle",
-                "İlk satır uzunluğunu veya matris boyutunu değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?"
+                "İlk satır uzunluğunu değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?"
             );
 
             if (confirmed) {
@@ -1264,9 +1282,7 @@
                     createMatrix();
                     showNotification(`⚠️ Matris boyutu ${currentDisplayedWidth}x${MATRIX_HEIGHT}'dan ${newWidth}x${MATRIX_HEIGHT}'a değiştirildi. Çizim temizlendi.`, 'warning');
                 } else {
-                    // İptal edilirse, seçimi eski haline getir (basit bir geri alma mekanizması)
-                    // Önceki genişliğe göre doğru ayırıcıyı bulmak zor, bu yüzden eski değeri geri yükle.
-                    // En iyi tahmin: Sadece mevcut değeri yeniden seçmek
+                    // İptal edilirse, seçimi eski haline getir
                     const prevValue = Array.from(separatorSelect.options).find(opt =>
                         (opt.value === 'SP_BS' && currentDisplayedWidth === SP_BS_MATRIX_WIDTH) ||
                         (opt.value !== 'SP_BS' && currentDisplayedWidth === DEFAULT_MATRIX_WIDTH)
@@ -1275,6 +1291,7 @@
                     return;
                 }
             } else {
+                // Sadece ayırıcı değiştiyse, karakter sayımını güncelle ve kırpma işlemini tekrar çalıştır.
                 updateCharacterCount();
                 const separatorName = SEPARATOR_MAP[separatorSelect.value].name;
                 showNotification(`Ayırıcı ${separatorName} olarak ayarlandı.`, 'info');
@@ -1367,24 +1384,27 @@
 
         // --- BAŞLANGIÇ ---
         document.addEventListener('DOMContentLoaded', async () => {
-            // Önce ayırıcı maliyetlerini hesapla ve dropdown'u güncelle
+            // 1. Ayırıcı maliyetlerini hesapla ve dropdown'u güncelle
             calculateSeparatorCharCosts();
 
+            // 2. Varsayılan kalbi (🖤) maliyetiyle manuel olarak başlat
+            selectedHeart = {
+                emoji: defaultHeart,
+                chars: calculateChatChars(defaultHeart),
+                name: 'black heart'
+            };
+
+            // 3. Emojileri yükle
             await loadEmojis();
 
+            // 4. Uygulama başlatma kontrolü ve Palet/Matris oluşturma
             if (Object.keys(emojiCategories).length > 0) {
-                const heartData = Object.values(emojiCategories).flatMap(Object.values).find(data => data.emoji === defaultHeart);
-                if (heartData) {
-                     selectedHeart = heartData;
-                } else {
-                    selectedHeart = { emoji: defaultHeart, chars: calculateChatChars(defaultHeart), name: 'black heart' };
-                }
-
+                // loadEmojis içindeki güncel selectedHeart'ı kullan
                 updateSelectedEmojiDisplay();
-                createMatrix();
+                createMatrix(); // Matris, selectedHeart'ın maliyetini kullanır
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.0 Hazır! (Dinamik Maliyet Aktif)', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.1 Hazır! (Stabil Sürüm)', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
