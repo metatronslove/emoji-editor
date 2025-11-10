@@ -524,7 +524,7 @@
             </div>
 
             <ol style="margin-left: 20px; font-size: 0.95em;">
-                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** YouTube'da 100 adet **🖤** gönderin. Nickname'inizin yanında görünen kalp sayısını sayın. Bu sayıyı **"İlk Satır Uzunluğu"** olarak girin ve **Matrisi Güncelle**'ye basın. **Bu alan (❌ ile işaretli) SADECE İLK SATIRDA çıktıya dahil edilmez.**</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** İlk satırda kaç adet emoji pikseli **çizebileceğinizi** belirleyin (Genellikle 5 veya 6'dır). Bu, nickname'inizin kapladığı alanı otomatik hesaplar. **(❌ ile işaretli hücreler çıktıya dahil edilmez.)**</li>
                 <li style="margin-bottom: 8px;">**Kılavuz Adım 2 (Filtre Atlatma):** Çiziminizin YouTube sohbetinde görünmemesi durumunda, **Filtre Atlatma Yöntemi**'ni sırayla deneyin. Bu karakterler, çiziminizin toplam karakter sayısına eklenir.</li>
                 <li style="margin-bottom: 8px;">**Kılavuz Adım 3 (Kopyalama):** Çiziminizi tamamladıktan sonra **Panoya Kopyala** butonuna basın. Çıktınızın 200 karakteri asla aşmadığından emin olabilirsiniz. **Kırpılan (✂️) pikseller çıktıya dahil edilmez.**</li>
             </ol>
@@ -532,7 +532,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.4 (Çıktı Kırpma Düzeltmesi)</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.5 (Sezgisel Giriş Düzeltmesi)</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -558,8 +558,8 @@
         <div id="right-panel">
             <div class="card" id="controls-panel">
                  <div id="main-controls" style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
-                    <label for="firstRowLength" style="color: var(--accent-color);">İlk Satır Uzunluğu (0-11):</label>
-                    <input type="number" id="firstRowLength" value="6" min="0" max="11" style="width: 70px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--fixed-bg); color: var(--main-text);">
+                    <label for="firstRowLength" style="color: var(--accent-color);">İlk Satır Çizim Piksel Sayısı (0-11):</label>
+                    <input type="number" id="firstRowLength" value="5" min="0" max="11" style="width: 70px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--fixed-bg); color: var(--main-text);">
                     <button id="updateMatrixButton" class="btn-success">Matrisi Güncelle</button>
                     <button id="showGuideButton" class="btn-primary">Kılavuz</button>
                 </div>
@@ -614,7 +614,7 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMA VE SABİTLER (V6.4 ÇIKTI KIRPMA DÜZELTME) ---
+        // --- TEMEL TANIMLAMA VE SABİTLER (V6.5 SEZGİSEL GİRİŞ DÜZELTMESİ) ---
         const DEFAULT_MATRIX_WIDTH = 11;
         const SP_BS_MATRIX_WIDTH = 10;
         const MATRIX_HEIGHT = 20; // Yükseklik 20'de tutulur
@@ -808,9 +808,9 @@
             let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
             let totalEditableCount = editableCells.length;
 
-            const rawFirstRowLength = parseInt(firstRowLengthInput.value) || 0;
-            // İlk satırda kaç hücrenin sabit olduğunu gösterir.
-            const permanentFixedCount = Math.min(rawFirstRowLength, currentMatrixWidth);
+            // V6.5 Düzeltmesi: Giriş değeri, çizilebilir piksel sayısıdır.
+            const drawablePixelCount = parseInt(firstRowLengthInput.value) || 0;
+            const permanentFixedCount = currentMatrixWidth - drawablePixelCount;
 
             let clippedCount = 0;
 
@@ -836,7 +836,7 @@
 
                 // Bulunduğumuz satırdaki toplam çizilebilir hücre sayısı
                 let effectiveRowWidth = (currentRow === 0)
-                    ? (currentMatrixWidth - permanentFixedCount)
+                    ? (currentMatrixWidth - permanentFixedCount) // Bu, drawablePixelCount'a eşittir.
                     : currentMatrixWidth;
 
                 // Ayırıcı sadece ilk emojiden sonra (emojisInCurrentRow > 0) konur.
@@ -893,13 +893,19 @@
 
             matrixTable.innerHTML = '';
 
-            const rawFirstRowLength = parseInt(firstRowLengthInput.value);
-            // Sadece ilk satırda nickname'in kapladığı alanı temsil eder (Fixed Hücre Sayısı)
-            const permanentFixedCount = Math.min(rawFirstRowLength, currentMatrixWidth);
+            // V6.5 Düzeltmesi: Giriş değeri, çizilebilir piksel sayısıdır.
+            const drawablePixelCount = parseInt(firstRowLengthInput.value);
+            // permanentFixedCount, sabit (X) hücre sayısıdır.
+            let permanentFixedCount = currentMatrixWidth - drawablePixelCount;
 
-            if (rawFirstRowLength > currentMatrixWidth) {
+            if (drawablePixelCount > currentMatrixWidth) {
                 firstRowLengthInput.value = currentMatrixWidth;
+                permanentFixedCount = 0; // Eğer max girilmişse fixed=0
+            } else if (drawablePixelCount < 0) {
+                 firstRowLengthInput.value = 0;
+                 permanentFixedCount = currentMatrixWidth; // Eğer 0 girilmişse fixed=11
             }
+
             firstRowLengthInput.setAttribute('max', currentMatrixWidth.toString());
 
             const defaultHeartChars = selectedHeart.chars;
@@ -1172,8 +1178,10 @@
 
             let currentRow = -1;
             let emojisInCurrentRow = 0;
-            const rawFirstRowLength = parseInt(firstRowLengthInput.value) || 0;
-            const permanentFixedCount = Math.min(rawFirstRowLength, currentMatrixWidth);
+
+            // V6.5 Düzeltmesi: permanentFixedCount için hesaplamayı tekrar yap
+            const drawablePixelCount = parseInt(firstRowLengthInput.value) || 0;
+            const permanentFixedCount = currentMatrixWidth - drawablePixelCount;
 
             for (let i = 0; i < totalEditableCount; i++) {
                 const cell = editableCells[i];
@@ -1270,7 +1278,7 @@
         updateMatrixButton.addEventListener('click', async () => {
             const confirmed = await showConfirm(
                 "Matrisi Güncelle",
-                "İlk satır uzunluğunu değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?"
+                "İlk satır çizilebilir piksel sayısını değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?"
             );
 
             if (confirmed) {
@@ -1416,7 +1424,7 @@
                 createMatrix(); // Matris, selectedHeart'ın maliyetini kullanır
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.4 Hazır! (Çıktı Kırpma Düzeltmesi)', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.5 Hazır! (Sezgisel Giriş Düzeltmesi)', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
