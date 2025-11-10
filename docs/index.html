@@ -401,8 +401,9 @@
             box-shadow: 0 0 5px #ffc107;
         }
 
-        .two-char-emoji:before {
-            content: '2';
+        /* Birden fazla karakter maliyeti olan emojiler için gösterge */
+        .multi-char-emoji:before {
+            content: attr(data-chars); /* Dinamik olarak uzunluğu göster */
             position: absolute;
             font-size: 8px;
             color: #ff6b6b;
@@ -495,7 +496,7 @@
             <h3>📖 YouTube Sohbet Kılavuzu</h3>
 
             <div style="background-color: var(--fixed-bg); padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid var(--accent-color);">
-                <strong>🎯 ÖNEMLİ:</strong> Tüm çiziminiz ve ayırıcı karakterlerinizin toplamı **200 karakteri geçmemelidir**. Uygulama bu limiti size gösterecektir.
+                <strong>🎯 ÖNEMLİ:</strong> Tüm çiziminiz ve ayırıcı karakterlerinizin toplamı **200 karakteri geçmemelidir**. Uygulama bu limiti size gösterecektir. **🖤** gibi bazı emojiler **2 karakter** maliyetlidir.
             </div>
 
             <ol style="margin-left: 20px; font-size: 0.95em;">
@@ -507,7 +508,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.3.6 (Tek Sınır Düzeltmesi)</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.3.8 (Kesin Karakter Maliyeti Çözümü)</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -589,17 +590,17 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMA VE SABİTLER (V3.6 TEK SINIR DÜZELTMESİ) ---
+        // --- TEMEL TANIMLAMA VE SABİTLER (V3.8 KESİN KARAKTER MALİYETİ ÇÖZÜMÜ) ---
         const DEFAULT_MATRIX_WIDTH = 11;
         const SP_BS_MATRIX_WIDTH = 10;
         const MATRIX_HEIGHT = 10;
-        const MAX_CHARACTERS = 200; // YouTube'un genel 200 karakter sınırı (görünür metin + emoji + ayırıcı)
+        const MAX_CHARACTERS = 200; // YouTube'un genel 200 karakter sınırı
         const EMOJI_JSON_URL = 'emoji.json';
         const defaultHeart = '🖤';
 
         let currentMatrixWidth = DEFAULT_MATRIX_WIDTH;
 
-        // Ayırıcı karakterlerin kendi karakter maliyetlerini içerir (Tek Kısıtlama: 200)
+        // Ayırıcı karakterlerin kendi karakter maliyetlerini içerir
         const SEPARATOR_MAP = {
             'none': { char: '', length: 0, name: 'Hiçbiri' },
             'ZWNJ': { char: '\u200C', length: 1, name: 'ZWNJ' },
@@ -622,7 +623,7 @@
         };
 
         let emojiCategories = {};
-        let selectedHeart = { emoji: defaultHeart, chars: 1, name: 'black heart' };
+        let selectedHeart = { emoji: defaultHeart, chars: 0, name: 'black heart' }; // Maliyet başlangıçta 0, yüklenirken atanacak
         let currentCategory = "";
 
         // --- DOM ELEMENTLERİ ---
@@ -685,14 +686,11 @@
         }
 
         /**
-         * EMOJİ KARAKTER MALİYETİNİ HESAPLAR
+         * EMOJİ KARAKTER MALİYETİNİ KESİNLİKLE HESAPLAR
+         * YouTube bütçesi için en doğru yöntem olan, emoji dizesinin UTF-16 kod birimi uzunluğunu (string.length) kullanır.
          */
         function calculateChatChars(emojiString) {
-            // İki karakterli emojiler (genellikle ten rengi değiştiricilerle veya özel formatlarla) 2 birim maliyetlidir.
-            if (emojiString.length > 2) {
-                return 2;
-            }
-            return 1;
+            return emojiString.length;
         }
 
         async function loadEmojis() {
@@ -714,9 +712,12 @@
                         processedCategories[categoryName] = {};
                     }
 
+                    // Kesin maliyet hesaplandı
+                    const charCost = calculateChatChars(item.emoji);
+
                     processedCategories[categoryName][emojiName] = {
                         emoji: item.emoji,
-                        chars: calculateChatChars(item.emoji), // Maliyet hesaplandı (1 veya 2)
+                        chars: charCost,
                         name: emojiName
                     };
                 });
@@ -728,7 +729,7 @@
                 );
                 currentCategory = sortedCategories[0];
 
-                showNotification(`✅ ${rawEmojis.length} adet emoji başarıyla yüklendi!`, 'success');
+                showNotification(`✅ ${rawEmojis.length} adet emoji başarıyla yüklendi ve maliyetleri hesaplandı!`, 'success');
 
             } catch (error) {
                 console.error("Emoji yükleme hatası:", error);
@@ -736,11 +737,11 @@
             }
         }
 
-        // --- YARDIMCI İSTATİSTİK FONKSİYONU (TEK SINIR İÇİN GÜNCELLENDİ) ---
+        // --- YARDIMCI İSTATİSTİK FONKSİYONU ---
         function calculateCurrentStats() {
-            let totalEmojiCharCost = 0; // Toplam emoji karakter maliyeti (1 veya 2)
+            let totalEmojiCharCost = 0; // Toplam emoji karakter maliyeti (UTF-16 birimi)
             let totalEmojis = 0; // Matristeki toplam emoji sayısı
-            let twoCharEmojisUsed = 0; // 2 karakterlik emoji sayısı
+            let multiCharEmojisUsed = 0; // 1 karakterden fazla maliyeti olan emoji sayısı
             const rows = matrixTable.rows;
 
             for (let i = 0; i < rows.length; i++) {
@@ -756,8 +757,8 @@
                         totalEmojiCharCost += chars;
                         totalEmojis++;
 
-                        if (chars === 2) {
-                            twoCharEmojisUsed++;
+                        if (chars > 1) {
+                            multiCharEmojisUsed++;
                         }
                     }
                 }
@@ -767,8 +768,16 @@
             const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
             const numRows = rows.length;
 
-            // Toplam ayırıcı sayısı = Toplam Emoji Sayısı - Toplam Satır Sayısı
-            // Her satırda (W-1) ayırıcı karakteri vardır.
+            // Toplam ayırıcı sayısı
+            // Matriste W*H emoji var. Toplam W*H-H = H(W-1) ayırıcı (her satırda W-1 adet)
+            const editableCellsCount = Array.from(rows).reduce((count, row) =>
+                count + Array.from(row.cells).filter(cell => !cell.classList.contains('fixed')).length, 0);
+
+            // Ayırıcılar satır sonlarına değil, emoji aralarına gelir.
+            // Satır bitimi ayırıcı içermez.
+            const totalSeparators = editableCellsCount - numRows;
+
+            // totalEmojis zaten editableCellsCount'a eşit
             const numSeparators = totalEmojis > 0 ? totalEmojis - numRows : 0;
             const separatorCharCost = numSeparators * selectedSeparator.length;
 
@@ -778,13 +787,13 @@
             return {
                 totalEmojiCharCost,
                 totalEmojis,
-                twoCharEmojisUsed,
+                multiCharEmojisUsed,
                 separatorCharCost,
                 totalOutputCharCount,
             };
         }
 
-        // --- MATRİS FONKSİYONLARI (BU FONKSİYON ARTIK SADECE OFFSET'İ YÖNETİR) ---
+        // --- MATRİS FONKSİYONLARI ---
 
         function createMatrix() {
             // 1. Matris Genişliğini Güncelle
@@ -804,6 +813,9 @@
             // Çizim alanı dışı kalacak sabitlenmiş hücre sayısı (OFFSET)
             const permanentFixedCount = currentMatrixWidth - firstRowLength;
 
+            // defaultHeart'ın maliyetini başlangıçta doğru hesapla
+            const defaultHeartChars = calculateChatChars(defaultHeart);
+
             for (let rowIndex = 0; rowIndex < MATRIX_HEIGHT; rowIndex++) {
                 const row = matrixTable.insertRow();
 
@@ -822,7 +834,7 @@
                     } else {
                         // Çizim Alanı (Varsayılan olarak siyah kalp)
                         cell.innerHTML = defaultHeart;
-                        cell.setAttribute('data-chars', '1');
+                        cell.setAttribute('data-chars', defaultHeartChars.toString());
                         cell.addEventListener('click', () => {
                             handleCellClick(cell);
                         });
@@ -847,7 +859,7 @@
         function updateCharacterCount() {
             const stats = calculateCurrentStats();
             const totalOutputCharCount = stats.totalOutputCharCount;
-            const twoCharEmojisUsed = stats.twoCharEmojisUsed;
+            const multiCharEmojisUsed = stats.multiCharEmojisUsed;
             const separatorCost = stats.separatorCharCost;
 
             currentCharsSpan.textContent = totalOutputCharCount;
@@ -862,8 +874,8 @@
             // UYARI METNİ GÜNCELLEME
             let warningText = '';
 
-            if (twoCharEmojisUsed > 0) {
-                 warningText += `${twoCharEmojisUsed} adet 2 karakterlik emoji `;
+            if (multiCharEmojisUsed > 0) {
+                 warningText += `${multiCharEmojisUsed} adet çok karakterli emoji kullanılıyor (Maliyet: ${stats.totalEmojiCharCost} Karakter)`;
             }
 
             if (separatorCost > 0) {
@@ -886,11 +898,11 @@
             }
         }
 
-        // --- PALET VE SEKMELER --- (Değişiklik Yok)
+        // --- PALET VE SEKMELER ---
 
         function updateSelectedEmojiDisplay() {
             currentBrushEmoji.textContent = selectedHeart.emoji;
-            currentBrushName.textContent = ` (${selectedHeart.name})`;
+            currentBrushName.textContent = ` (${selectedHeart.name} - ${selectedHeart.chars} Karakter Maliyeti)`;
 
             document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected-color'));
 
@@ -941,12 +953,13 @@
                 const span = document.createElement('span');
                 span.className = 'color-option';
 
-                if (emojiData.chars === 2) {
-                    span.classList.add('two-char-emoji');
+                if (emojiData.chars > 1) {
+                    span.classList.add('multi-char-emoji');
+                    span.setAttribute('data-chars', emojiData.chars.toString()); // Maliyeti göster
                 }
 
                 span.innerHTML = emojiData.emoji;
-                span.title = `${name} (${emojiData.chars} karakter)`;
+                span.title = `${name} (${emojiData.chars} karakter maliyeti)`;
                 span.setAttribute('data-color', name);
                 span.setAttribute('data-chars', emojiData.chars.toString());
                 span.setAttribute('data-category-name', currentCategory);
@@ -1030,10 +1043,15 @@
             const cleanText = textWithoutLineBreaks.split(selectedSeparator.char).join('');
 
             // 5. Emojileri doldur
-            const allEmojis = Object.values(emojiCategories).flatMap(category => Object.values(category));
+            // Tüm emojileri, uzunluklarına göre büyükten küçüğe sırala (en uzun eşleşmeyi bulmak için)
+            const allEmojis = Object.values(emojiCategories)
+                .flatMap(category => Object.values(category))
+                .sort((a, b) => b.emoji.length - a.emoji.length);
+
             let charIndex = 0;
 
             const allCells = matrixTable.querySelectorAll('td');
+            const defaultHeartChars = calculateChatChars(defaultHeart);
 
             for (let i = 0; i < allCells.length; i++) {
                 const cell = allCells[i];
@@ -1045,22 +1063,20 @@
                     let foundEmoji = null;
                     let tempString = cleanText.substring(charIndex);
 
-                    // En uzun eşleşen emoji karakterini bul
-                    allEmojis.forEach(data => {
+                    // En uzun eşleşen emojiyi bul
+                    for (const data of allEmojis) {
                         if (tempString.startsWith(data.emoji)) {
-                            if (!foundEmoji || data.emoji.length > foundEmoji.emoji.length) {
-                                foundEmoji = data;
-                                detectedCharCost = data.chars;
-                            }
+                            foundEmoji = data;
+                            emojiLength = data.emoji.length;
+                            detectedCharCost = data.chars;
+                            break; // En uzun eşleşme bulundu, dur
                         }
-                    });
+                    }
 
-                    if (foundEmoji) {
-                        emojiLength = foundEmoji.emoji.length;
-                    } else {
-                        // Bulunamazsa 1 karakter uzunluğunda ve 1 bütçe maliyetinde varsay
+                    if (!foundEmoji) {
+                        // Emoji bulunamazsa, metin veya bilinmeyen tek bir karakterdir.
                         emojiLength = 1;
-                        detectedCharCost = 1;
+                        detectedCharCost = calculateChatChars(tempString.substring(0, 1));
                     }
 
                     // Hücrenin içeriğini ve maliyetini ayarla
@@ -1071,7 +1087,7 @@
                 } else if (!cell.classList.contains('fixed') && charIndex >= cleanText.length) {
                     // Kalan boş hücreleri default emoji ile doldur
                     cell.innerHTML = defaultHeart;
-                    cell.setAttribute('data-chars', '1');
+                    cell.setAttribute('data-chars', defaultHeartChars.toString());
                 }
             }
 
@@ -1210,20 +1226,19 @@
             await loadEmojis();
 
             if (Object.keys(emojiCategories).length > 0) {
-                Object.values(emojiCategories).some(category => {
-                    return Object.values(category).some(data => {
-                        if (data.emoji === defaultHeart) {
-                            selectedHeart = data;
-                            return true;
-                        }
-                    });
-                });
+                // Varsayılan kalbin kesin maliyetini atama
+                const heartData = Object.values(emojiCategories).flatMap(Object.values).find(data => data.emoji === defaultHeart);
+                if (heartData) {
+                     selectedHeart = heartData;
+                } else {
+                    selectedHeart = { emoji: defaultHeart, chars: calculateChatChars(defaultHeart), name: 'black heart' };
+                }
 
                 updateSelectedEmojiDisplay();
                 createMatrix();
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.3.6 Hazır! (Tek Sınır Düzeltmesi)', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.3.8 Hazır! (Kesin Karakter Maliyeti Çözümü)', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
