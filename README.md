@@ -157,14 +157,10 @@ Bu proje MIT lisansı altında lisanslanmıştır - detaylar için [LICENSE](htt
 
 -----
 
-\<div align="center"\>
-
 **⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın\!**
 
 [](https://github.com/metatronslove/emoji-editor/stargazers)
 
 *YouTube sohbetinde sanatınızı sergileyin\! 🎨✨*
-
-\</div\>
 
 ```
