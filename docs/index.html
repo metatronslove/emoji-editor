@@ -520,11 +520,11 @@
             <h3>📖 YouTube Sohbet Kılavuzu</h3>
 
             <div style="background-color: var(--fixed-bg); padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid var(--accent-color);">
-                <strong>🎯 ÖNEMLİ:</strong> Uygulama, çiziminizin toplam maliyetinin **200 karakteri** aşmamasını otomatik olarak garantiler. Matris boyutu 1 karakterli emojilerle en büyük çizimi yapabilmeniz için ayarlandı.
+                <strong>🎯 ÖNEMLİ:</strong> Uygulama, çiziminizin toplam maliyetinin **200 karakteri** aşmamasını otomatik olarak garantiler.
             </div>
 
             <ol style="margin-left: 20px; font-size: 0.95em;">
-                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** YouTube'da 100 adet **🖤** gönderin. Nickname'inizin yanında görünen kalp sayısını sayın. Bu sayıyı **"İlk Satır Uzunluğu"** olarak girin ve **Matrisi Güncelle**'ye basın. **Bu alan SADECE İLK SATIRDA çizim dışı kalır.**</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** YouTube'da 100 adet **🖤** gönderin. Nickname'inizin yanında görünen kalp sayısını sayın. Bu sayıyı **"İlk Satır Uzunluğu"** olarak girin ve **Matrisi Güncelle**'ye basın. **Bu alan (❌ ile işaretli) SADECE İLK SATIRDA çıktıya dahil edilmez.**</li>
                 <li style="margin-bottom: 8px;">**Kılavuz Adım 2 (Filtre Atlatma):** Çiziminizin YouTube sohbetinde görünmemesi durumunda, **Filtre Atlatma Yöntemi**'ni sırayla deneyin. Bu karakterler, çiziminizin toplam karakter sayısına eklenir.</li>
                 <li style="margin-bottom: 8px;">**Kılavuz Adım 3 (Kopyalama):** Çiziminizi tamamladıktan sonra **Panoya Kopyala** butonuna basın. Çıktınızın 200 karakteri asla aşmadığından emin olabilirsiniz. **Kırpılan (✂️) pikseller çıktıya dahil edilmez.**</li>
             </ol>
@@ -532,7 +532,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.2 (Stabil)</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.3 (İlk Satır Düzeltmesi)</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -614,7 +614,7 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMA VE SABİTLER (V6.2 DÜZELTME) ---
+        // --- TEMEL TANIMLAMA VE SABİTLER (V6.3 İLK SATIR DÜZELTME) ---
         const DEFAULT_MATRIX_WIDTH = 11;
         const SP_BS_MATRIX_WIDTH = 10;
         const MATRIX_HEIGHT = 20; // Yükseklik 20'de tutulur
@@ -804,20 +804,19 @@
 
             const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
 
+            // Sadece sabit olmayan (fixed) hücreleri al. Fixed hücreler çıktıya dahil edilmez.
             let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
             let totalEditableCount = editableCells.length;
 
-            // Sabit hücreler ilk satırdan çıkarıldığı için rowWidth hesaplaması gereksizleşiyor.
-            // Sadece ayırıcı kontrolü için kullanılıyor.
             const rawFirstRowLength = parseInt(firstRowLengthInput.value) || 0;
-            const rowWidth = currentMatrixWidth - (rawFirstRowLength > 0 ? rawFirstRowLength : 0); // Düzenlenebilir sütun sayısı
+            // İlk satırda kaç hücrenin sabit olduğunu gösterir.
+            const permanentFixedCount = Math.min(rawFirstRowLength, currentMatrixWidth);
 
             let clippedCount = 0;
 
             // Kırpmadan önce tüm kırpma işaretlerini temizle
             editableCells.forEach(cell => cell.classList.remove('clipped'));
 
-            let currentEditableCellIndex = 0;
             let currentRow = -1;
             let emojisInCurrentRow = 0;
 
@@ -835,12 +834,17 @@
                 // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
                 let separatorCost = 0;
 
-                // Ayırıcı sadece ilk emojiden sonra (emojisInCurrentRow > 0) konur.
-                // Satır sonu kontrolü:
-                // Eğer mevcut satır (currentRow) ilk satırsa (0), o zaman rowWidth kullanılmalı.
-                // Eğer mevcut satır (currentRow) sonraki satırlarsa (> 0), tüm matris genişliği (currentMatrixWidth) kullanılmalı.
-                let effectiveRowWidth = (currentRow === 0) ? rowWidth : currentMatrixWidth;
+                // İlk Satır Kontrolü:
+                // İlk satırda (rowIndex === 0) çizilebilir hücre sayısı: (currentMatrixWidth - permanentFixedCount)
+                // Diğer satırlarda (rowIndex > 0) çizilebilir hücre sayısı: currentMatrixWidth
 
+                // Bulunduğumuz satırdaki toplam çizilebilir hücre sayısı
+                let effectiveRowWidth = (currentRow === 0)
+                    ? (currentMatrixWidth - permanentFixedCount)
+                    : currentMatrixWidth;
+
+                // Ayırıcı sadece ilk emojiden sonra (emojisInCurrentRow > 0) konur.
+                // Ayrıca, satır sonuna konmaması için (emojisInCurrentRow < effectiveRowWidth) kontrolü yapılır.
                 if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < effectiveRowWidth)) {
                     separatorCost = selectedSeparator.length;
                 }
@@ -888,21 +892,21 @@
         // --- MATRİS FONKSİYONLARI ---
 
         function createMatrix() {
+            // Matris genişliğini seçili ayırıcıya göre ayarla
             currentMatrixWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
 
             matrixTable.innerHTML = '';
 
             const rawFirstRowLength = parseInt(firstRowLengthInput.value);
-            const firstRowLength = Math.min(rawFirstRowLength, currentMatrixWidth);
+            // Sadece ilk satırda nickname'in kapladığı alanı temsil eder (Fixed Hücre Sayısı)
+            const permanentFixedCount = Math.min(rawFirstRowLength, currentMatrixWidth);
 
             if (rawFirstRowLength > currentMatrixWidth) {
                 firstRowLengthInput.value = currentMatrixWidth;
             }
             firstRowLengthInput.setAttribute('max', currentMatrixWidth.toString());
 
-            // Sabit hücre sayısı (Nickname'e karşılık gelen kısım)
-            const permanentFixedCount = firstRowLength;
-            const defaultHeartChars = selectedHeart.chars; // Başlangıç emojisi maliyetini kullan
+            const defaultHeartChars = selectedHeart.chars;
 
             for (let rowIndex = 0; rowIndex < MATRIX_HEIGHT; rowIndex++) {
                 const row = matrixTable.insertRow();
@@ -912,7 +916,8 @@
                     cell.setAttribute('data-row', rowIndex);
                     cell.setAttribute('data-col', colIndex);
 
-                    // DÜZELTME: Sabitlemeyi SADECE İLK SATIRDA (rowIndex === 0) uygula
+                    // Sabitlemeyi SADECE İLK SATIRDA (rowIndex === 0) uygula.
+                    // Sabit hücreler daima SOL TARAFTA yer alır (colIndex < permanentFixedCount).
                     const isPermanentlyFixed = (rowIndex === 0 && colIndex < permanentFixedCount);
 
                     if (isPermanentlyFixed) {
@@ -1074,7 +1079,7 @@
         // --- İÇE/DIŞA AKTARMA FONKSİYONLARI ---
 
         /**
-         * Çizimi düz emoji metni olarak döndürür. Sadece kırpılmamış (non-clipped) hücreleri dahil eder.
+         * Çizimi düz emoji metni olarak döndürür. Sadece kırpılmamış (non-clipped) ve fixed olmayan hücreleri dahil eder.
          */
         function getDrawingText(formatted = false) {
             let result = [];
@@ -1092,16 +1097,20 @@
                 for (let j = 0; j < cells.length; j++) {
                     const cell = cells[j];
 
+                    // ÖNEMLİ DÜZELTME: Fixed hücreleri atla (onlar çıktı metninde yer almayacak)
+                    if (cell.classList.contains('fixed')) {
+                        continue;
+                    }
+
                     if (cell.classList.contains('clipped')) {
                         isRowClipped = true;
                         // Kırpılan hücreye gelindi, bu satırın ve sonrasının çıktıya dahil edilmemesi gerekir.
                         break;
                     }
 
-                    if (!cell.classList.contains('fixed')) {
-                        emojisInRow.push(cell.innerHTML);
-                        rowHasEmoji = true;
-                    }
+                    // Fixed olmayan ve Clipped olmayan hücreleri ekle
+                    emojisInRow.push(cell.innerHTML);
+                    rowHasEmoji = true;
                 }
 
                 // Satır çıktıda yer alacak emojiler içeriyorsa ekle
@@ -1143,11 +1152,8 @@
             separatorSelect.value = detectedSeparatorKey;
 
             // 3. Matrisi yeniden oluştur (Offset'i ve matris boyutunu ayarlamak için)
-            // Bu aynı zamanda dinamik maliyet hesaplaması sayesinde ayırıcı maliyetini de güncelleyecektir.
             // createMatrix, currentMatrixWidth'i yeni ayırıcıya göre ayarlar ve matrisi temizler.
             createMatrix();
-
-            //showNotification(`Ayırıcı ${SEPARATOR_MAP[detectedSeparatorKey].name} olarak otomatik algılandı. Matris yeniden oluşturuluyor...`, 'info');
 
             // 4. Ayırıcıyı temizle
             const selectedSeparator = SEPARATOR_MAP[detectedSeparatorKey];
@@ -1161,17 +1167,17 @@
             let charIndex = 0;
             const allCells = matrixTable.querySelectorAll('td');
 
-            // Sadece çizilebilir hücreleri al
+            // Sadece çizilebilir hücreleri al (Fixed olmayanları)
             let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
             let totalEditableCount = editableCells.length;
 
             let currentTotalCharCost = 0;
-            const defaultHeartChars = selectedHeart.chars; // Varsayılan maliyeti kullan
+            const defaultHeartChars = selectedHeart.chars;
 
             let currentRow = -1;
             let emojisInCurrentRow = 0;
             const rawFirstRowLength = parseInt(firstRowLengthInput.value) || 0;
-            const firstRowLength = (rawFirstRowLength > 0 ? rawFirstRowLength : 0);
+            const permanentFixedCount = Math.min(rawFirstRowLength, currentMatrixWidth);
 
             for (let i = 0; i < totalEditableCount; i++) {
                 const cell = editableCells[i];
@@ -1211,14 +1217,14 @@
 
                 if (!foundEmoji) {
                     // Emoji değilse/Bulunamazsa, ilk karakteri al
-                    // Bulunan tek karakterin maliyetini hesapla
                     detectedCharCost = calculateChatChars(charContent);
-                    // length 1 olarak kalır
                 }
 
                 // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
                 let separatorCost = 0;
-                let effectiveRowWidth = (currentRow === 0) ? (currentMatrixWidth - firstRowLength) : currentMatrixWidth;
+                let effectiveRowWidth = (currentRow === 0)
+                    ? (currentMatrixWidth - permanentFixedCount)
+                    : currentMatrixWidth;
 
                 if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < effectiveRowWidth)) {
                     separatorCost = selectedSeparator.length;
@@ -1414,7 +1420,7 @@
                 createMatrix(); // Matris, selectedHeart'ın maliyetini kullanır
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.2 Hazır! (İlk Satır Sabitleme Düzeltmesi)', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.3 Hazır! (İlk Satır Mantık Düzeltmesi)', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
