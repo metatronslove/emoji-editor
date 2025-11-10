@@ -507,7 +507,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.2.8</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.2.9</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -545,10 +545,21 @@
                         <option value="none">Hiçbiri (Max 100 Emoji)</option>
                         <option value="ZWNJ" selected>ZWNJ (Max 69 Emoji)</option>
                         <option value="ZWSP">ZWSP (Max 69 Emoji)</option>
+                        <option value="ZWJ">ZWJ (Zero Width Joiner - Max 69 Emoji)</option>
+                        <option value="WJ">WJ (Word Joiner - Max 69 Emoji)</option>
+                        <option value="SHY">SHY (Soft Hyphen - Max 69 Emoji)</option>
                         <option value="HAIR">Hair Space (Max 69 Emoji)</option>
                         <option value="LRM">LRM (Yön Kontrol - Max 69 Emoji)</option>
                         <option value="RLM">RLM (Yön Kontrol - Max 69 Emoji)</option>
                         <option value="ZWNBSP">ZWNBSP (Max 69 Emoji)</option>
+                        <option value="LRE">LRE (Bidi L-R-Embedding - Max 69 Emoji)</option>
+                        <option value="RLE">RLE (Bidi R-L-Embedding - Max 69 Emoji)</option>
+                        <option value="PDF">PDF (Bidi Pop Directional - Max 69 Emoji)</option>
+                        <option value="LRI">LRI (Bidi L-R-Isolate - Max 69 Emoji)</option>
+                        <option value="RLI">RLI (Bidi R-L-Isolate - Max 69 Emoji)</option>
+                        <option value="PDI">PDI (Bidi Pop Isolate - Max 69 Emoji)</option>
+                        <option value="CGJ">CGJ (Combining Grapheme Joiner - Max 69 Emoji)</option>
+                        <option value="SP_BS">DENEYSEL (Space + Backspace - Max 69 Emoji)</option>
                     </select>
                 </div>
 
@@ -585,16 +596,26 @@
         const EMOJI_JSON_URL = 'emoji.json';
         const defaultHeart = '🖤';
 
-        // GÖRÜNMEZ KARAKTER MAP'İ (V2.8)
-        // EXP_SEQ kaldırıldı ve RLM/LRM eklendi.
+        // GÖRÜNMEZ KARAKTER MAP'İ (V2.9 GÜNCELLEMESİ)
         const SEPARATOR_MAP = {
             'none': '',
             'ZWNJ': '\u200C',
             'ZWSP': '\u200B',
+            'ZWJ': '\u200D',   // Zero Width Joiner
+            'WJ': '\u2060',    // Word Joiner
+            'SHY': '\u00AD',   // Soft Hyphen
             'HAIR': '\u200A',
             'LRM': '\u200E',
             'RLM': '\u200F',
             'ZWNBSP': '\uFEFF',
+            'LRE': '\u202A',   // Left-to-Right Embedding
+            'RLE': '\u202B',   // Right-to-Left Embedding
+            'PDF': '\u202C',   // Pop Directional Formatting
+            'LRI': '\u2066',   // Left-to-Right Isolate
+            'RLI': '\u2067',   // Right-to-Left Isolate
+            'PDI': '\u2069',   // Pop Directional Isolate
+            'CGJ': '\u034F',   // Combining Grapheme Joiner
+            'SP_BS': '\u0020\u0008' // Space + Backspace (Deneysel)
         };
 
         // DENEYSEL OLARAK BULUNAN PİKSEL LİMİTLERİ (V2.8 KURALI)
@@ -666,7 +687,6 @@
         }
 
         function calculateChatChars(emojiString) {
-            // YouTube'daki çoğu 2 karakterlik emoji (skin tonu, aileler vb.) 2 görünür karakter sayılır.
             if (emojiString.length > 2) {
                 return 2;
             }
@@ -784,14 +804,12 @@
             cell.innerHTML = selectedHeart.emoji;
             cell.setAttribute('data-chars', selectedHeart.chars.toString());
 
-            // 2-char emoji eklemek 200 limitini etkiler, ancak 69/100 piksel limitini etkilemez (V2.8 kuralı).
-            // Bu yüzden reorganizeMatrix() çağrısına gerek yoktur.
-            // reorganizeMatrix();
+            // 2-char emoji eklemek 200 limitini etkiler, ancak 69/100 piksel limitini etkilemez.
             updateCharacterCount();
         }
 
         /**
-         * Matrisi 69/100 kuralına göre yeniden düzenler (V2.8).
+         * Matrisi 69/100 kuralına göre yeniden düzenler (V2.8 Kuralı).
          */
         function reorganizeMatrix() {
             const firstRowLength = parseInt(firstRowLengthInput.value);
@@ -802,13 +820,11 @@
             const targetMaxCells = isSeparatorUsed ? MAX_EMOJI_CELLS_WITH_SEPARATOR : MAX_EMOJI_CELLS_NORMAL;
 
             // Toplam sabitlenmesi gereken hücre sayısı (Nickname Offset + Limit Kısıtlaması)
-            const cellsToFixByLimit = (MATRIX_WIDTH * MATRIX_HEIGHT - permanentFixedCount) - targetMaxCells;
-            const totalDynamicFix = Math.max(0, cellsToFixByLimit); // Negatif olamaz
+            const availableCells = MATRIX_WIDTH * MATRIX_HEIGHT - permanentFixedCount;
+            const cellsToFixByLimit = Math.max(0, availableCells - targetMaxCells);
 
-            const totalFixedCount = permanentFixedCount + totalDynamicFix;
-
-            // Sabitlemenin başladığı indis
-            const startFixedIndex = MATRIX_WIDTH * MATRIX_HEIGHT - totalDynamicFix;
+            // Sabitlemenin başladığı indis (Sadece dinamik olarak sabitlenenler)
+            const startFixedIndex = MATRIX_WIDTH * MATRIX_HEIGHT - cellsToFixByLimit;
 
             let cellIndex = 0;
             for (let i = 0; i < MATRIX_HEIGHT; i++) {
@@ -817,11 +833,7 @@
                     const cell = cells[j];
 
                     const isInitialFixed = (i === 0 && j < permanentFixedCount);
-                    // DİKKAT: V2.8 Düzeltmesi: startFixedIndex artık sadece dinamik kısıtlamayı temsil eder.
                     const isLimitFixed = (cellIndex >= startFixedIndex);
-
-                    // isInitialFixed zaten 0'dan başladığı için, isLimitFixed'in 0-X aralığını
-                    // etkilememesi gerekir.
 
                     const isFixedZone = isInitialFixed || (isLimitFixed && !isInitialFixed);
 
@@ -1014,15 +1026,9 @@
             const isSeparatorUsed = separatorSelect.value !== 'none';
             const targetMaxCells = isSeparatorUsed ? MAX_EMOJI_CELLS_WITH_SEPARATOR : MAX_EMOJI_CELLS_NORMAL;
 
-            // Kullanılabilir alan, hedeflenen max hücreden nickname offset'inin çıkarılmasıdır (Eğer 100/69 kuralı toplam hücre ise).
-            // Eğer 100/69 kuralı ÇİZİLEBİLİR hücre ise:
-            // return targetMaxCells;
+            const availableCells = MATRIX_WIDTH * MATRIX_HEIGHT - permanentFixedCount;
 
-            // 110 - (nickname offset) - (kısıtlama)
-            const cellsToFixByLimit = (MATRIX_WIDTH * MATRIX_HEIGHT - permanentFixedCount) - targetMaxCells;
-            const totalDynamicFix = Math.max(0, cellsToFixByLimit);
-
-            return (MATRIX_WIDTH * MATRIX_HEIGHT) - permanentFixedCount - totalDynamicFix;
+            return Math.min(availableCells, targetMaxCells);
         }
 
         function applyDrawingText(text) {
@@ -1117,7 +1123,7 @@
         separatorSelect.addEventListener('change', () => {
             reorganizeMatrix();
             const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
-            showNotification(`Ayırıcı ${separatorName} olarak ayarlandı. Matris alanı kısıtlandı.`, 'info');
+            showNotification(`Ayırıcı ${separatorName} olarak ayarlandı.`, 'info');
         });
 
         copyButton.addEventListener('click', async () => {
@@ -1233,7 +1239,7 @@
                 createMatrix();
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.2.8 Hazır!', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.2.9 Hazır!', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
