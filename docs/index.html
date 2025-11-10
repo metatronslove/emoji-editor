@@ -532,7 +532,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.3 (İlk Satır Düzeltmesi)</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.4 (Çıktı Kırpma Düzeltmesi)</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -614,7 +614,7 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMA VE SABİTLER (V6.3 İLK SATIR DÜZELTME) ---
+        // --- TEMEL TANIMLAMA VE SABİTLER (V6.4 ÇIKTI KIRPMA DÜZELTME) ---
         const DEFAULT_MATRIX_WIDTH = 11;
         const SP_BS_MATRIX_WIDTH = 10;
         const MATRIX_HEIGHT = 20; // Yükseklik 20'de tutulur
@@ -833,10 +833,6 @@
 
                 // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
                 let separatorCost = 0;
-
-                // İlk Satır Kontrolü:
-                // İlk satırda (rowIndex === 0) çizilebilir hücre sayısı: (currentMatrixWidth - permanentFixedCount)
-                // Diğer satırlarda (rowIndex > 0) çizilebilir hücre sayısı: currentMatrixWidth
 
                 // Bulunduğumuz satırdaki toplam çizilebilir hücre sayısı
                 let effectiveRowWidth = (currentRow === 0)
@@ -1097,14 +1093,14 @@
                 for (let j = 0; j < cells.length; j++) {
                     const cell = cells[j];
 
-                    // ÖNEMLİ DÜZELTME: Fixed hücreleri atla (onlar çıktı metninde yer almayacak)
+                    // Fixed hücreleri atla (onlar çıktı metninde yer almayacak)
                     if (cell.classList.contains('fixed')) {
                         continue;
                     }
 
                     if (cell.classList.contains('clipped')) {
                         isRowClipped = true;
-                        // Kırpılan hücreye gelindi, bu satırın ve sonrasının çıktıya dahil edilmemesi gerekir.
+                        // Kırpılan hücreye gelindi, bu satırın sadece kırpılmayan kısmı alınacak
                         break;
                     }
 
@@ -1113,8 +1109,8 @@
                     rowHasEmoji = true;
                 }
 
-                // Satır çıktıda yer alacak emojiler içeriyorsa ekle
-                if (rowHasEmoji && !isRowClipped) {
+                // DÜZELTME: Satır, kırpılmış olsa bile (isRowClipped=true), içinde emoji varsa eklenmeli
+                if (rowHasEmoji) {
                     let rowText = emojisInRow.join(separator);
                     // formatted=true ise her satırı ayrı tut
                     result.push(rowText);
@@ -1420,7 +1416,7 @@
                 createMatrix(); // Matris, selectedHeart'ın maliyetini kullanır
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.3 Hazır! (İlk Satır Mantık Düzeltmesi)', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.4 Hazır! (Çıktı Kırpma Düzeltmesi)', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
