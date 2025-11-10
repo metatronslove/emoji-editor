@@ -513,7 +513,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.3.4 (Dinamik Bütçe)</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.3.5 (Dinamik Bütçe Düzeltmesi)</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -584,9 +584,9 @@
 
             <div id="info-panel">
                 <span class="char-count">Kullanılan Görünür Karakter: <span id="currentChars">0</span>/200</span>
-                <span id="charWarning" class="warning" style="display: none;"> - ⚠️ Ekstra karakter maliyeti!</span>
                 <br>
                 <span class="char-count">YouTube **Bütçe Maliyeti**: <span id="currentBudgetCost">0</span>/<span id="maxBudgetCost">69</span></span>
+                <span id="charWarning" class="warning" style="display: none;"> - ⚠️ Ekstra karakter maliyeti!</span>
             </div>
 
             <div id="matrix-container" style="max-width: 100%;">
@@ -597,7 +597,7 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMA VE SABİTLER (V3.4 BÜTÇE DÜZELTMESİ) ---
+        // --- TEMEL TANIMLAMA VE SABİTLER (V3.5 BÜTÇE DÜZELTMESİ) ---
         const DEFAULT_MATRIX_WIDTH = 11;
         const SP_BS_MATRIX_WIDTH = 10;
         const MATRIX_HEIGHT = 10;
@@ -666,6 +666,7 @@
         const currentBrushEmoji = document.getElementById('current-brush-emoji');
         const currentBrushName = document.getElementById('current-brush-name');
         const separatorSelect = document.getElementById('separator-select');
+        // V3.5 Yeni DOM Öğeleri
         const currentBudgetCostSpan = document.getElementById('currentBudgetCost');
         const maxBudgetCostSpan = document.getElementById('maxBudgetCost');
 
@@ -703,10 +704,8 @@
 
         /**
          * EMOJİ KARAKTER MALİYETİNİ HESAPLAR
-         * Bu, YouTube'da görünen tek bir hücrenin kaç karakter birimi tükettiğini belirler.
          */
         function calculateChatChars(emojiString) {
-            // Basit kontrol: 2'den fazla uzunlukta olanların çoğu 2 karakter (kod noktası) olarak sayılır.
             if (emojiString.length > 2) {
                 return 2;
             }
@@ -715,6 +714,7 @@
 
         async function loadEmojis() {
              try {
+                // Bu kodun, projenizde 'emoji.json' dosyasının bulunduğunu varsaydığını unutmayın.
                 const response = await fetch(EMOJI_JSON_URL);
                 if (!response.ok) {
                     throw new Error(`HTTP Hata kodu: ${response.status}`);
@@ -764,14 +764,14 @@
                 const cells = rows[i].cells;
 
                 for (let j = 0; j < cells.length; j++) {
-                    if (!cells[j].classList.contains('fixed')) {
-                        // data-chars, emoji'nin bütçeye olan maliyetidir (1 veya 2)
-                        const chars = parseInt(cells[j].getAttribute('data-chars') || '1');
+                    const cell = cells[j];
 
-                        // 1. Görünür karakter sayısı hesaplanırken 1 veya 2 karakter olarak sayılır
+                    // Sadece düzenlenebilir hücrelerin maliyetini hesapla
+                    if (!cell.classList.contains('fixed') || (cell.classList.contains('fixed') && cell.innerHTML !== '❌')) {
+                        // data-chars, emoji'nin bütçeye olan maliyetidir (1 veya 2). Sabitlenmemiş (veya offset olup boş olmayan) hücrenin maliyetini alır.
+                        const chars = parseInt(cell.getAttribute('data-chars') || '1');
+
                         totalChars += chars;
-
-                        // 2. Bütçe maliyeti de aynı şekilde 1 veya 2 birim olarak sayılır
                         currentBudgetCost += chars;
 
                         if (chars === 2) {
@@ -781,6 +781,8 @@
                 }
             }
 
+            totalBudgetCost = currentBudgetCost; // Global değişkeni güncelle
+
             return {
                 totalChars,
                 currentBudgetCost,
@@ -788,14 +790,23 @@
             };
         }
 
-        // --- MATRİS VE HESAPLAMA FONKSİYONLARI (V3.4 GÜNCELLEMESİ) ---
+        // V3.5: Maksimum kullanılabilir BÜTÇE birimini döndürür
+        function getMaxAvailableBudget() {
+            const separatorValue = separatorSelect.value;
+            if (separatorValue === 'none') return MAX_BUDGET_NONE;
+            if (separatorValue === 'SP_BS') return MAX_BUDGET_SP_BS;
+            return MAX_BUDGET_WITH_SEPARATOR;
+        }
+
+
+        // --- MATRİS VE HESAPLAMA FONKSİYONLARI (V3.5 GÜNCELLEMESİ) ---
 
         function createMatrix() {
             // 1. Matris Genişliğini Güncelle
             currentMatrixWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
 
             matrixTable.innerHTML = '';
-            totalBudgetCost = 0; // Temizlemede bütçeyi sıfırla
+            totalBudgetCost = 0;
 
             // 2. firstRowLength'i mevcut genişliğe sınırla
             const rawFirstRowLength = parseInt(firstRowLengthInput.value);
@@ -821,6 +832,7 @@
                     if (isPermanentlyFixed) {
                         cell.innerHTML = '❌';
                         cell.classList.add('fixed');
+                        cell.removeAttribute('data-chars'); // Offset hücrenin maliyeti 0
                     } else {
                         // Başlangıçta defaultHeart (1 maliyet) olarak ayarla
                         cell.innerHTML = defaultHeart;
@@ -832,12 +844,13 @@
                     }
                 }
             }
-            // Matrisin ilk oluşturulması veya temizlenmesi, bu noktada reorganization'a ihtiyaç duymaz.
-            // Sadece ayırıcı değiştiğinde veya limit aşılırsa reorganize çağrılmalıdır.
+            // Yeni matris oluşturulduktan sonra bile reorganizasyona ihtiyaç vardır (Başlangıç bütçesi limiti aşıyor olabilir)
+            reorganizeMatrix();
             updateCharacterCount();
         }
 
         function handleCellClick(cell) {
+            // İlk satır offset'i zaten click eventine sahip değildir.
             if (cell.classList.contains('fixed')) return;
 
             // Eskiyi çıkar
@@ -851,115 +864,77 @@
             cell.innerHTML = selectedHeart.emoji;
             cell.setAttribute('data-chars', newCost.toString());
 
+            // Tıklamadan sonra bütçe limitini kontrol et
+            reorganizeMatrix();
             updateCharacterCount();
-            reorganizeMatrix(); // Her tıklamada dinamik bütçe limitini kontrol et
         }
 
         /**
-         * Matrisi DİNAMİK BÜTÇE LİMİTİNE göre yeniden düzenler (V3.4 Düzeltmesi).
+         * Matrisi DİNAMİK BÜTÇE LİMİTİNE göre yeniden düzenler (V3.5 Düzeltmesi).
          * Bu, asıl lojiktir.
          */
         function reorganizeMatrix() {
             const currentWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
             const firstRowLength = Math.min(parseInt(firstRowLengthInput.value), currentWidth);
             const permanentFixedCount = currentWidth - firstRowLength;
-
-            // BÜTÇE LİMİTİNİ AL
-            let maxBudget;
-            const separatorValue = separatorSelect.value;
-            if (separatorValue === 'none') {
-                maxBudget = MAX_BUDGET_NONE; // 100 Kuralı
-            } else if (separatorValue === 'SP_BS') {
-                maxBudget = MAX_BUDGET_SP_BS; // 53 Kuralı
-            } else {
-                maxBudget = MAX_BUDGET_WITH_SEPARATOR; // 69 Kuralı
-            }
+            const maxBudget = getMaxAvailableBudget();
 
             maxBudgetCostSpan.textContent = maxBudget;
 
-            // Toplam bütçe maliyeti aşılmışsa, matrisin sonunu sabitlemeye başla.
+            const allCells = matrixTable.querySelectorAll('td');
             let cumulativeCost = 0;
-            let cellsToFixByBudget = 0;
-            let cellIndex = 0;
 
-            // Matrisi tersten kontrol ederek, toplam maliyeti aşan hücreleri bul.
-            const allCells = [];
-            for (let i = 0; i < MATRIX_HEIGHT; i++) {
-                const rows = matrixTable.rows;
-                if (rows[i]) {
-                    const cells = rows[i].cells;
-                    for (let j = 0; j < cells.length; j++) {
-                        allCells.push(cells[j]);
-                    }
+            // 1. Tüm hücreleri gez ve bütçe aşımına göre sabitle/serbest bırak
+            for (let i = 0; i < allCells.length; i++) {
+                const cell = allCells[i];
+                const rowIndex = parseInt(cell.getAttribute('data-row'));
+                const colIndex = parseInt(cell.getAttribute('data-col'));
+
+                const isPermanentFixed = (rowIndex === 0 && colIndex < permanentFixedCount);
+
+                if (isPermanentFixed) {
+                    // Kalıcı olarak sabitlenmiş hücreler (Offset)
+                    cell.innerHTML = '❌';
+                    cell.classList.add('fixed');
+                    cell.removeAttribute('data-chars');
+                    cell.onclick = null;
+                    continue; // Sonraki hücreye geç
                 }
-            }
 
-            // Sabitleme sadece düzenlenebilir hücreler üzerinde yapılır (ilk satır offset'i hariç)
-            const editableCells = allCells.filter(cell => ! (cell.classList.contains('fixed') && cell.innerHTML === '❌'));
+                // Hücrenin maliyetini al (eğer düzenlenebilir bir emoji içeriyorsa)
+                const cellCost = parseInt(cell.getAttribute('data-chars') || '1');
 
-            // Toplam bütçe maliyetini bul (yine de emin olmak için)
-            const currentStats = calculateCurrentStats();
-            cumulativeCost = currentStats.currentBudgetCost;
-
-            // Bütçe aşımını hesapla
-            const budgetOverrun = Math.max(0, cumulativeCost - maxBudget);
-
-            // Bütçe aşımı varsa, matrisi tersten sabitle.
-            if (budgetOverrun > 0) {
-                 // Sadece son hücreleri (editableCells'in sonunu) sabitleyeceğiz.
-
-                // Matrisi sondan başa tarayarak bütçe aşımını telafi edecek kadar hücreyi default (1 maliyet) yaparak maliyeti düşür.
-                let tempCost = currentStats.currentBudgetCost;
-
-                for(let i = editableCells.length - 1; i >= 0; i--) {
-                    const cell = editableCells[i];
-
-                    const cellCost = parseInt(cell.getAttribute('data-chars') || '1');
-
-                    if (tempCost > maxBudget) {
-                        // Eğer hücre bütçeyi aşımına neden oluyorsa veya aşımı hafifletmeye yardımcı olacaksa
-                        // Sabitle ve bütçeyi azalt.
+                // 2. Bütçe Kontrolü
+                if (cumulativeCost + cellCost > maxBudget) {
+                    // Bütçe AŞILIYORSA: Hücreyi sabitle (kırp)
+                    if (!cell.classList.contains('fixed') || cell.innerHTML !== '❌') {
                         cell.innerHTML = '❌';
                         cell.classList.add('fixed');
                         cell.removeAttribute('data-chars');
                         cell.onclick = null;
 
-                        tempCost -= cellCost; // Geçici maliyeti azalt
-                        cellsToFixByBudget++;
+                        // Bu hücrenin ve sonraki tüm hücrelerin maliyeti 0'dır, ancak döngü devam etmeli.
+                    }
+                } else {
+                    // Bütçe AŞILMIYORSA: Hücreyi serbest bırak (sabitlenmişse) ve maliyeti topla
+                    if (cell.classList.contains('fixed') && cell.innerHTML === '❌') {
+                         // Limit nedeniyle sabitlenmiş, şimdi serbest bırak
+                        cell.innerHTML = defaultHeart;
+                        cell.classList.remove('fixed');
+                        cell.setAttribute('data-chars', '1');
+                        cell.addEventListener('click', () => {
+                            handleCellClick(cell);
+                        });
+                        cumulativeCost += 1; // Serbest bırakılan hücrenin varsayılan maliyetini ekle
                     } else {
-                        // Bütçe artık aşılmıyorsa, hücreyi serbest bırak (sabitlenmiş olabilir)
-                        if (cell.classList.contains('fixed') && cell.innerHTML === '❌') {
-                            cell.innerHTML = defaultHeart;
-                            cell.classList.remove('fixed');
-                            cell.setAttribute('data-chars', '1');
-                            cell.addEventListener('click', () => {
-                                handleCellClick(cell);
-                            });
-                        }
+                        // Zaten serbest ve emoji içeriyor, maliyetini topla
+                        cumulativeCost += cellCost;
                     }
                 }
-
-            } else {
-                 // Bütçe aşımı yok, tüm sabitlenmiş (limit kaynaklı) hücreleri serbest bırak.
-                 for(let i = 0; i < allCells.length; i++) {
-                     const cell = allCells[i];
-                     const isInitialFixed = (i === 0 && allCells.indexOf(cell) < permanentFixedCount);
-
-                     if (!isInitialFixed && cell.classList.contains('fixed') && cell.innerHTML === '❌') {
-                            cell.innerHTML = defaultHeart;
-                            cell.classList.remove('fixed');
-                            cell.setAttribute('data-chars', '1');
-                            cell.addEventListener('click', () => {
-                                handleCellClick(cell);
-                            });
-                     }
-                 }
             }
 
-
-            // Sonraki aşamada tekrar istatistikleri hesaplayarak totalBudgetCost'u güncelle
-            const finalStats = calculateCurrentStats();
-            totalBudgetCost = finalStats.currentBudgetCost;
+            // 3. Matris üzerindeki gerçek kullanılan bütçeyi güncelle
+            totalBudgetCost = cumulativeCost;
 
             updateCharacterCount();
         }
@@ -978,6 +953,8 @@
             // Bütçe aşımı kontrolü
             const isBudgetOver = currentBudget > maxBudget;
             currentBudgetCostSpan.style.color = isBudgetOver ? '#dc3545' : 'var(--accent-color)';
+
+            // Kopyalama butonu, bütçe aşılırsa devre dışı kalmalıdır.
             copyButton.disabled = isBudgetOver;
 
             // UYARI METNİ GÜNCELLEME
@@ -988,9 +965,10 @@
             }
 
             if (separatorSelect.value !== 'none') {
-                const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
-                if (warningText) warningText += ' ve ';
-                warningText += `${separatorName} ayırıcısı kullanılıyor (Filtre Atlatma).`;
+                const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text.match(/\(([^)]+)\)/)[1];
+
+                if (twoCharEmojisUsed > 0) warningText += ' ve ';
+                warningText += `Filtre Atlatma Yöntemi (${separatorName}) kullanılıyor.`;
             }
 
             if (isBudgetOver) {
@@ -1104,15 +1082,28 @@
             const rows = matrixTable.rows;
             const separatorCode = SEPARATOR_MAP[separatorSelect.value];
             const separator = formatted ? '' : separatorCode;
+            const maxBudget = getMaxAvailableBudget();
+            let cumulativeCost = 0;
 
             for (let i = 0; i < rows.length; i++) {
                 let emojisInRow = [];
                 const cells = rows[i].cells;
 
                 for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j];
+
                     // Sadece sabitlenmemiş hücreleri dahil et
-                    if (!cells[j].classList.contains('fixed')) {
-                        emojisInRow.push(cells[j].innerHTML);
+                    if (!cell.classList.contains('fixed')) {
+                         const cellCost = parseInt(cell.getAttribute('data-chars') || '1');
+
+                         // Kopyalamadan önce bütçe aşımını tekrar kontrol et (Bu, reorganizeMatrix() tarafından garanti edilmeli, ama çift kontrol)
+                         if (cumulativeCost + cellCost <= maxBudget) {
+                            emojisInRow.push(cell.innerHTML);
+                            cumulativeCost += cellCost;
+                         } else {
+                             // Kırpma noktası, bu ve sonraki hücreler atlanır
+                             break;
+                         }
                     }
                 }
 
@@ -1123,14 +1114,6 @@
             }
 
             return formatted ? result.join('\n') : result.join('');
-        }
-
-        // V3.4: Kullanılabilir BÜTÇE birimini alır
-        function getMaxAvailableBudget() {
-            const separatorValue = separatorSelect.value;
-            if (separatorValue === 'none') return MAX_BUDGET_NONE;
-            if (separatorValue === 'SP_BS') return MAX_BUDGET_SP_BS;
-            return MAX_BUDGET_WITH_SEPARATOR;
         }
 
         function applyDrawingText(text) {
@@ -1151,7 +1134,6 @@
             separatorSelect.value = detectedSeparatorKey;
 
             // 3. Matrisi yeniden oluştur (Matris boyutu ve initial fixed hücreleri ayarlamak için)
-            // Bu aynı zamanda totalBudgetCost'u da sıfırlar ve yeniden hesaplar.
             createMatrix();
 
             showNotification(`Ayırıcı ${detectedSeparatorKey} olarak otomatik algılandı. Matris yeniden düzenleniyor...`, 'info');
@@ -1164,63 +1146,59 @@
             // 5. Emojileri doldur
             const allEmojis = Object.values(emojiCategories).flatMap(category => Object.values(category));
             let charIndex = 0;
-            const rows = matrixTable.rows;
             let importedBudgetCost = 0;
 
-            for (let i = 0; i < rows.length; i++) {
-                const cells = rows[i].cells;
+            const allCells = matrixTable.querySelectorAll('td');
 
-                for (let j = 0; j < cells.length; j++) {
-                    const cell = cells[j];
+            for (let i = 0; i < allCells.length; i++) {
+                const cell = allCells[i];
 
-                    if (!cell.classList.contains('fixed') && charIndex < cleanText.length) {
+                if (!cell.classList.contains('fixed') && charIndex < cleanText.length) {
 
-                        let emojiLength = 1;
-                        let detectedBudgetCost = 1;
-                        let foundEmoji = null;
-                        let tempString = cleanText.substring(charIndex);
+                    let emojiLength = 1;
+                    let detectedBudgetCost = 1;
+                    let foundEmoji = null;
+                    let tempString = cleanText.substring(charIndex);
 
-                        // En uzun eşleşen emoji karakterini bul
-                        allEmojis.forEach(data => {
-                            if (tempString.startsWith(data.emoji)) {
-                                if (!foundEmoji || data.emoji.length > foundEmoji.emoji.length) {
-                                    foundEmoji = data;
-                                    detectedBudgetCost = data.chars;
-                                }
+                    // En uzun eşleşen emoji karakterini bul
+                    allEmojis.forEach(data => {
+                        if (tempString.startsWith(data.emoji)) {
+                            if (!foundEmoji || data.emoji.length > foundEmoji.emoji.length) {
+                                foundEmoji = data;
+                                detectedBudgetCost = data.chars;
                             }
-                        });
-
-                        if (foundEmoji) {
-                            emojiLength = foundEmoji.emoji.length;
-                        } else {
-                            // Bulunamazsa 1 karakter uzunluğunda ve 1 bütçe maliyetinde varsay
-                            emojiLength = 1;
-                            detectedBudgetCost = 1;
                         }
+                    });
 
-                        // Hücrenin içeriğini ve maliyetini ayarla
-                        cell.innerHTML = cleanText.substring(charIndex, charIndex + emojiLength);
-                        cell.setAttribute('data-chars', detectedBudgetCost.toString());
-                        importedBudgetCost += detectedBudgetCost; // İçe aktarılan bütçeyi topla
-                        charIndex += emojiLength;
-
-                    } else if (!cell.classList.contains('fixed') && charIndex >= cleanText.length) {
-                        // Kalan boş hücreleri default emoji ile doldur (createMatrix() zaten yapmış olmalı, bu sadece emin olmak için)
-                        cell.innerHTML = defaultHeart;
-                        cell.setAttribute('data-chars', '1');
+                    if (foundEmoji) {
+                        emojiLength = foundEmoji.emoji.length;
+                    } else {
+                        // Bulunamazsa 1 karakter uzunluğunda ve 1 bütçe maliyetinde varsay
+                        emojiLength = 1;
+                        detectedBudgetCost = 1;
                     }
+
+                    // Hücrenin içeriğini ve maliyetini ayarla
+                    cell.innerHTML = cleanText.substring(charIndex, charIndex + emojiLength);
+                    cell.setAttribute('data-chars', detectedBudgetCost.toString());
+                    importedBudgetCost += detectedBudgetCost; // İçe aktarılan bütçeyi topla
+                    charIndex += emojiLength;
+
+                } else if (!cell.classList.contains('fixed') && charIndex >= cleanText.length) {
+                    // Kalan boş hücreleri default emoji ile doldur
+                    cell.innerHTML = defaultHeart;
+                    cell.setAttribute('data-chars', '1');
                 }
             }
 
             // 6. Matrisin bütçe maliyetini ayarla ve yeniden düzenle
-            totalBudgetCost = importedBudgetCost;
-            updateCharacterCount();
-            reorganizeMatrix(); // Bütçe limitine göre hücreleri sabitle
+            // reorganizeMatrix, bu noktada bütçe aşımına göre otomatik kırpmayı yapacaktır.
+            reorganizeMatrix();
 
             const stats = calculateCurrentStats();
             const maxBudget = getMaxAvailableBudget();
 
-            if (stats.currentBudgetCost > maxBudget) {
+            if (stats.currentBudgetCost < importedBudgetCost) {
                  showNotification(`Hata: İçe aktarılan metin bütçe limitini aştı! Çizim otomatik olarak kırpıldı.`, 'error', 7000);
             } else if (stats.totalChars > MAX_CHARACTERS) {
                 showNotification(`⚠️ UYARI: İçe aktarılan metin toplam ${stats.totalChars} görünür karakter içeriyor (limit: ${MAX_CHARACTERS}).`, 'warning', 7000);
@@ -1245,7 +1223,7 @@
             }
         });
 
-        // Ayırıcı değiştiğinde matrisi yeniden organize et (V3.4 Dinamik Bütçe Kontrolü)
+        // Ayırıcı değiştiğinde matrisi yeniden organize et (V3.5 Dinamik Bütçe Kontrolü)
         separatorSelect.addEventListener('change', () => {
             const newWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
             const currentDisplayedWidth = matrixTable.rows.length > 0 ? matrixTable.rows[0].cells.length : DEFAULT_MATRIX_WIDTH;
@@ -1279,7 +1257,7 @@
             }
 
             try {
-                const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
+                const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text.match(/\(([^)]+)\)/)[1];
                 await navigator.clipboard.writeText(drawingText);
                 showNotification(`✅ Çizim panoya kopyalandı! (${stats.currentBudgetCost}/${maxBudget} Bütçe Birimi - ${separatorName} kullanılıyor)`, 'success');
             } catch (err) {
@@ -1377,7 +1355,7 @@
                 createMatrix();
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.3.4 Hazır! (Dinamik Bütçe)', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.3.5 Hazır! (Dinamik Bütçe Düzeltmesi)', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
