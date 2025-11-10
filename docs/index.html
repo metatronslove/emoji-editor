@@ -532,7 +532,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.5.0 (Max Canvas & Otomatik Kırpma)</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.0 (Dinamik Maliyet Hesabı)</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -568,23 +568,23 @@
                     <label for="separator-select" style="color: var(--accent-color); white-space: nowrap;">Filtre Atlatma Yöntemi:</label>
                     <select id="separator-select">
                         <option value="none" selected>Hiçbiri</option>
-                        <option value="ZWNJ">ZWNJ (Zero Width Non-Joiner - 1 Karakter)</option>
-                        <option value="ZWSP">ZWSP (Zero Width Space - 1 Karakter)</option>
-                        <option value="ZWJ">ZWJ (Zero Width Joiner - 1 Karakter)</option>
-                        <option value="WJ">WJ (Word Joiner - 1 Karakter)</option>
-                        <option value="SHY">SHY (Soft Hyphen - 1 Karakter)</option>
-                        <option value="HAIR">Hair Space (1 Karakter)</option>
-                        <option value="LRM">LRM (Yön Kontrol - 1 Karakter)</option>
-                        <option value="RLM">RLM (Yön Kontrol - 1 Karakter)</option>
-                        <option value="ZWNBSP">ZWNBSP (Zero Width No-Break Space - 1 Karakter)</option>
-                        <option value="LRE">LRE (Bidi L-R-Embedding - 1 Karakter)</option>
-                        <option value="RLE">RLE (Bidi R-L-Embedding - 1 Karakter)</option>
-                        <option value="PDF">PDF (Bidi Pop Directional - 1 Karakter)</option>
-                        <option value="LRI">LRI (Bidi L-R-Isolate - 1 Karakter)</option>
-                        <option value="RLI">RLI (Bidi R-L-Isolate - 1 Karakter)</option>
-                        <option value="PDI">PDI (Bidi Pop Isolate - 1 Karakter)</option>
-                        <option value="CGJ">CGJ (Combining Grapheme Joiner - 1 Karakter)</option>
-                        <option value="SP_BS">DENEYSEL (Space + Backspace - 2 Karakter)</option>
+                        <option value="ZWNJ">ZWNJ (Zero Width Non-Joiner)</option>
+                        <option value="ZWSP">ZWSP (Zero Width Space)</option>
+                        <option value="ZWJ">ZWJ (Zero Width Joiner)</option>
+                        <option value="WJ">WJ (Word Joiner)</option>
+                        <option value="SHY">SHY (Soft Hyphen)</option>
+                        <option value="HAIR">Hair Space</option>
+                        <option value="LRM">LRM (Yön Kontrol)</option>
+                        <option value="RLM">RLM (Yön Kontrol)</option>
+                        <option value="ZWNBSP">ZWNBSP (Zero Width No-Break Space)</option>
+                        <option value="LRE">LRE (Bidi L-R-Embedding)</option>
+                        <option value="RLE">RLE (Bidi R-L-Embedding)</option>
+                        <option value="PDF">PDF (Bidi Pop Directional)</option>
+                        <option value="LRI">LRI (Bidi L-R-Isolate)</option>
+                        <option value="RLI">RLI (Bidi R-L-Isolate)</option>
+                        <option value="PDI">PDI (Bidi Pop Isolate)</option>
+                        <option value="CGJ">CGJ (Combining Grapheme Joiner)</option>
+                        <option value="SP_BS">DENEYSEL (Space + Backspace)</option>
                     </select>
                 </div>
 
@@ -614,38 +614,64 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMA VE SABİTLER (V5.0 MAX CANVAS ÇÖZÜMÜ) ---
+        // --- TEMEL TANIMLAMA VE SABİTLER (V6.0 DİNAMİK MALİYET) ---
         const DEFAULT_MATRIX_WIDTH = 11;
         const SP_BS_MATRIX_WIDTH = 10;
-        const MATRIX_HEIGHT = 20; // Yükseklik 20'ye çıkarıldı (1-char emoji için max 18 satır sığabilir)
+        const MATRIX_HEIGHT = 20; // Yükseklik 20'de tutulur
         const MAX_CHARACTERS = 200; // YouTube'un genel 200 karakter sınırı
         const EMOJI_JSON_URL = 'emoji.json';
         const defaultHeart = '🖤';
 
         let currentMatrixWidth = DEFAULT_MATRIX_WIDTH;
 
-        // Ayırıcı karakterlerin kendi karakter maliyetlerini içerir
-        const SEPARATOR_MAP = {
-            'none': { char: '', length: 0, name: 'Hiçbiri' },
-            'ZWNJ': { char: '\u200C', length: 1, name: 'ZWNJ' },
-            'ZWSP': { char: '\u200B', length: 1, name: 'ZWSP' },
-            'ZWJ': { char: '\u200D', length: 1, name: 'ZWJ' },
-            'WJ': { char: '\u2060', length: 1, name: 'WJ' },
-            'SHY': { char: '\u00AD', length: 1, name: 'SHY' },
-            'HAIR': { char: '\u200A', length: 1, name: 'Hair Space' },
-            'LRM': { char: '\u200E', length: 1, name: 'LRM' },
-            'RLM': { char: '\u200F', length: 1, name: 'RLM' },
-            'ZWNBSP': { char: '\uFEFF', length: 1, name: 'ZWNBSP' },
-            'LRE': { char: '\u202A', length: 1, name: 'LRE' },
-            'RLE': { char: '\u202B', length: 1, name: 'RLE' },
-            'PDF': { char: '\u202C', length: 1, name: 'PDF' },
-            'LRI': { char: '\u2066', length: 1, name: 'LRI' },
-            'RLI': { char: '\u2067', length: 1, name: 'RLI' },
-            'PDI': { char: '\u2069', length: 1, name: 'PDI' },
-            'CGJ': { char: '\u034F', length: 1, name: 'CGJ' },
-            'SP_BS': { char: '\u0020\u0008', length: 2, name: 'Space + Backspace' }
+        /**
+         * EMOJİ/KARAKTER MALİYETİNİ KESİNLİKLE HESAPLAR (UTF-16 kod birimi uzunluğu)
+         */
+        function calculateChatChars(emojiString) {
+            return emojiString.length;
+        }
+
+        // Ayırıcı karakterlerin char ve name bilgileri (length artık dinamik hesaplanacak)
+        let SEPARATOR_MAP = {
+            'none': { char: '', length: 0, name: 'Hiçbiri' }, // length: 0 sabit kalacak
+            'ZWNJ': { char: '\u200C', name: 'ZWNJ' },
+            'ZWSP': { char: '\u200B', name: 'ZWSP' },
+            'ZWJ': { char: '\u200D', name: 'ZWJ' },
+            'WJ': { char: '\u2060', name: 'WJ' },
+            'SHY': { char: '\u00AD', name: 'SHY' },
+            'HAIR': { char: '\u200A', name: 'Hair Space' },
+            'LRM': { char: '\u200E', name: 'LRM' },
+            'RLM': { char: '\u200F', name: 'RLM' },
+            'ZWNBSP': { char: '\uFEFF', name: 'ZWNBSP' },
+            'LRE': { char: '\u202A', name: 'LRE' },
+            'RLE': { char: '\u202B', name: 'RLE' },
+            'PDF': { char: '\u202C', name: 'PDF' },
+            'LRI': { char: '\u2066', name: 'LRI' },
+            'RLI': { char: '\u2067', name: 'RLI' },
+            'PDI': { char: '\u2069', name: 'PDI' },
+            'CGJ': { char: '\u034F', name: 'CGJ' },
+            'SP_BS': { char: '\u0020\u0008', name: 'Space + Backspace' }
         };
 
+        /**
+         * SEPARATOR_MAP'teki ayırıcıların karakter maliyetlerini dinamik olarak hesaplar (V6.0 Düzeltmesi).
+         */
+        function calculateSeparatorCharCosts() {
+            for (const key in SEPARATOR_MAP) {
+                if (SEPARATOR_MAP.hasOwnProperty(key) && key !== 'none') {
+                    const separator = SEPARATOR_MAP[key];
+                    // length'i, char'ın gerçek karakter maliyetiyle güncelle (string.length)
+                    separator.length = calculateChatChars(separator.char);
+                    // Dropdown metnini maliyetle güncelle
+                    const option = document.querySelector(`#separator-select option[value="${key}"]`);
+                    if (option) {
+                         option.textContent = `${separator.name} (${separator.length} Karakter)`;
+                    }
+                }
+            }
+        }
+
+        // --- DİĞER TEMEL DEĞİŞKENLER (Aynı kaldı) ---
         let emojiCategories = {};
         let selectedHeart = { emoji: defaultHeart, chars: 0, name: 'black heart' };
         let currentCategory = "";
@@ -707,13 +733,6 @@
                     resolve(false);
                 };
             });
-        }
-
-        /**
-         * EMOJİ KARAKTER MALİYETİNİ KESİNLİKLE HESAPLAR (UTF-16 kod birimi uzunluğu)
-         */
-        function calculateChatChars(emojiString) {
-            return emojiString.length;
         }
 
         async function loadEmojis() {
@@ -779,33 +798,60 @@
             // Ayırıcı Maliyetini Hesapla (Tüm editable hücrelerin ayırıcı maliyeti)
             // Toplam ayırıcı: Her satırda (Width - 1) * RowCount
             const rowWidth = currentMatrixWidth - (parseInt(firstRowLengthInput.value) || 0); // Düzenlenebilir sütun sayısı
-            const totalSeparators = actualRows * (rowWidth > 0 ? rowWidth - 1 : 0);
+            // Bir satırdaki ayırıcı sayısı: Emojilerin bir eksiği (satır genişliği > 0 olmalı)
+            const separatorsPerRow = rowWidth > 0 ? rowWidth - 1 : 0;
 
-            const separatorCharCost = totalSeparators * selectedSeparator.length;
+            // Kırpma işlemi satır bazında olmadığı için, ayırıcı maliyetini sadece
+            // kırpılmayan emojilerin arasına eklenen toplam ayırıcı sayısı üzerinden hesaplamak gerekir.
 
-            // Emojiler için kalan bütçe
-            const emojiBudget = MAX_CHARACTERS - separatorCharCost;
+            // Ayırıcı için kalan bütçeyi bulalım.
+            // En kötü senaryo: max 200 karakter.
+
+            // Emojiler için kalan bütçe (Önce ayırıcı maliyetini tahmin et, sonra emojileri yerleştir)
+            // Ayırıcı maliyetinin kesinleştirilmesi, kaç emoji yerleştirildiğine bağlıdır.
 
             let clippedCount = 0;
 
             // Kırpmadan önce tüm kırpma işaretlerini temizle
             editableCells.forEach(cell => cell.classList.remove('clipped'));
 
+            let currentEmojiIndex = 0;
+            let currentRow = -1;
+            let emojisInCurrentRow = 0;
 
             // İkinci döngü: Karakter bütçesini kontrol et ve kırpma noktasını bul/uygula
             for (let i = 0; i < totalEditableCount; i++) {
                 const cell = editableCells[i];
-                // Hücrenin maliyeti (Drawn state'e göre)
-                const chars = parseInt(cell.getAttribute('data-chars') || '1');
+                const newRowIndex = parseInt(cell.getAttribute('data-row'));
 
-                if (totalEmojiCharCost + chars <= emojiBudget) {
+                // Yeni satıra geçiş kontrolü
+                if (newRowIndex !== currentRow) {
+                    currentRow = newRowIndex;
+                    emojisInCurrentRow = 0;
+                }
+
+                // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
+                let separatorCost = 0;
+                if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < rowWidth)) {
+                    // Bu, bir önceki emoji ile bu emoji arasına konulacak ayırıcı maliyetidir.
+                    separatorCost = selectedSeparator.length;
+                }
+
+                // Hücrenin maliyeti (Drawn state'e göre)
+                const emojiCost = parseInt(cell.getAttribute('data-chars') || '1');
+
+                // Toplam maliyet (Emoji + Ayırıcı)
+                const combinedCost = emojiCost + separatorCost;
+
+                if (totalEmojiCharCost + combinedCost <= MAX_CHARACTERS) {
                     // Bütçe dahilinde
-                    totalEmojiCharCost += chars;
+                    totalEmojiCharCost += combinedCost;
                     totalEmojis++;
-                    if (chars > 1) {
+                    emojisInCurrentRow++;
+
+                    if (emojiCost > 1) {
                         multiCharEmojisUsed++;
                     }
-                    // cell.classList.remove('clipped') zaten yukarıda yapıldı.
                 } else {
                     // Bütçeyi aşıyor, bu hücreyi ve kalanları kırp
                     clippedCount = totalEditableCount - i; // Kalan tüm hücre sayısı
@@ -819,15 +865,15 @@
             }
 
             // Nihai toplam karakter sayısı (ASLA 200'ü aşmaz)
-            const totalOutputCharCount = totalEmojiCharCost + separatorCharCost;
+            const totalOutputCharCount = totalEmojiCharCost;
 
             return {
-                totalEmojiCharCost,
+                totalEmojiCharCost: totalEmojiCharCost, // Bu artık Emoji + Ayırıcı maliyetidir
                 totalEmojis: totalEmojis,
                 multiCharEmojisUsed,
-                separatorCharCost,
-                totalOutputCharCount: totalOutputCharCount,
+                separatorCharCost: totalOutputCharCost - (totalEmojiCharCost - (totalEmojis - 1) * selectedSeparator.length), // Ayırıcılar hariç sadece emoji maliyeti
                 clippedCount: clippedCount,
+                totalOutputCharCount: totalOutputCharCount,
             };
         }
 
@@ -902,16 +948,19 @@
 
             // UYARI METNİ GÜNCELLEME
             let warningText = '';
+            const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
 
-            if (stats.multiCharEmojisUsed > 0) {
-                 warningText += `${stats.multiCharEmojisUsed} adet çok karakterli emoji kullanılıyor (Maliyet: ${stats.totalEmojiCharCost} Karakter)`;
+            // Eğer ayırıcı kullanılıyorsa, ayırıcı maliyeti göster
+            if (selectedSeparator.length > 0 && stats.totalEmojis > 0) {
+                const totalSeparators = stats.totalEmojis - 1; // Toplam emoji sayısı - 1
+                const separatorCharCost = totalSeparators * selectedSeparator.length;
+
+                warningText += `${selectedSeparator.name} (${separatorCharCost} Karakter Maliyeti) kullanılıyor.`;
             }
 
-            if (stats.separatorCharCost > 0) {
-                const selectedSeparatorName = SEPARATOR_MAP[separatorSelect.value].name;
-
-                if (warningText) warningText += ' ve ';
-                warningText += `${selectedSeparatorName} (${stats.separatorCharCost} Karakter Maliyeti) kullanılıyor.`;
+            if (stats.multiCharEmojisUsed > 0) {
+                if (warningText) warningText += ' | ';
+                 warningText += `${stats.multiCharEmojisUsed} adet çok karakterli emoji kullanılıyor.`;
             }
 
             if (stats.clippedCount > 0) {
@@ -928,7 +977,7 @@
             }
         }
 
-        // --- PALET VE SEKMELER (Değişiklik yok) ---
+        // --- PALET VE SEKMELER (Aynı kaldı) ---
 
         function updateSelectedEmojiDisplay() {
             currentBrushEmoji.textContent = selectedHeart.emoji;
@@ -1009,7 +1058,7 @@
             updateSelectedEmojiDisplay();
         }
 
-        // --- İÇE/DIŞA AKTARMA FONKSİYONLARI ---
+        // --- İÇE/DIŞA AKTARMA FONKSİYONLARI (Aynı kaldı) ---
 
         /**
          * Çizimi düz emoji metni olarak döndürür. Sadece kırpılmamış (non-clipped) hücreleri dahil eder.
@@ -1024,13 +1073,14 @@
             for (let i = 0; i < rows.length; i++) {
                 let emojisInRow = [];
                 const cells = rows[i].cells;
+                let isRowClipped = false;
 
                 for (let j = 0; j < cells.length; j++) {
                     const cell = cells[j];
 
                     if (cell.classList.contains('clipped')) {
+                        isRowClipped = true;
                         // Kırpılan hücreye gelindi, bu satırın ve sonrasının çıktıya dahil edilmemesi gerekir.
-                        // Satır döngüsünden çıkış, çünkü kırpma en sondan başlar.
                         break;
                     }
 
@@ -1039,15 +1089,14 @@
                     }
                 }
 
-                // Satır çıktıya dahil edilebilir durumdaysa ekle
-                if (emojisInRow.length > 0) {
+                // Satır çıktıda yer alacak emojiler içeriyorsa ekle
+                if (emojisInRow.length > 0 && !isRowClipped) {
                     let rowText = emojisInRow.join(separator);
                     result.push(rowText);
                 }
 
-                // Eğer bu satırda dahi kırpılmış hücre varsa veya sadece fixed hücre varsa,
-                // sonraki satırlara bakmaya gerek yok.
-                if (Array.from(cells).some(cell => cell.classList.contains('clipped'))) {
+                // Eğer bu satırda kırpılmış hücre varsa, sonraki satırlara bakmaya gerek yok.
+                if (isRowClipped) {
                     break;
                 }
             }
@@ -1061,11 +1110,13 @@
 
             // 1. Ayırıcıyı tespit et
             let detectedSeparatorKey = 'none';
+            // En uzun ayırıcıdan başlayarak kontrol et
             const keysToCheck = Object.keys(SEPARATOR_MAP).reverse().filter(k => k !== 'none');
 
             for (const key of keysToCheck) {
                 const separatorData = SEPARATOR_MAP[key];
-                if (textWithoutLineBreaks.includes(separatorData.char) && separatorData.length > 0) {
+                // Ayırıcının gerçekten bir karakteri varsa ve metinde geçiyorsa
+                if (separatorData.char && textWithoutLineBreaks.includes(separatorData.char)) {
                     detectedSeparatorKey = key;
                     break;
                 }
@@ -1075,6 +1126,8 @@
             separatorSelect.value = detectedSeparatorKey;
 
             // 3. Matrisi yeniden oluştur (Offset'i ve matris boyutunu ayarlamak için)
+            // Bu aynı zamanda dinamik maliyet hesaplaması sayesinde ayırıcı maliyetini de güncelleyecektir.
+            const statsBeforeRebuild = calculateAndClip(matrixTable.querySelectorAll('td')); // Geçici istatistik al
             createMatrix();
 
             showNotification(`Ayırıcı ${SEPARATOR_MAP[detectedSeparatorKey].name} olarak otomatik algılandı. Matris yeniden oluşturuluyor...`, 'info');
@@ -1094,21 +1147,22 @@
             let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
             let totalEditableCount = editableCells.length;
 
-            // Ayırıcı maliyetini içe aktarma senaryosunda doğru hesaplamak için:
-            const rowWidth = currentMatrixWidth - (parseInt(firstRowLengthInput.value) || 0);
-            const maxRows = MATRIX_HEIGHT;
-            const maxTotalSeparators = maxRows * (rowWidth > 0 ? rowWidth - 1 : 0);
-            const maxSeparatorCharCost = maxTotalSeparators * selectedSeparator.length;
-            const emojiBudget = MAX_CHARACTERS - maxSeparatorCharCost;
-
-            let currentEmojiCharCost = 0;
+            let currentTotalCharCost = 0;
             const defaultHeartChars = calculateChatChars(defaultHeart);
+
+            let currentRow = -1;
+            let emojisInCurrentRow = 0;
+            const rowWidth = currentMatrixWidth - (parseInt(firstRowLengthInput.value) || 0);
 
             for (let i = 0; i < totalEditableCount; i++) {
                 const cell = editableCells[i];
-                let emojiLength = 1;
-                let detectedCharCost = 1;
-                let foundEmoji = null;
+                const newRowIndex = parseInt(cell.getAttribute('data-row'));
+
+                // Yeni satıra geçiş kontrolü
+                if (newRowIndex !== currentRow) {
+                    currentRow = newRowIndex;
+                    emojisInCurrentRow = 0;
+                }
 
                 // Metin bittiği an veya bütçe aşıldığı an kırpmaya başla
                 if (charIndex >= cleanText.length) {
@@ -1120,6 +1174,9 @@
                 }
 
                 let tempString = cleanText.substring(charIndex);
+                let emojiLength = 1;
+                let detectedCharCost = 1;
+                let foundEmoji = null;
 
                 // En uzun eşleşen emojiyi bul
                 for (const data of allEmojis) {
@@ -1138,23 +1195,30 @@
                     detectedCharCost = calculateChatChars(tempString.substring(0, 1));
                 }
 
+                // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
+                let separatorCost = 0;
+                if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < rowWidth)) {
+                    separatorCost = selectedSeparator.length;
+                }
+
+                const combinedCost = detectedCharCost + separatorCost;
+
                 // BÜTÇE KONTROLÜ
-                // Geçici olarak hesaplanan ayırıcı maliyetini kullanarak emoji bütçesini kontrol et
-                if (currentEmojiCharCost + detectedCharCost <= emojiBudget) {
+                if (currentTotalCharCost + combinedCost <= MAX_CHARACTERS) {
                     // Bütçe dahilinde
                     cell.innerHTML = cleanText.substring(charIndex, charIndex + emojiLength);
                     cell.setAttribute('data-chars', detectedCharCost.toString());
                     cell.classList.remove('clipped');
-                    currentEmojiCharCost += detectedCharCost;
+                    currentTotalCharCost += combinedCost;
+                    emojisInCurrentRow++;
                     charIndex += emojiLength;
                 } else {
                     // Bütçe aşıldı: Bu hücreyi ve kalanları kırp
                     // Kalan hücreleri kırpma döngüsü
-                    // Bu noktada, kırpılan hücreler default emoji olarak kalmalı ve .clipped sınıfı almalıdır.
                     for(let j = i; j < totalEditableCount; j++) {
                         editableCells[j].classList.add('clipped');
                         editableCells[j].innerHTML = defaultHeart; // Kırpılanları default emojiye çevir
-                        editableCells[j].setAttribute('data-chars', defaultHeartChars.toString()); // Maliyeti tut, clipping lojiği sıfırlar zaten
+                        editableCells[j].setAttribute('data-chars', defaultHeartChars.toString());
                     }
                     break;
                 }
@@ -1171,7 +1235,7 @@
             return true;
         }
 
-        // --- OLAY DİNLEYİCİLERİ ---
+        // --- OLAY DİNLEYİCİLERİ (Aynı kaldı) ---
 
         updateMatrixButton.addEventListener('click', async () => {
             const confirmed = await showConfirm(
@@ -1202,6 +1266,7 @@
                 } else {
                     // İptal edilirse, seçimi eski haline getir (basit bir geri alma mekanizması)
                     // Önceki genişliğe göre doğru ayırıcıyı bulmak zor, bu yüzden eski değeri geri yükle.
+                    // En iyi tahmin: Sadece mevcut değeri yeniden seçmek
                     const prevValue = Array.from(separatorSelect.options).find(opt =>
                         (opt.value === 'SP_BS' && currentDisplayedWidth === SP_BS_MATRIX_WIDTH) ||
                         (opt.value !== 'SP_BS' && currentDisplayedWidth === DEFAULT_MATRIX_WIDTH)
@@ -1302,6 +1367,9 @@
 
         // --- BAŞLANGIÇ ---
         document.addEventListener('DOMContentLoaded', async () => {
+            // Önce ayırıcı maliyetlerini hesapla ve dropdown'u güncelle
+            calculateSeparatorCharCosts();
+
             await loadEmojis();
 
             if (Object.keys(emojiCategories).length > 0) {
@@ -1316,7 +1384,7 @@
                 createMatrix();
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.5.0 Hazır! (Max Canvas Aktif)', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.0 Hazır! (Dinamik Maliyet Aktif)', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
