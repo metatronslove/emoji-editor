@@ -389,7 +389,7 @@
             border: 2px solid transparent;
             border-radius: 4px;
             transition: border-color 0.1s;
-            position: relative; /* <<< V2.6 DÜZELTMESİ: Pseudo element sızıntısını engellemek için eklendi */
+            position: relative;
         }
 
         .color-option:hover {
@@ -495,19 +495,19 @@
             <h3>📖 YouTube Sohbet Kılavuzu</h3>
 
             <div style="background-color: var(--fixed-bg); padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid var(--accent-color);">
-                <strong>🎯 ÖNEMLİ:</strong> **Filtre Atlatma Yöntemi**'ni kullanmak, **görünür karakter limitini (200)** veya **çizim alanınızı DARALTMAZ**. Sadece kopyalanan metne görünmez karakter(ler) ekler.
+                <strong>🎯 ÖNEMLİ:</strong> **Filtre Atlatma Yöntemi**'ni kullanmak, **çizim alanınızı 69 emoji hücresiyle kısıtlar**.
             </div>
 
             <ol style="margin-left: 20px; font-size: 0.95em;">
                 <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** YouTube'da 100 adet **🖤** gönderin. Nickname'inizin yanında görünen kalp sayısını sayın. Bu sayıyı **"İlk Satır Uzunluğu"** olarak girin ve **Matrisi Güncelle**'ye basın.</li>
-                <li style="margin-bottom: 8px;">**Kılavuz Adım 2 (Spam Filtresi):** Çiziminizin YouTube sohbetinde görünmemesi durumunda, **Filtre Atlatma Yöntemi**'ni sırayla deneyin. Yeni eklenen seçenekler (LRM, RLM, DENEYSEL SIRA) daha agresif sonuçlar verebilir. Bu seçim, çizim alanınızı küçültmez.</li>
-                <li style="margin-bottom: 8px;">**Kılavuz Adım 3 (Kopyalama):** Çiziminizi tamamladıktan sonra **Panoya Kopyala** butonuna basın. Seçtiğiniz filtre atlatma karakteri veya sırası otomatik olarak eklenecektir.</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 2 (Spam Filtresi):** Çiziminizin YouTube sohbetinde görünmemesi durumunda, **Filtre Atlatma Yöntemi**'ni sırayla deneyin. Unutmayın, bu ayırıcılar matrisinizi **100 emojiden 69 emojiye** düşürecektir.</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 3 (Kopyalama):** Çiziminizi tamamladıktan sonra **Panoya Kopyala** butonuna basın. Seçtiğiniz filtre atlatma karakteri otomatik olarak eklenecektir.</li>
             </ol>
             <button id="close-guide-btn">Anladım, Kapat</button>
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.2.6</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.2.7</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -542,15 +542,14 @@
                 <div style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
                     <label for="separator-select" style="color: var(--accent-color); white-space: nowrap;">Filtre Atlatma Yöntemi:</label>
                     <select id="separator-select">
-                        <option value="none">Hiçbiri (Sadece Emojiler)</option>
-                        <option value="ZWNJ" selected>ZWNJ (Zero Width Non-Joiner - Agresif)</option>
-                        <option value="ZWSP">ZWSP (Zero Width Space)</option>
-                        <option value="HAIR">Hair Space (\u200A - Daha Az Kısıtlayıcı)</option>
-                        <option value="LRM">LRM (Left-to-Right Mark - Yön Kontrol)</option>
-                        <option value="RLM">RLM (Right-to-Left Mark - Yön Kontrol)</option>
-                        <option value="ZWNBSP">ZWNBSP (Zero Width No-Break Space)</option>
-                        <option value="EXP_SEQ">DENEYSEL SIRA (Birden Fazla Görünmez Karakter)</option>
-                    </select>
+                        <option value="none">Hiçbiri (Max 100 Emoji)</option>
+                        <option value="ZWNJ" selected>ZWNJ (Zero Width Non-Joiner - Max 69 Emoji)</option>
+                        <option value="ZWSP">ZWSP (Zero Width Space - Max 69 Emoji)</option>
+                        <option value="HAIR">Hair Space (\u200A - Max 69 Emoji)</option>
+                        <option value="LRM">LRM (Left-to-Right Mark - Max 69 Emoji)</option>
+                        <option value="RLM">RLM (Right-to-Left Mark - Max 69 Emoji)</option>
+                        <option value="ZWNBSP">ZWNBSP (Zero Width No-Break Space - Max 69 Emoji)</option>
+                        </select>
                 </div>
 
                 <div id="auxiliary-controls" style="flex-direction: column; gap: 8px; width: 100%;">
@@ -586,7 +585,8 @@
         const EMOJI_JSON_URL = 'emoji.json';
         const defaultHeart = '🖤';
 
-        // GÖRÜNMEZ KARAKTER MAP'İ VE YENİ DENEYSEL EKLEMELER (V2.5)
+        // GÖRÜNMEZ KARAKTER MAP'İ VE GÜNCEL EKLEMELER (V2.7)
+        // EXP_SEQ kaldırıldı ve RLM/LRM eklendi.
         const SEPARATOR_MAP = {
             'none': '',
             'ZWNJ': '\u200C',
@@ -595,7 +595,6 @@
             'LRM': '\u200E',
             'RLM': '\u200F',
             'ZWNBSP': '\uFEFF',
-            'EXP_SEQ': '\u200A\u200A\u200A\u200B' // Yüksek deneysel sıra (3xHair Space + 1xZWSP)
         };
 
         let emojiCategories = {};
@@ -663,6 +662,7 @@
         }
 
         function calculateChatChars(emojiString) {
+            // YouTube'daki çoğu 2 karakterlik emoji (skin tonu, aileler vb.) 2 görünür karakter sayılır.
             if (emojiString.length > 2) {
                 return 2;
             }
@@ -713,8 +713,8 @@
         // --- YARDIMCI İSTATİSTİK FONKSİYONU ---
 
         /**
-         * Seçilen ayırıcıya göre matris kısıtlamasını hesaplar.
-         * Spam filtresi ayırıcıları (ZWNJ, ZWSP, RLM, vb.) YouTube limitine sayılmadığından, matris küçültme maliyetine eklenmez.
+         * Toplam görünür karakter sayısını ve 2-char emoji maliyetini hesaplar.
+         * Matrisin şeklini kısıtlayan ana faktör 69/100 emoji limitidir, 2-char emojiler sadece 200 karakter limitine sayılır.
          */
         function calculateCurrentStats() {
             let totalChars = 0; // YouTube Görünür Karakter Limiti (200)
@@ -734,7 +734,7 @@
 
                         if (chars === 2) {
                             localTwoCharEmojisUsed++;
-                            // 2-char emoji, 1 fazla karakter harcadı (matris küçültme maliyeti)
+                            // 2-char emoji, 1 fazla karakter harcadı (200 limitine karşı maliyet)
                             extraCharCost += 1;
                         }
                     }
@@ -743,7 +743,7 @@
 
             return {
                 totalChars,
-                extraCharCost, // Sadece 2-char emojilerden gelen maliyet
+                extraCharCost, // 2-char emojilerin 1'den fazla getirdiği karakter sayısı
                 localTwoCharEmojisUsed,
             };
         }
@@ -792,16 +792,23 @@
         }
 
         function reorganizeMatrix() {
-            const stats = calculateCurrentStats();
-
             const firstRowLength = parseInt(firstRowLengthInput.value);
             const permanentFixedCount = MATRIX_WIDTH - firstRowLength;
 
-            // Toplam ekstra maliyet (SADECE 2-char emojiler)
-            const totalExtraChars = stats.extraCharCost;
+            // YENİ KISITLAMA MANTIĞI (V2.7):
+            // Kullanıcı verisine göre:
+            // Ayrıcı yoksa: Max 100 emoji hücresi
+            // Ayrıcı varsa: Max 69 emoji hücresi
 
-            // Toplam sabitlenmesi gereken hücre sayısı (Nickname Offset + 2-char emojilerin maliyeti)
-            const totalFixedCount = permanentFixedCount + totalExtraChars;
+            const isSeparatorUsed = separatorSelect.value !== 'none';
+            const targetMaxCells = isSeparatorUsed ? 69 : 100; // Kullanılabilecek max emoji hücresi
+
+            // Matrisin toplam 110 hücresi var. Toplam kaç hücrenin limit nedeniyle sabitlenmesi gerekiyor?
+            // 110 - 100 = 10 VEYA 110 - 69 = 41
+            const cellsToFixByLimit = MATRIX_WIDTH * MATRIX_HEIGHT - targetMaxCells;
+
+            // Toplam sabitlenmesi gereken hücre sayısı (Nickname Offset + Limit Kısıtlaması)
+            const totalFixedCount = permanentFixedCount + cellsToFixByLimit;
 
             // Sabitlemenin başladığı indis
             const startFixedIndex = MATRIX_WIDTH * MATRIX_HEIGHT - totalFixedCount;
@@ -841,6 +848,8 @@
                     cellIndex++;
                 }
             }
+            // Statiklerin güncellenmesi, yeni sınırlamayı kullanıcıya gösterir.
+            updateCharacterCount();
         }
 
         function updateCharacterCount() {
@@ -858,16 +867,17 @@
 
                 const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
                 const isSeparatorUsed = separatorSelect.value !== 'none';
+                const currentMaxEmojiLimit = isSeparatorUsed ? 69 : 100;
 
                 let warningText = ` - ⚠️ `;
 
                 if(stats.extraCharCost > 0) {
-                     warningText += `${stats.extraCharCost} adet 2 karakterlik emoji`;
+                     warningText += `${stats.extraCharCost} adet 2 karakterlik emoji (Ekstra Görünür Karakter Maliyeti)`;
                 }
 
                 if(isSeparatorUsed) {
                     if (stats.extraCharCost > 0) warningText += ' ve ';
-                    warningText += `${separatorName} ayırıcısı kullanılıyor (Filtre Atlatma).`;
+                    warningText += `${separatorName} ayırıcısı kullanılıyor (Maksimum ${currentMaxEmojiLimit} Emoji).`;
                 } else if (stats.extraCharCost > 0) {
                     warningText += ' kullanılıyor.';
                 }
@@ -1078,19 +1088,27 @@
             }
         });
 
-        // Ayırıcı değiştiğinde sadece bilgi ver
+        // Ayırıcı değiştiğinde hem matrisi yeniden organize et hem de uyarıyı güncelle
         separatorSelect.addEventListener('change', () => {
-            updateCharacterCount();
-            showNotification(`Ayırıcı ${separatorSelect.options[separatorSelect.selectedIndex].text} olarak ayarlandı. Görünür karakter ve çizim alanı etkilenmeyecektir.`, 'info');
+            reorganizeMatrix();
+            const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
+            showNotification(`Ayırıcı ${separatorName} olarak ayarlandı.`, 'info');
         });
 
         copyButton.addEventListener('click', async () => {
             const drawingText = getDrawingText(false);
             const totalChars = parseInt(currentCharsSpan.textContent);
+            const isSeparatorUsed = separatorSelect.value !== 'none';
+            const maxEmojiLimit = isSeparatorUsed ? 69 : 100;
 
             if (totalChars > MAX_CHARACTERS) {
                 showNotification(`⚠️ UYARI: Çiziminiz ${totalChars} görünür karakter içeriyor (limit: ${MAX_CHARACTERS}). YouTube'da kesilebilir.`, 'warning', 4000);
                 return;
+            }
+
+            if (document.querySelectorAll('#matrix td:not(.fixed)').length > maxEmojiLimit) {
+                 showNotification(`⚠️ HATA: Matris kısıtlaması nedeniyle kopyalama başarısız oldu. Matrisin maksimum ${maxEmojiLimit} emoji içermesi gerekir.`, 'error', 5000);
+                 return;
             }
 
             try {
@@ -1172,9 +1190,6 @@
 
         // --- BAŞLANGIÇ ---
         document.addEventListener('DOMContentLoaded', async () => {
-            // Örnek emoji.json'un var olduğunu varsayarak ilerliyoruz
-            // Lütfen bu dosyayı projenizin ana dizinine eklediğinizden emin olun.
-            // Örn: [{"emoji": "🖤", "chars": 1, "description": "black heart", "category": "Hearts"}, ...]
             await loadEmojis();
 
             if (Object.keys(emojiCategories).length > 0) {
@@ -1191,7 +1206,7 @@
                 createMatrix();
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.2.6 Hazır!', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.2.7 Hazır!', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
