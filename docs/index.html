@@ -389,6 +389,7 @@
             border: 2px solid transparent;
             border-radius: 4px;
             transition: border-color 0.1s;
+            position: relative; /* <<< V2.6 DÜZELTMESİ: Pseudo element sızıntısını engellemek için eklendi */
         }
 
         .color-option:hover {
@@ -506,7 +507,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.2.5</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.2.6</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -670,6 +671,7 @@
 
         async function loadEmojis() {
              try {
+                // Not: Bu kısım, projenin başarılı çalışması için 'emoji.json' dosyasının projenin ana dizininde var olduğunu varsayar.
                 const response = await fetch(EMOJI_JSON_URL);
                 if (!response.ok) {
                     throw new Error(`HTTP Hata kodu: ${response.status}`);
@@ -1189,7 +1191,7 @@
                 createMatrix();
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.2.5 Hazır!', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.2.6 Hazır!', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
