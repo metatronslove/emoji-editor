@@ -524,7 +524,7 @@
             </div>
 
             <ol style="margin-left: 20px; font-size: 0.95em;">
-                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** YouTube'da 100 adet **🖤** gönderin. Nickname'inizin yanında görünen kalp sayısını sayın. Bu sayıyı **"İlk Satır Uzunluğu"** olarak girin ve **Matrisi Güncelle**'ye basın. Bu alan çizim dışı kalır.</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** YouTube'da 100 adet **🖤** gönderin. Nickname'inizin yanında görünen kalp sayısını sayın. Bu sayıyı **"İlk Satır Uzunluğu"** olarak girin ve **Matrisi Güncelle**'ye basın. **Bu alan SADECE İLK SATIRDA çizim dışı kalır.**</li>
                 <li style="margin-bottom: 8px;">**Kılavuz Adım 2 (Filtre Atlatma):** Çiziminizin YouTube sohbetinde görünmemesi durumunda, **Filtre Atlatma Yöntemi**'ni sırayla deneyin. Bu karakterler, çiziminizin toplam karakter sayısına eklenir.</li>
                 <li style="margin-bottom: 8px;">**Kılavuz Adım 3 (Kopyalama):** Çiziminizi tamamladıktan sonra **Panoya Kopyala** butonuna basın. Çıktınızın 200 karakteri asla aşmadığından emin olabilirsiniz. **Kırpılan (✂️) pikseller çıktıya dahil edilmez.**</li>
             </ol>
@@ -532,7 +532,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.1 (Stabil)</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.2 (Stabil)</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -614,7 +614,7 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMA VE SABİTLER (V6.1 DİNAMİK MALİYET) ---
+        // --- TEMEL TANIMLAMA VE SABİTLER (V6.2 DÜZELTME) ---
         const DEFAULT_MATRIX_WIDTH = 11;
         const SP_BS_MATRIX_WIDTH = 10;
         const MATRIX_HEIGHT = 20; // Yükseklik 20'de tutulur
@@ -807,8 +807,10 @@
             let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
             let totalEditableCount = editableCells.length;
 
+            // Sabit hücreler ilk satırdan çıkarıldığı için rowWidth hesaplaması gereksizleşiyor.
+            // Sadece ayırıcı kontrolü için kullanılıyor.
             const rawFirstRowLength = parseInt(firstRowLengthInput.value) || 0;
-            const rowWidth = currentMatrixWidth - rawFirstRowLength; // Düzenlenebilir sütun sayısı (Örn: 11-6 = 5)
+            const rowWidth = currentMatrixWidth - (rawFirstRowLength > 0 ? rawFirstRowLength : 0); // Düzenlenebilir sütun sayısı
 
             let clippedCount = 0;
 
@@ -832,9 +834,14 @@
 
                 // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
                 let separatorCost = 0;
-                // Ayırıcı sadece ilk emojiden sonra (emojisInCurrentRow > 0) ve satır sonu değilse konur.
-                if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < rowWidth)) {
-                    // Bu, bir önceki emoji ile bu emoji arasına konulacak ayırıcı maliyetidir.
+
+                // Ayırıcı sadece ilk emojiden sonra (emojisInCurrentRow > 0) konur.
+                // Satır sonu kontrolü:
+                // Eğer mevcut satır (currentRow) ilk satırsa (0), o zaman rowWidth kullanılmalı.
+                // Eğer mevcut satır (currentRow) sonraki satırlarsa (> 0), tüm matris genişliği (currentMatrixWidth) kullanılmalı.
+                let effectiveRowWidth = (currentRow === 0) ? rowWidth : currentMatrixWidth;
+
+                if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < effectiveRowWidth)) {
                     separatorCost = selectedSeparator.length;
                 }
 
@@ -905,7 +912,8 @@
                     cell.setAttribute('data-row', rowIndex);
                     cell.setAttribute('data-col', colIndex);
 
-                    const isPermanentlyFixed = (colIndex < permanentFixedCount);
+                    // DÜZELTME: Sabitlemeyi SADECE İLK SATIRDA (rowIndex === 0) uygula
+                    const isPermanentlyFixed = (rowIndex === 0 && colIndex < permanentFixedCount);
 
                     if (isPermanentlyFixed) {
                         cell.innerHTML = '❌';
@@ -1163,7 +1171,7 @@
             let currentRow = -1;
             let emojisInCurrentRow = 0;
             const rawFirstRowLength = parseInt(firstRowLengthInput.value) || 0;
-            const rowWidth = currentMatrixWidth - rawFirstRowLength; // Düzenlenebilir sütun sayısı
+            const firstRowLength = (rawFirstRowLength > 0 ? rawFirstRowLength : 0);
 
             for (let i = 0; i < totalEditableCount; i++) {
                 const cell = editableCells[i];
@@ -1210,7 +1218,9 @@
 
                 // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
                 let separatorCost = 0;
-                if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < rowWidth)) {
+                let effectiveRowWidth = (currentRow === 0) ? (currentMatrixWidth - firstRowLength) : currentMatrixWidth;
+
+                if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < effectiveRowWidth)) {
                     separatorCost = selectedSeparator.length;
                 }
 
@@ -1404,7 +1414,7 @@
                 createMatrix(); // Matris, selectedHeart'ın maliyetini kullanır
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.1 Hazır! (Stabil Sürüm)', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.2 Hazır! (İlk Satır Sabitleme Düzeltmesi)', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
