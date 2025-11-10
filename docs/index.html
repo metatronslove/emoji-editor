@@ -1132,10 +1132,6 @@
             return formatted ? result.join('\n') : result.join('');
         }
 
-/**
-         * Panodan veya dosyadan gelen metni matrise uygular.
-         * Sadece görünür (fixed olmayan) hücrelere yerleştirir ve bütçeyi aşanları otomatik kırpar.
-         */
         function applyDrawingText(text) {
             // Txt dosyasından yüklenen metin satır sonlarını içerebilir. Tüm whitespace'i kaldır.
             // NOT: Ayırıcı karakterleri temizlemeyin, çünkü tespit için gerekli!
@@ -1241,17 +1237,6 @@
             } else if (charIndex < cleanText.length) {
                  // Eğer metin matristen daha uzunsa ama 200 karakteri aşmıyorsa (çok nadir)
                  showNotification(`⚠️ UYARI: İçe aktarılan metin matristeki ${totalEditableCount} hücreden daha uzundu. Fazla kısım atıldı.`, 'warning', 7000);
-            }
-
-            return true;
-        }
-
-            // 6. Karakter sayımını güncelle (Bu çağrı kırpma işlemini kesinleştirir)
-            updateCharacterCount();
-
-            const stats = calculateAndClip(allCells);
-            if (stats.clippedCount > 0) {
-                 showNotification(`⚠️ UYARI: İçe aktarılan metnin bütçeye uyan kısmı yüklendi. ${stats.clippedCount} hücre limit nedeniyle kırpıldı.`, 'warning', 7000);
             }
 
             return true;
