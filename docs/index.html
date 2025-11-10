@@ -495,25 +495,19 @@
             <h3>📖 YouTube Sohbet Kılavuzu</h3>
 
             <div style="background-color: var(--fixed-bg); padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid var(--accent-color);">
-                <strong>🎯 ÖNEMLİ:</strong> **Filtre Atlatma Yöntemi**'ni kullanmak, **çizim alanınızı (matrisinizi) kısıtlar**.
+                <strong>🎯 ÖNEMLİ:</strong> Tüm çiziminiz ve ayırıcı karakterlerinizin toplamı **200 karakteri geçmemelidir**. Uygulama bu limiti size gösterecektir.
             </div>
 
             <ol style="margin-left: 20px; font-size: 0.95em;">
-                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** YouTube'da 100 adet **🖤** gönderin. Nickname'inizin yanında görünen kalp sayısını sayın. Bu sayıyı **"İlk Satır Uzunluğu"** olarak girin ve **Matrisi Güncelle**'ye basın.</li>
-                <li style="margin-bottom: 8px;">**Kılavuz Adım 2 (Spam Filtresi):** Çiziminizin YouTube sohbetinde görünmemesi durumunda, **Filtre Atlatma Yöntemi**'ni sırayla deneyin.
-                    <ul>
-                        <li>**Hiçbiri:** Max **100** **Bütçe Birimi** (Emoji Karakter Maliyeti). Matris boyutu **11x10**.</li>
-                        <li>**ZWNJ/ZWSP/Diğerleri:** Max **69** **Bütçe Birimi**. Matris boyutu **11x10**.</li>
-                        <li>**DENEYSEL (Space+Backspace):** Max **53** **Bütçe Birimi**. Matrisi **10x10** olarak yeniden boyutlandırır.</li>
-                    </ul>
-                </li>
-                <li style="margin-bottom: 8px;">**Kılavuz Adım 3 (Kopyalama):** Çiziminizi tamamladıktan sonra **Panoya Kopyala** butonuna basın. Seçtiğiniz filtre atlatma karakteri otomatik olarak eklenecektir.</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** YouTube'da 100 adet **🖤** gönderin. Nickname'inizin yanında görünen kalp sayısını sayın. Bu sayıyı **"İlk Satır Uzunluğu"** olarak girin ve **Matrisi Güncelle**'ye basın. Bu alan çizim dışı kalır.</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 2 (Filtre Atlatma):** Çiziminizin YouTube sohbetinde görünmemesi durumunda, **Filtre Atlatma Yöntemi**'ni sırayla deneyin. Bu karakterler, çiziminizin toplam karakter sayısına eklenir.</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 3 (Kopyalama):** Çiziminizi tamamladıktan sonra **Panoya Kopyala** butonuna basın. Seçtiğiniz filtre atlatma karakteri otomatik olarak eklenir ve **toplam karakter sayınızın 200'ü geçmediğinden emin olun**.</li>
             </ol>
             <button id="close-guide-btn">Anladım, Kapat</button>
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.3.5 (Dinamik Bütçe Düzeltmesi)</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.3.6 (Tek Sınır Düzeltmesi)</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -548,24 +542,24 @@
                 <div style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
                     <label for="separator-select" style="color: var(--accent-color); white-space: nowrap;">Filtre Atlatma Yöntemi:</label>
                     <select id="separator-select">
-                        <option value="none">Hiçbiri (Max 100 Bütçe Birimi)</option>
-                        <option value="ZWNJ" selected>ZWNJ (Max 69 Bütçe Birimi)</option>
-                        <option value="ZWSP">ZWSP (Max 69 Bütçe Birimi)</option>
-                        <option value="ZWJ">ZWJ (Zero Width Joiner - Max 69 Bütçe Birimi)</option>
-                        <option value="WJ">WJ (Word Joiner - Max 69 Bütçe Birimi)</option>
-                        <option value="SHY">SHY (Soft Hyphen - Max 69 Bütçe Birimi)</option>
-                        <option value="HAIR">Hair Space (Max 69 Bütçe Birimi)</option>
-                        <option value="LRM">LRM (Yön Kontrol - Max 69 Bütçe Birimi)</option>
-                        <option value="RLM">RLM (Yön Kontrol - Max 69 Bütçe Birimi)</option>
-                        <option value="ZWNBSP">ZWNBSP (Max 69 Bütçe Birimi)</option>
-                        <option value="LRE">LRE (Bidi L-R-Embedding - Max 69 Bütçe Birimi)</option>
-                        <option value="RLE">RLE (Bidi R-L-Embedding - Max 69 Bütçe Birimi)</option>
-                        <option value="PDF">PDF (Bidi Pop Directional - Max 69 Bütçe Birimi)</option>
-                        <option value="LRI">LRI (Bidi L-R-Isolate - Max 69 Bütçe Birimi)</option>
-                        <option value="RLI">RLI (Bidi R-L-Isolate - Max 69 Bütçe Birimi)</option>
-                        <option value="PDI">PDI (Bidi Pop Isolate - Max 69 Bütçe Birimi)</option>
-                        <option value="CGJ">CGJ (Combining Grapheme Joiner - Max 69 Bütçe Birimi)</option>
-                        <option value="SP_BS">DENEYSEL (Space + Backspace - Max 53 Bütçe Birimi)</option>
+                        <option value="none" selected>Hiçbiri</option>
+                        <option value="ZWNJ">ZWNJ (Zero Width Non-Joiner - 1 Karakter)</option>
+                        <option value="ZWSP">ZWSP (Zero Width Space - 1 Karakter)</option>
+                        <option value="ZWJ">ZWJ (Zero Width Joiner - 1 Karakter)</option>
+                        <option value="WJ">WJ (Word Joiner - 1 Karakter)</option>
+                        <option value="SHY">SHY (Soft Hyphen - 1 Karakter)</option>
+                        <option value="HAIR">Hair Space (1 Karakter)</option>
+                        <option value="LRM">LRM (Yön Kontrol - 1 Karakter)</option>
+                        <option value="RLM">RLM (Yön Kontrol - 1 Karakter)</option>
+                        <option value="ZWNBSP">ZWNBSP (Zero Width No-Break Space - 1 Karakter)</option>
+                        <option value="LRE">LRE (Bidi L-R-Embedding - 1 Karakter)</option>
+                        <option value="RLE">RLE (Bidi R-L-Embedding - 1 Karakter)</option>
+                        <option value="PDF">PDF (Bidi Pop Directional - 1 Karakter)</option>
+                        <option value="LRI">LRI (Bidi L-R-Isolate - 1 Karakter)</option>
+                        <option value="RLI">RLI (Bidi R-L-Isolate - 1 Karakter)</option>
+                        <option value="PDI">PDI (Bidi Pop Isolate - 1 Karakter)</option>
+                        <option value="CGJ">CGJ (Combining Grapheme Joiner - 1 Karakter)</option>
+                        <option value="SP_BS">DENEYSEL (Space + Backspace - 2 Karakter)</option>
                     </select>
                 </div>
 
@@ -583,9 +577,7 @@
             </div>
 
             <div id="info-panel">
-                <span class="char-count">Kullanılan Görünür Karakter: <span id="currentChars">0</span>/200</span>
-                <br>
-                <span class="char-count">YouTube **Bütçe Maliyeti**: <span id="currentBudgetCost">0</span>/<span id="maxBudgetCost">69</span></span>
+                <span class="char-count">Toplam Çıktı Karakteri (Emoji + Ayırıcı): <span id="currentChars">0</span>/200</span>
                 <span id="charWarning" class="warning" style="display: none;"> - ⚠️ Ekstra karakter maliyeti!</span>
             </div>
 
@@ -597,48 +589,41 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMA VE SABİTLER (V3.5 BÜTÇE DÜZELTMESİ) ---
+        // --- TEMEL TANIMLAMA VE SABİTLER (V3.6 TEK SINIR DÜZELTMESİ) ---
         const DEFAULT_MATRIX_WIDTH = 11;
         const SP_BS_MATRIX_WIDTH = 10;
         const MATRIX_HEIGHT = 10;
-        const MAX_CHARACTERS = 200; // YouTube'un genel 200 karakter sınırı (görünür metin + emoji)
+        const MAX_CHARACTERS = 200; // YouTube'un genel 200 karakter sınırı (görünür metin + emoji + ayırıcı)
         const EMOJI_JSON_URL = 'emoji.json';
         const defaultHeart = '🖤';
 
         let currentMatrixWidth = DEFAULT_MATRIX_WIDTH;
-        let totalBudgetCost = 0; // Toplam bütçe maliyeti (asıl limitimiz)
 
-        // GÖRÜNMEZ KARAKTER MAP'İ
+        // Ayırıcı karakterlerin kendi karakter maliyetlerini içerir (Tek Kısıtlama: 200)
         const SEPARATOR_MAP = {
-            'none': '',
-            'ZWNJ': '\u200C',
-            'ZWSP': '\u200B',
-            'ZWJ': '\u200D',
-            'WJ': '\u2060',
-            'SHY': '\u00AD',
-            'HAIR': '\u200A',
-            'LRM': '\u200E',
-            'RLM': '\u200F',
-            'ZWNBSP': '\uFEFF',
-            'LRE': '\u202A',
-            'RLE': '\u202B',
-            'PDF': '\u202C',
-            'LRI': '\u2066',
-            'RLI': '\u2067',
-            'PDI': '\u2069',
-            'CGJ': '\u034F',
-            'SP_BS': '\u0020\u0008' // Space + Backspace (Deneysel)
+            'none': { char: '', length: 0, name: 'Hiçbiri' },
+            'ZWNJ': { char: '\u200C', length: 1, name: 'ZWNJ' },
+            'ZWSP': { char: '\u200B', length: 1, name: 'ZWSP' },
+            'ZWJ': { char: '\u200D', length: 1, name: 'ZWJ' },
+            'WJ': { char: '\u2060', length: 1, name: 'WJ' },
+            'SHY': { char: '\u00AD', length: 1, name: 'SHY' },
+            'HAIR': { char: '\u200A', length: 1, name: 'Hair Space' },
+            'LRM': { char: '\u200E', length: 1, name: 'LRM' },
+            'RLM': { char: '\u200F', length: 1, name: 'RLM' },
+            'ZWNBSP': { char: '\uFEFF', length: 1, name: 'ZWNBSP' },
+            'LRE': { char: '\u202A', length: 1, name: 'LRE' },
+            'RLE': { char: '\u202B', length: 1, name: 'RLE' },
+            'PDF': { char: '\u202C', length: 1, name: 'PDF' },
+            'LRI': { char: '\u2066', length: 1, name: 'LRI' },
+            'RLI': { char: '\u2067', length: 1, name: 'RLI' },
+            'PDI': { char: '\u2069', length: 1, name: 'PDI' },
+            'CGJ': { char: '\u034F', length: 1, name: 'CGJ' },
+            'SP_BS': { char: '\u0020\u0008', length: 2, name: 'Space + Backspace' }
         };
-
-        // BÜTÇE LİMİTLERİ (KULLANILAN EMOJİLERİN TOPLAM KARAKTER MALİYETİ)
-        const MAX_BUDGET_NONE = 100;
-        const MAX_BUDGET_WITH_SEPARATOR = 69;
-        const MAX_BUDGET_SP_BS = 53;
 
         let emojiCategories = {};
         let selectedHeart = { emoji: defaultHeart, chars: 1, name: 'black heart' };
         let currentCategory = "";
-        let twoCharEmojisUsed = 0;
 
         // --- DOM ELEMENTLERİ ---
         const firstRowLengthInput = document.getElementById('firstRowLength');
@@ -666,9 +651,6 @@
         const currentBrushEmoji = document.getElementById('current-brush-emoji');
         const currentBrushName = document.getElementById('current-brush-name');
         const separatorSelect = document.getElementById('separator-select');
-        // V3.5 Yeni DOM Öğeleri
-        const currentBudgetCostSpan = document.getElementById('currentBudgetCost');
-        const maxBudgetCostSpan = document.getElementById('maxBudgetCost');
 
 
         // --- DİĞER TEMEL FONKSİYONLAR ---
@@ -706,6 +688,7 @@
          * EMOJİ KARAKTER MALİYETİNİ HESAPLAR
          */
         function calculateChatChars(emojiString) {
+            // İki karakterli emojiler (genellikle ten rengi değiştiricilerle veya özel formatlarla) 2 birim maliyetlidir.
             if (emojiString.length > 2) {
                 return 2;
             }
@@ -733,7 +716,7 @@
 
                     processedCategories[categoryName][emojiName] = {
                         emoji: item.emoji,
-                        chars: calculateChatChars(item.emoji), // Maliyet hesaplandı
+                        chars: calculateChatChars(item.emoji), // Maliyet hesaplandı (1 veya 2)
                         name: emojiName
                     };
                 });
@@ -753,11 +736,11 @@
             }
         }
 
-        // --- YARDIMCI İSTATİSTİK FONKSİYONU ---
+        // --- YARDIMCI İSTATİSTİK FONKSİYONU (TEK SINIR İÇİN GÜNCELLENDİ) ---
         function calculateCurrentStats() {
-            let totalChars = 0; // Görünür karakter sayısı (200 sınırı için)
-            let currentBudgetCost = 0; // Toplam bütçe maliyeti (69/53/100 sınırı için)
-            let localTwoCharEmojisUsed = 0;
+            let totalEmojiCharCost = 0; // Toplam emoji karakter maliyeti (1 veya 2)
+            let totalEmojis = 0; // Matristeki toplam emoji sayısı
+            let twoCharEmojisUsed = 0; // 2 karakterlik emoji sayısı
             const rows = matrixTable.rows;
 
             for (let i = 0; i < rows.length; i++) {
@@ -767,46 +750,47 @@
                     const cell = cells[j];
 
                     // Sadece düzenlenebilir hücrelerin maliyetini hesapla
-                    if (!cell.classList.contains('fixed') || (cell.classList.contains('fixed') && cell.innerHTML !== '❌')) {
-                        // data-chars, emoji'nin bütçeye olan maliyetidir (1 veya 2). Sabitlenmemiş (veya offset olup boş olmayan) hücrenin maliyetini alır.
+                    if (!cell.classList.contains('fixed')) {
                         const chars = parseInt(cell.getAttribute('data-chars') || '1');
 
-                        totalChars += chars;
-                        currentBudgetCost += chars;
+                        totalEmojiCharCost += chars;
+                        totalEmojis++;
 
                         if (chars === 2) {
-                            localTwoCharEmojisUsed++;
+                            twoCharEmojisUsed++;
                         }
                     }
                 }
             }
 
-            totalBudgetCost = currentBudgetCost; // Global değişkeni güncelle
+            // Ayırıcı Maliyetini Hesapla
+            const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
+            const numRows = rows.length;
+
+            // Toplam ayırıcı sayısı = Toplam Emoji Sayısı - Toplam Satır Sayısı
+            // Her satırda (W-1) ayırıcı karakteri vardır.
+            const numSeparators = totalEmojis > 0 ? totalEmojis - numRows : 0;
+            const separatorCharCost = numSeparators * selectedSeparator.length;
+
+            // Nihai toplam karakter sayısı (200'e karşı kontrol edilen değer)
+            const totalOutputCharCount = totalEmojiCharCost + separatorCharCost;
 
             return {
-                totalChars,
-                currentBudgetCost,
-                localTwoCharEmojisUsed,
+                totalEmojiCharCost,
+                totalEmojis,
+                twoCharEmojisUsed,
+                separatorCharCost,
+                totalOutputCharCount,
             };
         }
 
-        // V3.5: Maksimum kullanılabilir BÜTÇE birimini döndürür
-        function getMaxAvailableBudget() {
-            const separatorValue = separatorSelect.value;
-            if (separatorValue === 'none') return MAX_BUDGET_NONE;
-            if (separatorValue === 'SP_BS') return MAX_BUDGET_SP_BS;
-            return MAX_BUDGET_WITH_SEPARATOR;
-        }
-
-
-        // --- MATRİS VE HESAPLAMA FONKSİYONLARI (V3.5 GÜNCELLEMESİ) ---
+        // --- MATRİS FONKSİYONLARI (BU FONKSİYON ARTIK SADECE OFFSET'İ YÖNETİR) ---
 
         function createMatrix() {
             // 1. Matris Genişliğini Güncelle
             currentMatrixWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
 
             matrixTable.innerHTML = '';
-            totalBudgetCost = 0;
 
             // 2. firstRowLength'i mevcut genişliğe sınırla
             const rawFirstRowLength = parseInt(firstRowLengthInput.value);
@@ -817,6 +801,7 @@
             }
             firstRowLengthInput.setAttribute('max', currentMatrixWidth.toString());
 
+            // Çizim alanı dışı kalacak sabitlenmiş hücre sayısı (OFFSET)
             const permanentFixedCount = currentMatrixWidth - firstRowLength;
 
             for (let rowIndex = 0; rowIndex < MATRIX_HEIGHT; rowIndex++) {
@@ -830,150 +815,67 @@
                     const isPermanentlyFixed = (rowIndex === 0 && colIndex < permanentFixedCount);
 
                     if (isPermanentlyFixed) {
+                        // İlk Satır Offset (Çizim Alanı Dışı)
                         cell.innerHTML = '❌';
                         cell.classList.add('fixed');
-                        cell.removeAttribute('data-chars'); // Offset hücrenin maliyeti 0
+                        cell.removeAttribute('data-chars');
                     } else {
-                        // Başlangıçta defaultHeart (1 maliyet) olarak ayarla
+                        // Çizim Alanı (Varsayılan olarak siyah kalp)
                         cell.innerHTML = defaultHeart;
                         cell.setAttribute('data-chars', '1');
-                        totalBudgetCost += 1; // Başlangıç bütçe maliyetini ekle
                         cell.addEventListener('click', () => {
                             handleCellClick(cell);
                         });
                     }
                 }
             }
-            // Yeni matris oluşturulduktan sonra bile reorganizasyona ihtiyaç vardır (Başlangıç bütçesi limiti aşıyor olabilir)
-            reorganizeMatrix();
+
             updateCharacterCount();
         }
 
         function handleCellClick(cell) {
-            // İlk satır offset'i zaten click eventine sahip değildir.
             if (cell.classList.contains('fixed')) return;
 
-            // Eskiyi çıkar
-            const oldCost = parseInt(cell.getAttribute('data-chars') || '1');
-            totalBudgetCost -= oldCost;
-
-            // Yeniyi ekle
             const newCost = selectedHeart.chars;
-            totalBudgetCost += newCost;
 
             cell.innerHTML = selectedHeart.emoji;
             cell.setAttribute('data-chars', newCost.toString());
-
-            // Tıklamadan sonra bütçe limitini kontrol et
-            reorganizeMatrix();
-            updateCharacterCount();
-        }
-
-        /**
-         * Matrisi DİNAMİK BÜTÇE LİMİTİNE göre yeniden düzenler (V3.5 Düzeltmesi).
-         * Bu, asıl lojiktir.
-         */
-        function reorganizeMatrix() {
-            const currentWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
-            const firstRowLength = Math.min(parseInt(firstRowLengthInput.value), currentWidth);
-            const permanentFixedCount = currentWidth - firstRowLength;
-            const maxBudget = getMaxAvailableBudget();
-
-            maxBudgetCostSpan.textContent = maxBudget;
-
-            const allCells = matrixTable.querySelectorAll('td');
-            let cumulativeCost = 0;
-
-            // 1. Tüm hücreleri gez ve bütçe aşımına göre sabitle/serbest bırak
-            for (let i = 0; i < allCells.length; i++) {
-                const cell = allCells[i];
-                const rowIndex = parseInt(cell.getAttribute('data-row'));
-                const colIndex = parseInt(cell.getAttribute('data-col'));
-
-                const isPermanentFixed = (rowIndex === 0 && colIndex < permanentFixedCount);
-
-                if (isPermanentFixed) {
-                    // Kalıcı olarak sabitlenmiş hücreler (Offset)
-                    cell.innerHTML = '❌';
-                    cell.classList.add('fixed');
-                    cell.removeAttribute('data-chars');
-                    cell.onclick = null;
-                    continue; // Sonraki hücreye geç
-                }
-
-                // Hücrenin maliyetini al (eğer düzenlenebilir bir emoji içeriyorsa)
-                const cellCost = parseInt(cell.getAttribute('data-chars') || '1');
-
-                // 2. Bütçe Kontrolü
-                if (cumulativeCost + cellCost > maxBudget) {
-                    // Bütçe AŞILIYORSA: Hücreyi sabitle (kırp)
-                    if (!cell.classList.contains('fixed') || cell.innerHTML !== '❌') {
-                        cell.innerHTML = '❌';
-                        cell.classList.add('fixed');
-                        cell.removeAttribute('data-chars');
-                        cell.onclick = null;
-
-                        // Bu hücrenin ve sonraki tüm hücrelerin maliyeti 0'dır, ancak döngü devam etmeli.
-                    }
-                } else {
-                    // Bütçe AŞILMIYORSA: Hücreyi serbest bırak (sabitlenmişse) ve maliyeti topla
-                    if (cell.classList.contains('fixed') && cell.innerHTML === '❌') {
-                         // Limit nedeniyle sabitlenmiş, şimdi serbest bırak
-                        cell.innerHTML = defaultHeart;
-                        cell.classList.remove('fixed');
-                        cell.setAttribute('data-chars', '1');
-                        cell.addEventListener('click', () => {
-                            handleCellClick(cell);
-                        });
-                        cumulativeCost += 1; // Serbest bırakılan hücrenin varsayılan maliyetini ekle
-                    } else {
-                        // Zaten serbest ve emoji içeriyor, maliyetini topla
-                        cumulativeCost += cellCost;
-                    }
-                }
-            }
-
-            // 3. Matris üzerindeki gerçek kullanılan bütçeyi güncelle
-            totalBudgetCost = cumulativeCost;
 
             updateCharacterCount();
         }
 
         function updateCharacterCount() {
             const stats = calculateCurrentStats();
+            const totalOutputCharCount = stats.totalOutputCharCount;
+            const twoCharEmojisUsed = stats.twoCharEmojisUsed;
+            const separatorCost = stats.separatorCharCost;
 
-            twoCharEmojisUsed = stats.localTwoCharEmojisUsed;
-            const totalChars = stats.totalChars;
-            const currentBudget = stats.currentBudgetCost;
-            const maxBudget = parseInt(maxBudgetCostSpan.textContent || MAX_BUDGET_WITH_SEPARATOR);
+            currentCharsSpan.textContent = totalOutputCharCount;
 
-            currentCharsSpan.textContent = totalChars;
-            currentBudgetCostSpan.textContent = currentBudget;
+            // 200 karakter aşımı kontrolü
+            const isOverLimit = totalOutputCharCount > MAX_CHARACTERS;
+            currentCharsSpan.style.color = isOverLimit ? '#dc3545' : 'var(--accent-color)';
 
-            // Bütçe aşımı kontrolü
-            const isBudgetOver = currentBudget > maxBudget;
-            currentBudgetCostSpan.style.color = isBudgetOver ? '#dc3545' : 'var(--accent-color)';
-
-            // Kopyalama butonu, bütçe aşılırsa devre dışı kalmalıdır.
-            copyButton.disabled = isBudgetOver;
+            // Kopyalama butonu, 200 karakter aşılırsa devre dışı kalmalıdır.
+            copyButton.disabled = isOverLimit;
 
             // UYARI METNİ GÜNCELLEME
             let warningText = '';
 
             if (twoCharEmojisUsed > 0) {
-                 warningText += `${twoCharEmojisUsed} adet 2 karakterlik emoji (Ekstra Görünür Karakter Maliyeti)`;
+                 warningText += `${twoCharEmojisUsed} adet 2 karakterlik emoji `;
             }
 
-            if (separatorSelect.value !== 'none') {
-                const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text.match(/\(([^)]+)\)/)[1];
+            if (separatorCost > 0) {
+                const selectedSeparatorName = SEPARATOR_MAP[separatorSelect.value].name;
 
-                if (twoCharEmojisUsed > 0) warningText += ' ve ';
-                warningText += `Filtre Atlatma Yöntemi (${separatorName}) kullanılıyor.`;
+                if (warningText) warningText += ' ve ';
+                warningText += `${selectedSeparatorName} (${separatorCost} Karakter Maliyeti) kullanılıyor.`;
             }
 
-            if (isBudgetOver) {
+            if (isOverLimit) {
                  if (warningText) warningText += ' | ';
-                 warningText += `BÜTÇE LİMİTİ AŞILDI (${currentBudget - maxBudget} birim fazla)!`;
+                 warningText += `ÇIKTI LİMİTİ AŞILDI (${totalOutputCharCount - MAX_CHARACTERS} karakter fazla)!`;
             }
 
             if (warningText) {
@@ -982,16 +884,9 @@
             } else {
                 charWarningSpan.style.display = 'none';
             }
-
-            // Genel 200 karakter sınırı kontrolü (Görünür karakter)
-            if (totalChars > MAX_CHARACTERS) {
-                currentCharsSpan.style.color = '#ff6b6b';
-            } else {
-                currentCharsSpan.style.color = 'var(--accent-color)';
-            }
         }
 
-        // --- PALET VE SEKMELER (DEĞİŞİKLİK YOK) ---
+        // --- PALET VE SEKMELER --- (Değişiklik Yok)
 
         function updateSelectedEmojiDisplay() {
             currentBrushEmoji.textContent = selectedHeart.emoji;
@@ -1080,11 +975,10 @@
         function getDrawingText(formatted = false) {
             let result = [];
             const rows = matrixTable.rows;
-            const separatorCode = SEPARATOR_MAP[separatorSelect.value];
+            const separatorCode = SEPARATOR_MAP[separatorSelect.value].char;
             const separator = formatted ? '' : separatorCode;
-            const maxBudget = getMaxAvailableBudget();
-            let cumulativeCost = 0;
 
+            // Sadece sabitlenmemiş hücreleri dahil et
             for (let i = 0; i < rows.length; i++) {
                 let emojisInRow = [];
                 const cells = rows[i].cells;
@@ -1092,18 +986,8 @@
                 for (let j = 0; j < cells.length; j++) {
                     const cell = cells[j];
 
-                    // Sadece sabitlenmemiş hücreleri dahil et
                     if (!cell.classList.contains('fixed')) {
-                         const cellCost = parseInt(cell.getAttribute('data-chars') || '1');
-
-                         // Kopyalamadan önce bütçe aşımını tekrar kontrol et (Bu, reorganizeMatrix() tarafından garanti edilmeli, ama çift kontrol)
-                         if (cumulativeCost + cellCost <= maxBudget) {
-                            emojisInRow.push(cell.innerHTML);
-                            cumulativeCost += cellCost;
-                         } else {
-                             // Kırpma noktası, bu ve sonraki hücreler atlanır
-                             break;
-                         }
+                        emojisInRow.push(cell.innerHTML);
                     }
                 }
 
@@ -1113,10 +997,12 @@
                 }
             }
 
+            // formatted=false ise, tüm satırları birleştirilmiş tek bir dize döndürür.
             return formatted ? result.join('\n') : result.join('');
         }
 
         function applyDrawingText(text) {
+            // Matrisi temizlemeden önce ayırıcıyı tespit et
             const textWithoutLineBreaks = text.replace(/[\s\n\r]/g, '');
 
             // 1. Ayırıcıyı tespit et
@@ -1124,7 +1010,8 @@
             const keysToCheck = Object.keys(SEPARATOR_MAP).reverse().filter(k => k !== 'none');
 
             for (const key of keysToCheck) {
-                if (textWithoutLineBreaks.includes(SEPARATOR_MAP[key])) {
+                const separatorData = SEPARATOR_MAP[key];
+                if (textWithoutLineBreaks.includes(separatorData.char) && separatorData.length > 0) {
                     detectedSeparatorKey = key;
                     break;
                 }
@@ -1133,20 +1020,18 @@
             // 2. Dropdown'u otomatik seç
             separatorSelect.value = detectedSeparatorKey;
 
-            // 3. Matrisi yeniden oluştur (Matris boyutu ve initial fixed hücreleri ayarlamak için)
+            // 3. Matrisi yeniden oluştur (Offset'i ve matris boyutunu ayarlamak için)
             createMatrix();
 
-            showNotification(`Ayırıcı ${detectedSeparatorKey} olarak otomatik algılandı. Matris yeniden düzenleniyor...`, 'info');
+            showNotification(`Ayırıcı ${SEPARATOR_MAP[detectedSeparatorKey].name} olarak otomatik algılandı. Matris yeniden oluşturuluyor...`, 'info');
 
-            // 4. Tüm ayırıcıları temizle
-            const allSeparatorCharacters = Object.values(SEPARATOR_MAP).join('');
-            const allSeparatorsRegex = new RegExp(`[${allSeparatorCharacters}]`, 'g');
-            const cleanText = textWithoutLineBreaks.replace(allSeparatorsRegex, '');
+            // 4. Ayırıcıyı temizle
+            const selectedSeparator = SEPARATOR_MAP[detectedSeparatorKey];
+            const cleanText = textWithoutLineBreaks.split(selectedSeparator.char).join('');
 
             // 5. Emojileri doldur
             const allEmojis = Object.values(emojiCategories).flatMap(category => Object.values(category));
             let charIndex = 0;
-            let importedBudgetCost = 0;
 
             const allCells = matrixTable.querySelectorAll('td');
 
@@ -1156,7 +1041,7 @@
                 if (!cell.classList.contains('fixed') && charIndex < cleanText.length) {
 
                     let emojiLength = 1;
-                    let detectedBudgetCost = 1;
+                    let detectedCharCost = 1;
                     let foundEmoji = null;
                     let tempString = cleanText.substring(charIndex);
 
@@ -1165,7 +1050,7 @@
                         if (tempString.startsWith(data.emoji)) {
                             if (!foundEmoji || data.emoji.length > foundEmoji.emoji.length) {
                                 foundEmoji = data;
-                                detectedBudgetCost = data.chars;
+                                detectedCharCost = data.chars;
                             }
                         }
                     });
@@ -1175,13 +1060,12 @@
                     } else {
                         // Bulunamazsa 1 karakter uzunluğunda ve 1 bütçe maliyetinde varsay
                         emojiLength = 1;
-                        detectedBudgetCost = 1;
+                        detectedCharCost = 1;
                     }
 
                     // Hücrenin içeriğini ve maliyetini ayarla
                     cell.innerHTML = cleanText.substring(charIndex, charIndex + emojiLength);
-                    cell.setAttribute('data-chars', detectedBudgetCost.toString());
-                    importedBudgetCost += detectedBudgetCost; // İçe aktarılan bütçeyi topla
+                    cell.setAttribute('data-chars', detectedCharCost.toString());
                     charIndex += emojiLength;
 
                 } else if (!cell.classList.contains('fixed') && charIndex >= cleanText.length) {
@@ -1191,17 +1075,13 @@
                 }
             }
 
-            // 6. Matrisin bütçe maliyetini ayarla ve yeniden düzenle
-            // reorganizeMatrix, bu noktada bütçe aşımına göre otomatik kırpmayı yapacaktır.
-            reorganizeMatrix();
+            // 6. Karakter sayımını güncelle
+            updateCharacterCount();
 
             const stats = calculateCurrentStats();
-            const maxBudget = getMaxAvailableBudget();
 
-            if (stats.currentBudgetCost < importedBudgetCost) {
-                 showNotification(`Hata: İçe aktarılan metin bütçe limitini aştı! Çizim otomatik olarak kırpıldı.`, 'error', 7000);
-            } else if (stats.totalChars > MAX_CHARACTERS) {
-                showNotification(`⚠️ UYARI: İçe aktarılan metin toplam ${stats.totalChars} görünür karakter içeriyor (limit: ${MAX_CHARACTERS}).`, 'warning', 7000);
+            if (stats.totalOutputCharCount > MAX_CHARACTERS) {
+                 showNotification(`⚠️ UYARI: İçe aktarılan metin toplam ${stats.totalOutputCharCount} karakter içeriyor (limit: ${MAX_CHARACTERS}). YouTube'da kesilebilir.`, 'error', 7000);
             }
 
 
@@ -1213,30 +1093,28 @@
         updateMatrixButton.addEventListener('click', async () => {
             const confirmed = await showConfirm(
                 "Matrisi Güncelle",
-                "İlk satır uzunluğunu değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?"
+                "İlk satır uzunluğunu veya matris boyutunu değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?"
             );
 
             if (confirmed) {
-                twoCharEmojisUsed = 0;
                 createMatrix();
                 showNotification('Matris başarıyla güncellendi!', 'success');
             }
         });
 
-        // Ayırıcı değiştiğinde matrisi yeniden organize et (V3.5 Dinamik Bütçe Kontrolü)
+        // Ayırıcı değiştiğinde SADECE karakter sayımını güncelle
         separatorSelect.addEventListener('change', () => {
             const newWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
             const currentDisplayedWidth = matrixTable.rows.length > 0 ? matrixTable.rows[0].cells.length : DEFAULT_MATRIX_WIDTH;
 
             // Eğer matris boyutu değişiyorsa (11x10 -> 10x10), matrisi yeniden oluştur.
             if (newWidth !== currentDisplayedWidth) {
-                 twoCharEmojisUsed = 0;
                  createMatrix(); // Matris boyutunu değiştirir ve temizler
                  showNotification(`⚠️ Matris boyutu ${currentDisplayedWidth}x${MATRIX_HEIGHT}'dan ${newWidth}x${MATRIX_HEIGHT}'a değiştirildi. Çizim temizlendi.`, 'warning');
             } else {
-                // Boyut aynıysa, sadece yeniden düzenle (yeni bütçe limitini uygula)
-                reorganizeMatrix();
-                const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
+                // Boyut aynıysa, sadece yeniden sayımı tetikle
+                updateCharacterCount();
+                const separatorName = SEPARATOR_MAP[separatorSelect.value].name;
                 showNotification(`Ayırıcı ${separatorName} olarak ayarlandı.`, 'info');
             }
         });
@@ -1244,22 +1122,17 @@
         copyButton.addEventListener('click', async () => {
             const drawingText = getDrawingText(false);
             const stats = calculateCurrentStats();
-            const totalChars = stats.totalChars;
-            const maxBudget = getMaxAvailableBudget();
+            const totalChars = stats.totalOutputCharCount;
 
-            if (stats.currentBudgetCost > maxBudget) {
-                 showNotification(`HATA: Kopyalama başarısız. Bütçe Maliyeti Aşıldı. ${stats.currentBudgetCost}/${maxBudget} Bütçe Birimi.`, 'error', 5000);
+            if (totalChars > MAX_CHARACTERS) {
+                 showNotification(`HATA: Kopyalama başarısız. Toplam karakter ${totalChars}/${MAX_CHARACTERS} limiti aşıyor.`, 'error', 5000);
                  return;
             }
 
-            if (totalChars > MAX_CHARACTERS) {
-                showNotification(`⚠️ UYARI: Çiziminiz ${totalChars} görünür karakter içeriyor (limit: ${MAX_CHARACTERS}). YouTube'da kesilebilir.`, 'warning', 4000);
-            }
-
             try {
-                const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text.match(/\(([^)]+)\)/)[1];
+                const separatorName = SEPARATOR_MAP[separatorSelect.value].name;
                 await navigator.clipboard.writeText(drawingText);
-                showNotification(`✅ Çizim panoya kopyalandı! (${stats.currentBudgetCost}/${maxBudget} Bütçe Birimi - ${separatorName} kullanılıyor)`, 'success');
+                showNotification(`✅ Çizim panoya kopyalandı! (${totalChars}/${MAX_CHARACTERS} Karakter - ${separatorName} kullanılıyor)`, 'success');
             } catch (err) {
                 console.error('Kopyalama başarısız:', err);
                 showNotification('❌ Kopyalama başarısız oldu. Lütfen tarayıcı izinlerini kontrol edin.', 'error');
@@ -1318,7 +1191,6 @@
             );
 
             if (confirmed) {
-                twoCharEmojisUsed = 0;
                 createMatrix();
                 showNotification('🧹 Çizim temizlendi!', 'success');
             }
@@ -1348,14 +1220,10 @@
                 });
 
                 updateSelectedEmojiDisplay();
-
-                // Başlangıçta bütçe limitini ayarla (ZWNJ varsayılan)
-                maxBudgetCostSpan.textContent = getMaxAvailableBudget();
-
                 createMatrix();
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.3.5 Hazır! (Dinamik Bütçe Düzeltmesi)', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.3.6 Hazır! (Tek Sınır Düzeltmesi)', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
