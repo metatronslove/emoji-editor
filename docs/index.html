@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fütüristik Emoji Matris Editörü V2.2</title>
+    <title>Kalp Emoji Piksel Sanatı Editörü</title>
     <style>
         /*
         ========================================
@@ -27,7 +27,7 @@
                 --bg-color: #1a1a2e;
                 --main-text: #e0eaf1;
                 --accent-color: #3f72af; /* Mavi-Mor Tonu */
-                --card-bg: rgba(25, 25, 45, 0.75);
+                --card-bg: rgba(25, 25, 45, 0.85);
                 --border-color: #3b3b64;
                 --fixed-bg: #2c2c4d;
                 --shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -125,7 +125,7 @@
 
         /*
         ========================================
-        3. BİLEŞEN STİLLERİ (CARD, MATRİS, PALET)
+        3. BİLEŞEN STİLLERİ (CARD, MATRİS, PALET, MODAL)
         ========================================
         */
         .card {
@@ -154,11 +154,79 @@
             align-items: center;
         }
 
-        /* KONTROL PANELİ STİLİ (Yeni Yerleşim) */
+        /* KONTROL PANELİ STİLİ */
         #controls-panel {
             max-width: 600px;
             margin: 0 auto 20px auto;
             width: 100%;
+        }
+
+        /* Kılavuz ve Onay Modal Stilleri */
+        #guide-modal, #confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #guide-modal.show, #confirm-modal.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content, .modal-content-guide {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            width: 90%;
+            text-align: left;
+            border: 2px solid var(--accent-color);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            color: white;
+            transition: background-color 0.2s;
+        }
+
+        .modal-btn.confirm { background-color: #28a745; }
+        .modal-btn.cancel { background-color: #dc3545; }
+        .modal-btn.confirm:hover { background-color: #218838; }
+        .modal-btn.cancel:hover { background-color: #c82333; }
+
+        #close-guide-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: opacity 0.2s;
         }
 
         /* Bilgi Paneli */
@@ -171,6 +239,7 @@
             max-width: 800px;
             text-align: center;
             border-left: 4px solid var(--accent-color);
+            font-size: 0.9em;
         }
 
         /* Kontrol Butonları */
@@ -182,11 +251,7 @@
             justify-content: center;
         }
 
-        #controls-panel > div {
-            padding-bottom: 10px;
-        }
-
-        /* YENİ: Ayırıcı Seçimi Stili */
+        /* Ayırıcı Seçimi Stili */
         #separator-select {
             padding: 8px;
             border-radius: 4px;
@@ -198,15 +263,7 @@
             flex-grow: 1;
         }
 
-        #controls-panel > div {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Düğme stilleri önceki gibi kalır */
+        /* Düğme stilleri */
         #controls-panel button {
             padding: 8px 12px;
             border: none;
@@ -227,7 +284,7 @@
         .btn-danger { background-color: #dc3545; color: white !important;}
         .btn-danger:hover { background-color: #c82333; }
 
-        /* Matris stilleri önceki gibi kalır */
+        /* Matris stilleri */
         #matrix-container {
             overflow-x: auto;
             margin-bottom: 30px;
@@ -266,6 +323,119 @@
             opacity: 0.7;
         }
 
+        /* Palet Stilleri */
+        #palette strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: var(--accent-color);
+        }
+
+        #selected-emoji-display {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 15px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: var(--fixed-bg);
+        }
+
+        #current-brush-emoji {
+            font-size: 24px;
+        }
+
+        #category-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .category-tab {
+            padding: 5px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: var(--fixed-bg);
+            color: var(--main-text);
+            font-size: 0.85em;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .category-tab.active {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        #color-options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .color-option {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            transition: border-color 0.1s;
+        }
+
+        .color-option:hover {
+            border-color: var(--accent-color);
+        }
+
+        .color-option.selected-color {
+            border-color: #ffc107;
+            box-shadow: 0 0 5px #ffc107;
+        }
+
+        .two-char-emoji:before {
+            content: '2';
+            position: absolute;
+            font-size: 8px;
+            color: #ff6b6b;
+            transform: translate(12px, -8px);
+            font-weight: bold;
+        }
+
+        /* BİLDİRİM SİSTEMİ */
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 18px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        #notification.info { background-color: #3f72af; }
+        #notification.success { background-color: #28a745; }
+        #notification.warning { background-color: #ffc107; color: #333; }
+        #notification.error { background-color: #dc3545; }
+
+
         /*
         ========================================
         4. RESPONSIVE DÜZENLEMELER
@@ -299,7 +469,6 @@
             #auxiliary-controls button {
                  flex-grow: 1;
             }
-            /* ... diğer mobil düzenlemeler ... */
         }
     </style>
 </head>
@@ -308,6 +477,7 @@
     <div id="background-grid"></div>
 
     <div id="notification"></div>
+
     <div id="confirm-modal">
         <div class="modal-content">
             <h3 id="modal-title">Emin misiniz?</h3>
@@ -318,25 +488,25 @@
             </div>
         </div>
     </div>
+
     <div id="guide-modal">
         <div class="modal-content-guide">
             <h3>📖 YouTube Sohbet Kılavuzu</h3>
+
             <div style="background-color: var(--fixed-bg); padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid var(--accent-color);">
-                <strong>🎯 ÖNEMLİ:</strong> İlk satır uzunluğunu doğru belirlemek, çiziminizin nickname'inizin hemen yanında başlaması için hayati öneme sahiptir.
+                <strong>🎯 ÖNEMLİ:</strong> **Filtre Atlatma Yöntemi**'ni kullanmak, **görünür karakter limitini (200)** veya **çizim alanınızı DARALTMAZ**. Sadece kopyalanan metne görünmez karakter(ler) ekler.
             </div>
+
             <ol style="margin-left: 20px; font-size: 0.95em;">
-                <li style="margin-bottom: 8px;">**Çizime başlamadan önce** "Panoya Kopyala" butonuna basın.</li>
-                <li style="margin-bottom: 8px;">YouTube sohbet kutusuna 100 adet siyah kalp yapıştırın (**🖤**).</li>
-                <li style="margin-bottom: 8px;">Bu mesajı **gönderin** ve sohbette görünmesini bekleyin.</li>
-                <li style="margin-bottom: 8px;">Gönderdiğiniz mesajda, **nickname'inizin yanında görünen kalp sayısını sayın** (Bu 3 ila 8 arasında bir değer olmalıdır).</li>
-                <li style="margin-bottom: 8px;">Bu sayıyı "İlk Satır Uzunluğu" olarak ayarlayın ve **Matrisi Güncelle**'ye basın.</li>
-                <li style="margin-bottom: 8px;">Artık çiziminizi yapmaya başlayabilirsiniz!</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** YouTube'da 100 adet **🖤** gönderin. Nickname'inizin yanında görünen kalp sayısını sayın. Bu sayıyı **"İlk Satır Uzunluğu"** olarak girin ve **Matrisi Güncelle**'ye basın.</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 2 (Spam Filtresi):** Çiziminizin YouTube sohbetinde görünmemesi durumunda, **Filtre Atlatma Yöntemi**'ni sırayla deneyin. Yeni eklenen seçenekler (LRM, RLM, DENEYSEL SIRA) daha agresif sonuçlar verebilir. Bu seçim, çizim alanınızı küçültmez.</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 3 (Kopyalama):** Çiziminizi tamamladıktan sonra **Panoya Kopyala** butonuna basın. Seçtiğiniz filtre atlatma karakteri veya sırası otomatik olarak eklenecektir.</li>
             </ol>
             <button id="close-guide-btn">Anladım, Kapat</button>
         </div>
     </div>
 
-    <h2>FÜTÜRİSTİK EMOJİ MATRİS YÖNETİCİSİ V.2.2</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.2.5</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -372,9 +542,13 @@
                     <label for="separator-select" style="color: var(--accent-color); white-space: nowrap;">Filtre Atlatma Yöntemi:</label>
                     <select id="separator-select">
                         <option value="none">Hiçbiri (Sadece Emojiler)</option>
-                        <option value="ZWNJ" selected>ZWNJ (Zero Width Non-Joiner - Aggressive)</option>
+                        <option value="ZWNJ" selected>ZWNJ (Zero Width Non-Joiner - Agresif)</option>
                         <option value="ZWSP">ZWSP (Zero Width Space)</option>
-                        <option value="HAIR">Hair Space (\u200A - Visible on some clients)</option>
+                        <option value="HAIR">Hair Space (\u200A - Daha Az Kısıtlayıcı)</option>
+                        <option value="LRM">LRM (Left-to-Right Mark - Yön Kontrol)</option>
+                        <option value="RLM">RLM (Right-to-Left Mark - Yön Kontrol)</option>
+                        <option value="ZWNBSP">ZWNBSP (Zero Width No-Break Space)</option>
+                        <option value="EXP_SEQ">DENEYSEL SIRA (Birden Fazla Görünmez Karakter)</option>
                     </select>
                 </div>
 
@@ -392,7 +566,7 @@
             </div>
 
             <div id="info-panel">
-                <span class="char-count">Kullanılan Karakter: <span id="currentChars">0</span>/200</span>
+                <span class="char-count">Kullanılan Görünür Karakter: <span id="currentChars">0</span>/200</span>
                 <span id="charWarning" class="warning" style="display: none;"> - ⚠️ Ekstra karakter maliyeti!</span>
             </div>
 
@@ -411,12 +585,16 @@
         const EMOJI_JSON_URL = 'emoji.json';
         const defaultHeart = '🖤';
 
-        // GÖRÜNMEZ KARAKTER MAP'İ
+        // GÖRÜNMEZ KARAKTER MAP'İ VE YENİ DENEYSEL EKLEMELER (V2.5)
         const SEPARATOR_MAP = {
             'none': '',
-            'ZWNJ': '\u200C', // Zero Width Non-Joiner
-            'ZWSP': '\u200B', // Zero Width Space
-            'HAIR': '\u200A'  // Hair Space
+            'ZWNJ': '\u200C',
+            'ZWSP': '\u200B',
+            'HAIR': '\u200A',
+            'LRM': '\u200E',
+            'RLM': '\u200F',
+            'ZWNBSP': '\uFEFF',
+            'EXP_SEQ': '\u200A\u200A\u200A\u200B' // Yüksek deneysel sıra (3xHair Space + 1xZWSP)
         };
 
         let emojiCategories = {};
@@ -449,14 +627,12 @@
         const modalCancel = document.getElementById('modal-cancel');
         const currentBrushEmoji = document.getElementById('current-brush-emoji');
         const currentBrushName = document.getElementById('current-brush-name');
-
-        // YENİ: Ayırıcı Seçimi
         const separatorSelect = document.getElementById('separator-select');
 
 
-        // --- DİĞER TEMEL FONKSİYONLAR (Kısaltıldı) ---
+        // --- DİĞER TEMEL FONKSİYONLAR ---
 
-        function showNotification(message, type = 'info', duration = 3000) { /* ... */
+        function showNotification(message, type = 'info', duration = 3000) {
             notification.textContent = message;
             notification.className = '';
             notification.classList.add(type);
@@ -467,7 +643,7 @@
             }, duration);
         }
 
-        function showConfirm(title, message) { /* ... */
+        function showConfirm(title, message) {
              return new Promise((resolve) => {
                 modalTitle.textContent = title;
                 modalMessage.textContent = message;
@@ -485,14 +661,14 @@
             });
         }
 
-        function calculateChatChars(emojiString) { /* ... */
+        function calculateChatChars(emojiString) {
             if (emojiString.length > 2) {
                 return 2;
             }
             return 1;
         }
 
-        async function loadEmojis() { /* ... */
+        async function loadEmojis() {
              try {
                 const response = await fetch(EMOJI_JSON_URL);
                 if (!response.ok) {
@@ -532,56 +708,47 @@
             }
         }
 
-        // --- YARDIMCI İSTATİSTİK FONKSİYONU (GÜNCELLENDİ) ---
+        // --- YARDIMCI İSTATİSTİK FONKSİYONU ---
 
         /**
          * Seçilen ayırıcıya göre matris kısıtlamasını hesaplar.
+         * Spam filtresi ayırıcıları (ZWNJ, ZWSP, RLM, vb.) YouTube limitine sayılmadığından, matris küçültme maliyetine eklenmez.
          */
         function calculateCurrentStats() {
-            let totalChars = 0; // YouTube Limit (Ayırıcı HARİÇ)
-            let extraCharCost = 0; // Matris Kısıtlamasına neden olan toplam maliyet
+            let totalChars = 0; // YouTube Görünür Karakter Limiti (200)
+            let extraCharCost = 0; // Matris Kısıtlamasına neden olan toplam maliyet (Sadece 2-char emojilerden gelir)
             let localTwoCharEmojisUsed = 0;
             const rows = matrixTable.rows;
 
-            // Ayırıcı sadece 'none' değilse maliyeti hesapla
-            const isSeparatorUsed = separatorSelect.value !== 'none';
-
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].cells;
-                let emojisInRow = 0;
 
                 for (let j = 0; j < cells.length; j++) {
                     if (!cells[j].classList.contains('fixed')) {
                         const chars = parseInt(cells[j].getAttribute('data-chars') || '1');
 
-                        totalChars += chars; // YOUTUBE LİMİTİ: SADECE GÖRÜNÜR EMOJİ KARAKTERLERİ
+                        // YOUTUBE LİMİTİ: SADECE GÖRÜNÜR EMOJİ KARAKTERLERİNİ SAY
+                        totalChars += chars;
 
                         if (chars === 2) {
                             localTwoCharEmojisUsed++;
-                            extraCharCost += 1; // 2-char emoji, 1 fazla karakter harcadı (matris maliyeti)
+                            // 2-char emoji, 1 fazla karakter harcadı (matris küçültme maliyeti)
+                            extraCharCost += 1;
                         }
-
-                        emojisInRow++;
                     }
-                }
-
-                // Ayırıcı Maliyeti (Her satırda N emoji varsa, N-1 ayırıcı kullanılır)
-                if (isSeparatorUsed && emojisInRow > 0) {
-                    // N-1 karakterin her biri matrisin küçülmesine neden olur.
-                    extraCharCost += (emojisInRow - 1);
                 }
             }
 
             return {
                 totalChars,
-                extraCharCost,
+                extraCharCost, // Sadece 2-char emojilerden gelen maliyet
                 localTwoCharEmojisUsed,
             };
         }
 
-        // --- MATRİS VE HESAPLAMA FONKSİYONLARI (Kısaltıldı) ---
+        // --- MATRİS VE HESAPLAMA FONKSİYONLARI ---
 
-        function createMatrix() { /* ... */
+        function createMatrix() {
             matrixTable.innerHTML = '';
             const firstRowLength = parseInt(firstRowLengthInput.value);
             const permanentFixedCount = MATRIX_WIDTH - firstRowLength;
@@ -622,16 +789,19 @@
             updateCharacterCount();
         }
 
-        function reorganizeMatrix() { /* ... */
+        function reorganizeMatrix() {
             const stats = calculateCurrentStats();
 
             const firstRowLength = parseInt(firstRowLengthInput.value);
             const permanentFixedCount = MATRIX_WIDTH - firstRowLength;
 
+            // Toplam ekstra maliyet (SADECE 2-char emojiler)
             const totalExtraChars = stats.extraCharCost;
 
+            // Toplam sabitlenmesi gereken hücre sayısı (Nickname Offset + 2-char emojilerin maliyeti)
             const totalFixedCount = permanentFixedCount + totalExtraChars;
 
+            // Sabitlemenin başladığı indis
             const startFixedIndex = MATRIX_WIDTH * MATRIX_HEIGHT - totalFixedCount;
 
             let cellIndex = 0;
@@ -640,7 +810,11 @@
                 for (let j = 0; j < MATRIX_WIDTH; j++) {
                     const cell = cells[j];
 
-                    const isFixedZone = (cellIndex < permanentFixedCount || cellIndex >= startFixedIndex);
+                    const isInitialFixed = (i === 0 && j < permanentFixedCount);
+                    const isLimitFixed = (cellIndex >= startFixedIndex);
+
+                    const isFixedZone = isInitialFixed || isLimitFixed;
+
                     const isCurrentlyFixed = cell.classList.contains('fixed');
 
                     if (isFixedZone) {
@@ -652,12 +826,14 @@
                         }
                     } else {
                         if (isCurrentlyFixed) {
-                            cell.innerHTML = defaultHeart;
-                            cell.classList.remove('fixed');
-                            cell.setAttribute('data-chars', '1');
-                            cell.addEventListener('click', () => {
-                                handleCellClick(cell);
-                            });
+                            if (!isInitialFixed) {
+                                cell.innerHTML = defaultHeart;
+                                cell.classList.remove('fixed');
+                                cell.setAttribute('data-chars', '1');
+                                cell.addEventListener('click', () => {
+                                    handleCellClick(cell);
+                                });
+                            }
                         }
                     }
                     cellIndex++;
@@ -674,21 +850,26 @@
 
             currentCharsSpan.textContent = totalChars;
 
-            if (stats.extraCharCost > 0) {
+            // UYARI METNİ GÜNCELLENDİ
+            if (stats.extraCharCost > 0 || separatorSelect.value !== 'none') {
                 charWarningSpan.style.display = 'inline';
 
-                // Sadece ayırıcı maliyetini hesapla
-                const invisibleSeparatorCost = stats.extraCharCost - twoCharEmojisUsed;
                 const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
+                const isSeparatorUsed = separatorSelect.value !== 'none';
 
                 let warningText = ` - ⚠️ `;
-                if(twoCharEmojisUsed > 0) warningText += `${twoCharEmojisUsed} adet 2 karakterlik emoji`;
 
-                if(twoCharEmojisUsed > 0 && invisibleSeparatorCost > 0) warningText += ' ve ';
+                if(stats.extraCharCost > 0) {
+                     warningText += `${stats.extraCharCost} adet 2 karakterlik emoji`;
+                }
 
-                if(invisibleSeparatorCost > 0) warningText += `${invisibleSeparatorCost} adet ${separatorName} ayırıcısı`;
+                if(isSeparatorUsed) {
+                    if (stats.extraCharCost > 0) warningText += ' ve ';
+                    warningText += `${separatorName} ayırıcısı kullanılıyor (Filtre Atlatma).`;
+                } else if (stats.extraCharCost > 0) {
+                    warningText += ' kullanılıyor.';
+                }
 
-                warningText += ' kullanıyorsunuz!';
                 charWarningSpan.textContent = warningText;
 
             } else {
@@ -697,15 +878,15 @@
 
             if (totalChars > MAX_CHARACTERS) {
                 currentCharsSpan.style.color = '#ff6b6b';
-                charWarningSpan.innerHTML += ' <strong>⚠️ LIMIT AŞILDI!</strong>';
+                charWarningSpan.innerHTML += ' <strong>⚠️ GÖRÜNÜR KARAKTER LİMİTİ AŞILDI!</strong>';
             } else {
                 currentCharsSpan.style.color = 'var(--accent-color)';
             }
         }
 
-        // --- PALET VE SEKMELER (Kısaltıldı) ---
+        // --- PALET VE SEKMELER (DEĞİŞİKLİK YOK) ---
 
-        function updateSelectedEmojiDisplay() { /* ... */
+        function updateSelectedEmojiDisplay() {
             currentBrushEmoji.textContent = selectedHeart.emoji;
             currentBrushName.textContent = ` (${selectedHeart.name})`;
 
@@ -717,7 +898,7 @@
             }
         }
 
-        function createCategoryTabs() { /* ... */
+        function createCategoryTabs() {
             categoryTabsContainer.innerHTML = '';
 
             Object.keys(emojiCategories).forEach(categoryName => {
@@ -743,7 +924,7 @@
             });
         }
 
-        function createPalette() { /* ... */
+        function createPalette() {
             colorOptionsContainer.innerHTML = '';
 
             if (!currentCategory || !emojiCategories[currentCategory]) {
@@ -781,7 +962,7 @@
             updateSelectedEmojiDisplay();
         }
 
-        // --- İÇE/DIŞA AKTARMA FONKSİYONLARI (GÜNCELLENDİ) ---
+        // --- İÇE/DIŞA AKTARMA FONKSİYONLARI ---
 
         /**
          * Çizimi düz emoji metni olarak döndürür.
@@ -818,7 +999,8 @@
             const textWithoutLineBreaks = text.replace(/[\s\n\r]/g, '');
 
             // Tüm ayırıcı karakterleri temizle (İçe aktarma için)
-            const allSeparatorsRegex = new RegExp(`[${SEPARATOR_MAP['ZWNJ']}${SEPARATOR_MAP['ZWSP']}${SEPARATOR_MAP['HAIR']}]`, 'g');
+            const allSeparatorCharacters = Object.values(SEPARATOR_MAP).join('');
+            const allSeparatorsRegex = new RegExp(`[${allSeparatorCharacters}]`, 'g');
             const cleanText = textWithoutLineBreaks.replace(allSeparatorsRegex, '');
 
             createMatrix();
@@ -873,15 +1055,15 @@
 
             const stats = calculateCurrentStats();
             if (stats.totalChars > MAX_CHARACTERS) {
-                showNotification(`Hata: İçe aktarılan metin toplam ${stats.totalChars} karakter içeriyor (Limit: ${MAX_CHARACTERS}). İçe aktarma başarılı oldu ancak limit aşıldı!`, 'warning', 7000);
+                showNotification(`Hata: İçe aktarılan metin toplam ${stats.totalChars} görünür karakter içeriyor (Limit: ${MAX_CHARACTERS}). İçe aktarma başarılı oldu ancak limit aşıldı!`, 'warning', 7000);
             }
 
             return true;
         }
 
-        // --- OLAY DİNLEYİCİLERİ (GÜNCELLENDİ) ---
+        // --- OLAY DİNLEYİCİLERİ ---
 
-        updateMatrixButton.addEventListener('click', async () => { /* ... */
+        updateMatrixButton.addEventListener('click', async () => {
             const confirmed = await showConfirm(
                 "Matrisi Güncelle",
                 "İlk satır uzunluğunu değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?"
@@ -894,11 +1076,10 @@
             }
         });
 
-        // YENİ OLAY DİNLEYİCİSİ: Ayırıcı değiştiğinde matrisi yeniden düzenle
+        // Ayırıcı değiştiğinde sadece bilgi ver
         separatorSelect.addEventListener('change', () => {
-            reorganizeMatrix();
             updateCharacterCount();
-            showNotification(`Ayırıcı ${separatorSelect.options[separatorSelect.selectedIndex].text} olarak ayarlandı.`, 'info');
+            showNotification(`Ayırıcı ${separatorSelect.options[separatorSelect.selectedIndex].text} olarak ayarlandı. Görünür karakter ve çizim alanı etkilenmeyecektir.`, 'info');
         });
 
         copyButton.addEventListener('click', async () => {
@@ -906,21 +1087,21 @@
             const totalChars = parseInt(currentCharsSpan.textContent);
 
             if (totalChars > MAX_CHARACTERS) {
-                showNotification(`⚠️ UYARI: Çiziminiz ${totalChars} karakter içeriyor (limit: ${MAX_CHARACTERS}). YouTube'da kesilebilir.`, 'warning', 4000);
+                showNotification(`⚠️ UYARI: Çiziminiz ${totalChars} görünür karakter içeriyor (limit: ${MAX_CHARACTERS}). YouTube'da kesilebilir.`, 'warning', 4000);
                 return;
             }
 
             try {
                 const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
                 await navigator.clipboard.writeText(drawingText);
-                showNotification(`✅ Çizim panoya kopyalandı! (${totalChars}/${MAX_CHARACTERS} karakter - ${separatorName} kullanılıyor)`, 'success');
+                showNotification(`✅ Çizim panoya kopyalandı! (${totalChars}/${MAX_CHARACTERS} görünür karakter - ${separatorName} kullanılıyor)`, 'success');
             } catch (err) {
                 console.error('Kopyalama başarısız:', err);
                 showNotification('❌ Kopyalama başarısız oldu. Lütfen tarayıcı izinlerini kontrol edin.', 'error');
             }
         });
 
-        importButton.addEventListener('click', async () => { /* ... */
+        importButton.addEventListener('click', async () => {
             try {
                 const text = await navigator.clipboard.readText();
                 if (applyDrawingText(text)) {
@@ -932,7 +1113,7 @@
             }
         });
 
-        saveButton.addEventListener('click', () => { /* ... */
+        saveButton.addEventListener('click', () => {
             const drawingText = getDrawingText(true);
             const blob = new Blob([drawingText], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
@@ -946,11 +1127,11 @@
             showNotification('💾 Çizim başarıyla kaydedildi!', 'success');
         });
 
-        loadButton.addEventListener('click', () => { /* ... */
+        loadButton.addEventListener('click', () => {
             fileInput.click();
         });
 
-        fileInput.addEventListener('change', (event) => { /* ... */
+        fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -965,7 +1146,7 @@
             }
         });
 
-        clearButton.addEventListener('click', async () => { /* ... */
+        clearButton.addEventListener('click', async () => {
             const confirmed = await showConfirm(
                 "Çizimi Temizle",
                 "Mevcut çizimi temizlemek istediğinizden emin misiniz?"
@@ -989,6 +1170,9 @@
 
         // --- BAŞLANGIÇ ---
         document.addEventListener('DOMContentLoaded', async () => {
+            // Örnek emoji.json'un var olduğunu varsayarak ilerliyoruz
+            // Lütfen bu dosyayı projenizin ana dizinine eklediğinizden emin olun.
+            // Örn: [{"emoji": "🖤", "chars": 1, "description": "black heart", "category": "Hearts"}, ...]
             await loadEmojis();
 
             if (Object.keys(emojiCategories).length > 0) {
@@ -1005,7 +1189,7 @@
                 createMatrix();
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Fütüristik Editör Hazır! Kılavuzu kontrol edin.', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.2.5 Hazır!', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
