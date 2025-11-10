@@ -507,7 +507,7 @@
         </div>
     </div>
 
-    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.2.7</h2>
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.2.8</h2>
 
     <div id="main-layout">
         <div id="left-panel">
@@ -543,13 +543,13 @@
                     <label for="separator-select" style="color: var(--accent-color); white-space: nowrap;">Filtre Atlatma Yöntemi:</label>
                     <select id="separator-select">
                         <option value="none">Hiçbiri (Max 100 Emoji)</option>
-                        <option value="ZWNJ" selected>ZWNJ (Zero Width Non-Joiner - Max 69 Emoji)</option>
-                        <option value="ZWSP">ZWSP (Zero Width Space - Max 69 Emoji)</option>
-                        <option value="HAIR">Hair Space (\u200A - Max 69 Emoji)</option>
-                        <option value="LRM">LRM (Left-to-Right Mark - Max 69 Emoji)</option>
-                        <option value="RLM">RLM (Right-to-Left Mark - Max 69 Emoji)</option>
-                        <option value="ZWNBSP">ZWNBSP (Zero Width No-Break Space - Max 69 Emoji)</option>
-                        </select>
+                        <option value="ZWNJ" selected>ZWNJ (Max 69 Emoji)</option>
+                        <option value="ZWSP">ZWSP (Max 69 Emoji)</option>
+                        <option value="HAIR">Hair Space (Max 69 Emoji)</option>
+                        <option value="LRM">LRM (Yön Kontrol - Max 69 Emoji)</option>
+                        <option value="RLM">RLM (Yön Kontrol - Max 69 Emoji)</option>
+                        <option value="ZWNBSP">ZWNBSP (Max 69 Emoji)</option>
+                    </select>
                 </div>
 
                 <div id="auxiliary-controls" style="flex-direction: column; gap: 8px; width: 100%;">
@@ -578,14 +578,14 @@
     </div>
 
     <script>
-        // --- TEMEL TANIMLAMALAR ---
+        // --- TEMEL TANIMLAMA VE SABİTLER ---
         const MATRIX_WIDTH = 11;
         const MATRIX_HEIGHT = 10;
         const MAX_CHARACTERS = 200;
         const EMOJI_JSON_URL = 'emoji.json';
         const defaultHeart = '🖤';
 
-        // GÖRÜNMEZ KARAKTER MAP'İ VE GÜNCEL EKLEMELER (V2.7)
+        // GÖRÜNMEZ KARAKTER MAP'İ (V2.8)
         // EXP_SEQ kaldırıldı ve RLM/LRM eklendi.
         const SEPARATOR_MAP = {
             'none': '',
@@ -596,6 +596,10 @@
             'RLM': '\u200F',
             'ZWNBSP': '\uFEFF',
         };
+
+        // DENEYSEL OLARAK BULUNAN PİKSEL LİMİTLERİ (V2.8 KURALI)
+        const MAX_EMOJI_CELLS_NORMAL = 100;
+        const MAX_EMOJI_CELLS_WITH_SEPARATOR = 69;
 
         let emojiCategories = {};
         let selectedHeart = { emoji: defaultHeart, chars: 1, name: 'black heart' };
@@ -713,12 +717,10 @@
         // --- YARDIMCI İSTATİSTİK FONKSİYONU ---
 
         /**
-         * Toplam görünür karakter sayısını ve 2-char emoji maliyetini hesaplar.
-         * Matrisin şeklini kısıtlayan ana faktör 69/100 emoji limitidir, 2-char emojiler sadece 200 karakter limitine sayılır.
+         * 200 karakterlik *görünür* limiti (info paneli için) ve 2-char emoji sayısını hesaplar.
          */
         function calculateCurrentStats() {
             let totalChars = 0; // YouTube Görünür Karakter Limiti (200)
-            let extraCharCost = 0; // Matris Kısıtlamasına neden olan toplam maliyet (Sadece 2-char emojilerden gelir)
             let localTwoCharEmojisUsed = 0;
             const rows = matrixTable.rows;
 
@@ -728,14 +730,10 @@
                 for (let j = 0; j < cells.length; j++) {
                     if (!cells[j].classList.contains('fixed')) {
                         const chars = parseInt(cells[j].getAttribute('data-chars') || '1');
-
-                        // YOUTUBE LİMİTİ: SADECE GÖRÜNÜR EMOJİ KARAKTERLERİNİ SAY
                         totalChars += chars;
 
                         if (chars === 2) {
                             localTwoCharEmojisUsed++;
-                            // 2-char emoji, 1 fazla karakter harcadı (200 limitine karşı maliyet)
-                            extraCharCost += 1;
                         }
                     }
                 }
@@ -743,7 +741,6 @@
 
             return {
                 totalChars,
-                extraCharCost, // 2-char emojilerin 1'den fazla getirdiği karakter sayısı
                 localTwoCharEmojisUsed,
             };
         }
@@ -787,31 +784,31 @@
             cell.innerHTML = selectedHeart.emoji;
             cell.setAttribute('data-chars', selectedHeart.chars.toString());
 
-            reorganizeMatrix();
+            // 2-char emoji eklemek 200 limitini etkiler, ancak 69/100 piksel limitini etkilemez (V2.8 kuralı).
+            // Bu yüzden reorganizeMatrix() çağrısına gerek yoktur.
+            // reorganizeMatrix();
             updateCharacterCount();
         }
 
+        /**
+         * Matrisi 69/100 kuralına göre yeniden düzenler (V2.8).
+         */
         function reorganizeMatrix() {
             const firstRowLength = parseInt(firstRowLengthInput.value);
             const permanentFixedCount = MATRIX_WIDTH - firstRowLength;
 
-            // YENİ KISITLAMA MANTIĞI (V2.7):
-            // Kullanıcı verisine göre:
-            // Ayrıcı yoksa: Max 100 emoji hücresi
-            // Ayrıcı varsa: Max 69 emoji hücresi
-
             const isSeparatorUsed = separatorSelect.value !== 'none';
-            const targetMaxCells = isSeparatorUsed ? 69 : 100; // Kullanılabilecek max emoji hücresi
-
-            // Matrisin toplam 110 hücresi var. Toplam kaç hücrenin limit nedeniyle sabitlenmesi gerekiyor?
-            // 110 - 100 = 10 VEYA 110 - 69 = 41
-            const cellsToFixByLimit = MATRIX_WIDTH * MATRIX_HEIGHT - targetMaxCells;
+            // V2.8 KURALI: Kullanılabilecek piksel (emoji) sayısı
+            const targetMaxCells = isSeparatorUsed ? MAX_EMOJI_CELLS_WITH_SEPARATOR : MAX_EMOJI_CELLS_NORMAL;
 
             // Toplam sabitlenmesi gereken hücre sayısı (Nickname Offset + Limit Kısıtlaması)
-            const totalFixedCount = permanentFixedCount + cellsToFixByLimit;
+            const cellsToFixByLimit = (MATRIX_WIDTH * MATRIX_HEIGHT - permanentFixedCount) - targetMaxCells;
+            const totalDynamicFix = Math.max(0, cellsToFixByLimit); // Negatif olamaz
+
+            const totalFixedCount = permanentFixedCount + totalDynamicFix;
 
             // Sabitlemenin başladığı indis
-            const startFixedIndex = MATRIX_WIDTH * MATRIX_HEIGHT - totalFixedCount;
+            const startFixedIndex = MATRIX_WIDTH * MATRIX_HEIGHT - totalDynamicFix;
 
             let cellIndex = 0;
             for (let i = 0; i < MATRIX_HEIGHT; i++) {
@@ -820,9 +817,13 @@
                     const cell = cells[j];
 
                     const isInitialFixed = (i === 0 && j < permanentFixedCount);
+                    // DİKKAT: V2.8 Düzeltmesi: startFixedIndex artık sadece dinamik kısıtlamayı temsil eder.
                     const isLimitFixed = (cellIndex >= startFixedIndex);
 
-                    const isFixedZone = isInitialFixed || isLimitFixed;
+                    // isInitialFixed zaten 0'dan başladığı için, isLimitFixed'in 0-X aralığını
+                    // etkilememesi gerekir.
+
+                    const isFixedZone = isInitialFixed || (isLimitFixed && !isInitialFixed);
 
                     const isCurrentlyFixed = cell.classList.contains('fixed');
 
@@ -848,7 +849,6 @@
                     cellIndex++;
                 }
             }
-            // Statiklerin güncellenmesi, yeni sınırlamayı kullanıcıya gösterir.
             updateCharacterCount();
         }
 
@@ -862,23 +862,22 @@
             currentCharsSpan.textContent = totalChars;
 
             // UYARI METNİ GÜNCELLENDİ
-            if (stats.extraCharCost > 0 || separatorSelect.value !== 'none') {
+            if (twoCharEmojisUsed > 0 || separatorSelect.value !== 'none') {
                 charWarningSpan.style.display = 'inline';
 
                 const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
                 const isSeparatorUsed = separatorSelect.value !== 'none';
-                const currentMaxEmojiLimit = isSeparatorUsed ? 69 : 100;
 
                 let warningText = ` - ⚠️ `;
 
-                if(stats.extraCharCost > 0) {
-                     warningText += `${stats.extraCharCost} adet 2 karakterlik emoji (Ekstra Görünür Karakter Maliyeti)`;
+                if(twoCharEmojisUsed > 0) {
+                     warningText += `${twoCharEmojisUsed} adet 2 karakterlik emoji (Ekstra Görünür Karakter Maliyeti)`;
                 }
 
                 if(isSeparatorUsed) {
-                    if (stats.extraCharCost > 0) warningText += ' ve ';
-                    warningText += `${separatorName} ayırıcısı kullanılıyor (Maksimum ${currentMaxEmojiLimit} Emoji).`;
-                } else if (stats.extraCharCost > 0) {
+                    if (twoCharEmojisUsed > 0) warningText += ' ve ';
+                    warningText += `${separatorName} ayırıcısı kullanılıyor (Filtre Atlatma).`;
+                } else if (twoCharEmojisUsed > 0) {
                     warningText += ' kullanılıyor.';
                 }
 
@@ -1007,6 +1006,25 @@
             return formatted ? result.join('\n') : result.join('');
         }
 
+        // V2.8: Kullanılabilir piksel sayısını alır (69 veya 100/105)
+        function getAvailablePixelCount() {
+            const firstRowLength = parseInt(firstRowLengthInput.value);
+            const permanentFixedCount = MATRIX_WIDTH - firstRowLength;
+
+            const isSeparatorUsed = separatorSelect.value !== 'none';
+            const targetMaxCells = isSeparatorUsed ? MAX_EMOJI_CELLS_WITH_SEPARATOR : MAX_EMOJI_CELLS_NORMAL;
+
+            // Kullanılabilir alan, hedeflenen max hücreden nickname offset'inin çıkarılmasıdır (Eğer 100/69 kuralı toplam hücre ise).
+            // Eğer 100/69 kuralı ÇİZİLEBİLİR hücre ise:
+            // return targetMaxCells;
+
+            // 110 - (nickname offset) - (kısıtlama)
+            const cellsToFixByLimit = (MATRIX_WIDTH * MATRIX_HEIGHT - permanentFixedCount) - targetMaxCells;
+            const totalDynamicFix = Math.max(0, cellsToFixByLimit);
+
+            return (MATRIX_WIDTH * MATRIX_HEIGHT) - permanentFixedCount - totalDynamicFix;
+        }
+
         function applyDrawingText(text) {
             const textWithoutLineBreaks = text.replace(/[\s\n\r]/g, '');
 
@@ -1015,7 +1033,14 @@
             const allSeparatorsRegex = new RegExp(`[${allSeparatorCharacters}]`, 'g');
             const cleanText = textWithoutLineBreaks.replace(allSeparatorsRegex, '');
 
-            createMatrix();
+            // İçe aktarma sırasında 69/100 kuralını kontrol et
+            const maxPixels = getAvailablePixelCount();
+            if (cleanText.length > maxPixels) {
+                 showNotification(`Hata: İçe aktarılan metin ${cleanText.length} emoji içeriyor. Mevcut ayar (Filtre: ${separatorSelect.value}) ile izin verilen maksimum emoji sayısı ${maxPixels}.`, 'error', 7000);
+                 return false;
+            }
+
+            createMatrix(); // Matrisi temizle ve 69/100 kuralına göre yeniden çiz
 
             const allEmojis = Object.values(emojiCategories).flatMap(category => Object.values(category));
 
@@ -1062,7 +1087,7 @@
                 }
             }
 
-            reorganizeMatrix();
+            // reorganizeMatrix(); // createMatrix() zaten bunu çağırdı
             updateCharacterCount();
 
             const stats = calculateCurrentStats();
@@ -1088,27 +1113,29 @@
             }
         });
 
-        // Ayırıcı değiştiğinde hem matrisi yeniden organize et hem de uyarıyı güncelle
+        // Ayırıcı değiştiğinde matrisi yeniden organize et
         separatorSelect.addEventListener('change', () => {
             reorganizeMatrix();
             const separatorName = separatorSelect.options[separatorSelect.selectedIndex].text;
-            showNotification(`Ayırıcı ${separatorName} olarak ayarlandı.`, 'info');
+            showNotification(`Ayırıcı ${separatorName} olarak ayarlandı. Matris alanı kısıtlandı.`, 'info');
         });
 
         copyButton.addEventListener('click', async () => {
             const drawingText = getDrawingText(false);
             const totalChars = parseInt(currentCharsSpan.textContent);
-            const isSeparatorUsed = separatorSelect.value !== 'none';
-            const maxEmojiLimit = isSeparatorUsed ? 69 : 100;
+
+            // Kopyalama sırasında 69/100 kuralını kontrol et
+            const maxPixels = getAvailablePixelCount();
+            const currentPixels = document.querySelectorAll('#matrix td:not(.fixed)').length;
+
+            if (currentPixels > maxPixels) {
+                 showNotification(`HATA: Kopyalama başarısız. Matris kuralı ihlali. ${currentPixels}/${maxPixels} piksel.`, 'error', 5000);
+                 return;
+            }
 
             if (totalChars > MAX_CHARACTERS) {
                 showNotification(`⚠️ UYARI: Çiziminiz ${totalChars} görünür karakter içeriyor (limit: ${MAX_CHARACTERS}). YouTube'da kesilebilir.`, 'warning', 4000);
                 return;
-            }
-
-            if (document.querySelectorAll('#matrix td:not(.fixed)').length > maxEmojiLimit) {
-                 showNotification(`⚠️ HATA: Matris kısıtlaması nedeniyle kopyalama başarısız oldu. Matrisin maksimum ${maxEmojiLimit} emoji içermesi gerekir.`, 'error', 5000);
-                 return;
             }
 
             try {
@@ -1206,7 +1233,7 @@
                 createMatrix();
                 createCategoryTabs();
                 createPalette();
-                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.2.7 Hazır!', 'info', 4000);
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.2.8 Hazır!', 'info', 4000);
             } else {
                 showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
             }
