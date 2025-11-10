@@ -135,7 +135,7 @@ Bu proje MIT lisansı altında lisanslanmıştır - detaylar için [LICENSE](LIC
 ## 👨‍💻 Geliştirici
 
 **One Fan Club Rocks**
-- GitHub: [@username](https://github.com/metatronslove)
+- GitHub: [@metatronslove](https://github.com/metatronslove)
 
 ## 🙏 Teşekkürler
 
