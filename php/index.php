@@ -1,0 +1,1710 @@
+<?php
+require_once 'config.php';
+
+// Veritabanı bağlantısını kur ve sayaçları güncelle
+// Burada getDbConnection() çağrılır, sayaçlar güncellenir ve $counters dizisi oluşturulur.
+require_once 'counter_manager.php';
+?>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalp Emoji Piksel Sanatı Editörü</title>
+    <style>
+        /*
+        ========================================
+        1. TEMEL VE TEMA TANIMLARI (DARK/LIGHT)
+        ========================================
+        */
+        :root {
+            /* Light Mode Varsayılanları */
+            --bg-color-light: #f0f3f8;
+            --main-text-light: #2c3e50;
+            --accent-color-light: #007bff;
+            --card-bg-light: rgba(255, 255, 255, 0.85);
+            --border-color-light: #e0e6ed;
+            --fixed-bg-light: #d4e3f5;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dark Mode Ayarları */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1a1a2e;
+                --main-text: #e0eaf1;
+                --accent-color: #3f72af; /* Mavi-Mor Tonu */
+                --card-bg: rgba(25, 25, 45, 0.85);
+                --border-color: #3b3b64;
+                --fixed-bg: #2c2c4d;
+                --shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        /* Fallback ve Light Mode Uygulama */
+        :root {
+            --bg-color: var(--bg-color-light);
+            --main-text: var(--main-text-light);
+            --accent-color: var(--accent-color-light);
+            --card-bg: var(--card-bg-light);
+            --border-color: var(--border-color-light);
+            --fixed-bg: var(--fixed-bg-light);
+            --shadow: var(--shadow-light);
+        }
+
+        /* Zorunlu Dark Mode (JS ile eklenecek) */
+        body.dark-mode {
+            --bg-color: #1a1a2e;
+            --main-text: #e0eaf1;
+            --accent-color: #3f72af;
+            --card-bg: rgba(25, 25, 45, 0.85);
+            --border-color: #3b3b64;
+            --fixed-bg: #2c2c4d;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        /*
+        ========================================
+        2. ANATOMİ VE ARKA PLAN
+        ========================================
+        */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Space Mono', 'Segoe UI', monospace, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+            color: var(--main-text);
+            background-color: var(--bg-color);
+            transition: background-color 0.5s, color 0.5s;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Fütüristik Hareketli Arka Plan */
+        #background-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.1;
+            background:
+                linear-gradient(to right, var(--accent-color) 1px, transparent 1px) 0 0,
+                linear-gradient(to bottom, var(--accent-color) 1px, transparent 1px) 0 0;
+            background-size: 50px 50px;
+            animation: grid-flow 60s linear infinite;
+        }
+
+        @keyframes grid-flow {
+            from { background-position: 0 0; }
+            to { background-position: 500px 500px; }
+        }
+
+        h2 {
+            color: var(--accent-color);
+            margin-bottom: 25px;
+            font-weight: 700;
+            text-align: center;
+            width: 100%;
+            text-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+            z-index: 2;
+        }
+
+        /* Ana İçerik Konteyneri (Desktop Yerleşimi için) */
+        #main-layout {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1400px;
+            z-index: 2;
+            margin-top: 15px;
+        }
+
+        /*
+        ========================================
+        3. BİLEŞEN STİLLERİ (CARD, MATRİS, PALET, MODAL)
+        ========================================
+        */
+        .card {
+            background-color: var(--card-bg);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            transition: background-color 0.5s, border-color 0.5s;
+            width: 100%;
+        }
+
+        /* Sol Kontrol Paneli (SADECE PALETİ İÇERİR) */
+        #left-panel {
+            width: 350px;
+            flex-shrink: 0;
+        }
+
+        /* Sağ Ana Alan (Matris, Bilgi VE KONTROLLER) */
+        #right-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* KONTROL PANELİ STİLİ */
+        #controls-panel {
+            max-width: 600px;
+            margin: 0 auto 20px auto;
+            width: 100%;
+        }
+
+        /* Kılavuz ve Onay Modal Stilleri */
+        #guide-modal, #confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #guide-modal.show, #confirm-modal.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content, .modal-content-guide {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            width: 90%;
+            text-align: left;
+            border: 2px solid var(--accent-color);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            color: white;
+            transition: background-color 0.2s;
+        }
+
+        .modal-btn.confirm { background-color: #28a745; }
+        .modal-btn.cancel { background-color: #dc3545; }
+        .modal-btn.confirm:hover { background-color: #218838; }
+        .modal-btn.cancel:hover { background-color: #c82333; }
+
+        #close-guide-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        /* Bilgi Paneli */
+        #info-panel {
+            background-color: var(--fixed-bg);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            border-left: 4px solid var(--accent-color);
+            font-size: 0.9em;
+        }
+
+        /* Kontrol Butonları */
+        #main-controls, #auxiliary-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Ayırıcı Seçimi Stili */
+        #separator-select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--fixed-bg);
+            color: var(--main-text);
+            font-size: 14px;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+
+        /* Düğme stilleri */
+        #controls-panel button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+            color: var(--main-text);
+        }
+
+        .btn-primary { background-color: var(--accent-color); color: white !important;}
+        .btn-primary:hover { opacity: 0.85; }
+        .btn-success { background-color: #28a745; color: white !important;}
+        .btn-success:hover { background-color: #218838; }
+        .btn-warning { background-color: #ffc107; color: var(--main-text) !important;}
+        .btn-warning:hover { background-color: #e0a800; }
+        .btn-danger { background-color: #dc3545; color: white !important;}
+        .btn-danger:hover { background-color: #c82333; }
+
+        /* Matris stilleri */
+        #matrix-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            max-height: 80vh; /* Yüksek matris için limit */
+            overflow-y: auto;
+        }
+
+        #matrix {
+            border-collapse: collapse;
+            table-layout: fixed;
+            background-color: var(--card-bg);
+            border: 4px solid var(--accent-color);
+            border-radius: 8px;
+            box-shadow: 0 0 20px var(--accent-color), 0 8px 25px rgba(0, 0, 0, 0.2);
+            margin: 0 auto;
+            transition: background-color 0.5s, border-color 0.5s, box-shadow 0.5s;
+        }
+
+        #matrix td {
+            width: 35px;
+            height: 35px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 20px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.1s, border-color 0.5s;
+        }
+
+        .fixed {
+            cursor: not-allowed !important;
+            background-color: var(--fixed-bg) !important;
+            color: var(--main-text);
+            border: 1px solid var(--border-color);
+            opacity: 0.7;
+        }
+
+        /* Kırpılan Hücre Stili (AUTO-CLIPPING) */
+        .clipped {
+            background-color: rgba(220, 53, 69, 0.3) !important; /* Yarı saydam kırmızı */
+            cursor: not-allowed !important;
+            opacity: 0.5;
+            position: relative;
+            pointer-events: none; /* Tıklamayı tamamen devre dışı bırak */
+        }
+        .clipped:after {
+            content: '✂️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+
+        /* Palet Stilleri */
+        #palette strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: var(--accent-color);
+        }
+
+        #selected-emoji-display {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 15px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: var(--fixed-bg);
+        }
+
+        #current-brush-emoji {
+            font-size: 24px;
+        }
+
+        #category-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .category-tab {
+            padding: 5px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: var(--fixed-bg);
+            color: var(--main-text);
+            font-size: 0.85em;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .category-tab.active {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        #color-options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .color-option {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            transition: border-color 0.1s;
+            position: relative;
+        }
+
+        .color-option:hover {
+            border-color: var(--accent-color);
+        }
+
+        .color-option.selected-color {
+            border-color: #ffc107;
+            box-shadow: 0 0 5px #ffc107;
+        }
+
+        /* Birden fazla karakter maliyeti olan emojiler için gösterge */
+        .multi-char-emoji:before {
+            content: attr(data-chars); /* Dinamik olarak uzunluğu göster */
+            position: absolute;
+            font-size: 8px;
+            color: #ff6b6b;
+            transform: translate(12px, -8px);
+            font-weight: bold;
+        }
+
+        /* BİLDİRİM SİSTEMİ */
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 18px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        #notification.info { background-color: #3f72af; }
+        #notification.success { background-color: #28a745; }
+        #notification.warning { background-color: #ffc107; color: #333; }
+        #notification.error { background-color: #dc3545; }
+
+
+        /*
+        ========================================
+        4. RESPONSIVE DÜZENLEMELER
+        ========================================
+        */
+        @media (max-width: 1024px) {
+            #main-layout {
+                flex-direction: column;
+                gap: 0;
+            }
+            #left-panel {
+                width: 100%;
+            }
+            #controls-panel {
+                max-width: 100%;
+                margin: 0 0 20px 0;
+            }
+            #matrix-container {
+                max-height: 60vh; /* Mobil cihazlarda daha az yer kaplama */
+            }
+        }
+
+        @media (max-width: 600px) {
+            #controls-panel > div {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #controls-panel button, #controls-panel input, #controls-panel label, #separator-select {
+                width: 100%;
+            }
+            #auxiliary-controls {
+                 flex-direction: row !important;
+            }
+            #auxiliary-controls button {
+                 flex-grow: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="background-grid"></div>
+
+    <div id="notification"></div>
+
+    <div id="confirm-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Emin misiniz?</h3>
+            <p id="modal-message">Bu işlem geri alınamaz.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn confirm" id="modal-confirm">Evet</button>
+                <button class="modal-btn cancel" id="modal-cancel">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="guide-modal">
+        <div class="modal-content-guide">
+            <h3>📖 YouTube Sohbet Kılavuzu</h3>
+
+            <div style="background-color: var(--fixed-bg); padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid var(--accent-color);">
+                <strong>🎯 ÖNEMLİ:</strong> Uygulama, çiziminizin toplam maliyetinin **200 karakteri** aşmamasını otomatik olarak garantiler.
+            </div>
+
+            <ol style="margin-left: 20px; font-size: 0.95em;">
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 1 (İlk Satır Ayarı):** İlk satırda kaç adet emoji pikseli **çizebileceğinizi** belirleyin (Genellikle 5 veya 6'dır). Bu, nickname'inizin kapladığı alanı otomatik hesaplar. **(❌ ile işaretli hücreler çıktıya dahil edilmez.)**</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 2 (Filtre Atlatma):** Çiziminizin YouTube sohbetinde görünmemesi durumunda, **Filtre Atlatma Yöntemi**'ni sırayla deneyin. Bu karakterler, çiziminizin toplam karakter sayısına eklenir.</li>
+                <li style="margin-bottom: 8px;">**Kılavuz Adım 3 (Kopyalama):** Çiziminizi tamamladıktan sonra **Panoya Kopyala** butonuna basın. Çıktınızın 200 karakteri asla aşmadığından emin olabilirsiniz. **Kırpılan (✂️) pikseller çıktıya dahil edilmez.**</li>
+            </ol>
+            <button id="close-guide-btn">Anladım, Kapat</button>
+        </div>
+    </div>
+
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.5 (Sezgisel Giriş Düzeltmesi)</h2>
+
+    <div id="main-layout">
+        <div id="left-panel">
+        <div id="auth-controls">
+            <?php if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in']): ?>
+            <p>Hoş geldin, **<?php echo htmlspecialchars($_SESSION['username']); ?>**!</p>
+            <button id="logoutButton" class="btn-danger">Çıkış Yap</button>
+            <button id="profileButton" class="btn-primary">Profilim</button>
+            <?php else: ?>
+            <a href="login.php" class="btn-primary" style="text-decoration: none; padding: 8px 12px; border-radius: 6px;">Google ile Oturum Aç</a>
+            <?php endif; ?>
+        </div>
+            <div class="card" id="palette">
+                <strong>Fırça Rengi Seçin:</strong>
+
+                <div id="selected-emoji-display">
+                    <span style="font-weight: normal;">Seçili Emoji:</span>
+                    <span id="current-brush-emoji">🖤</span>
+                    <span id="current-brush-name"> (black heart)</span>
+                </div>
+
+                <div id="category-tabs">
+                </div>
+
+                <div id="emoji-container">
+                    <div id="color-options-container">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="right-panel">
+            <div class="card" id="controls-panel">
+                 <div id="main-controls" style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
+                    <label for="firstRowLength" style="color: var(--accent-color);">İlk Satır Çizim Piksel Sayısı (0-11):</label>
+                    <input type="number" id="firstRowLength" value="5" min="0" max="11" style="width: 70px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--fixed-bg); color: var(--main-text);">
+                    <button id="updateMatrixButton" class="btn-success">Matrisi Güncelle</button>
+                    <button id="showGuideButton" class="btn-primary">Kılavuz</button>
+                </div>
+
+                <div style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
+                    <label for="separator-select" style="color: var(--accent-color); white-space: nowrap;">Filtre Atlatma Yöntemi:</label>
+                    <select id="separator-select">
+                        <option value="none" selected>Hiçbiri</option>
+                        <option value="ZWNJ">ZWNJ (Zero Width Non-Joiner)</option>
+                        <option value="ZWSP">ZWSP (Zero Width Space)</option>
+                        <option value="ZWJ">ZWJ (Zero Width Joiner)</option>
+                        <option value="WJ">WJ (Word Joiner)</option>
+                        <option value="SHY">SHY (Soft Hyphen)</option>
+                        <option value="HAIR">Hair Space</option>
+                        <option value="LRM">LRM (Yön Kontrol)</option>
+                        <option value="RLM">RLM (Yön Kontrol)</option>
+                        <option value="ZWNBSP">ZWNBSP (Zero Width No-Break Space)</option>
+                        <option value="LRE">LRE (Bidi L-R-Embedding)</option>
+                        <option value="RLE">RLE (Bidi R-L-Embedding)</option>
+                        <option value="PDF">PDF (Bidi Pop Directional)</option>
+                        <option value="LRI">LRI (Bidi L-R-Isolate)</option>
+                        <option value="RLI">RLI (Bidi R-L-Isolate)</option>
+                        <option value="PDI">PDI (Bidi Pop Isolate)</option>
+                        <option value="CGJ">CGJ (Combining Grapheme Joiner)</option>
+                        <option value="SP_BS">DENEYSEL (Space + Backspace)</option>
+                    </select>
+                </div>
+
+                <div id="auxiliary-controls" style="flex-direction: column; gap: 8px; width: 100%;">
+                    <button id="copyButton" class="btn-primary" style="width: 100%;">Panoya Kopyala</button>
+                    <button id="importButton" class="btn-primary" style="width: 100%;">Panodan İçe Aktar</button>
+
+                    <div style="display: flex; gap: 8px; width: 100%;">
+                        <button id="saveButton" class="btn-warning" style="flex-grow: 1;">Kaydet (.txt)</button>
+                        <input type="file" id="fileInput" accept=".txt" style="display: none;">
+                        <button id="loadButton" class="btn-warning" style="flex-grow: 1;">Dosya Aç</button>
+                    </div>
+                    <button id="clearButton" class="btn-danger" style="width: 100%;">Temizle</button>
+                </div>
+            </div>
+
+            <div id="info-panel">
+                <span class="char-count">Toplam Çıktı Karakteri (Emoji + Ayırıcı): <span id="currentChars">0</span>/200</span>
+                <span id="charWarning" class="warning" style="display: none;"> - ⚠️ Ekstra karakter maliyeti!</span>
+            </div>
+
+            <div id="matrix-container" style="max-width: 100%;">
+                <table id="matrix">
+                    </table>
+            </div>
+        </div>
+    </div>
+
+    <?php if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in']): ?>
+    <section id="following-feed-container" class="card" style="margin-top: 20px; padding: 20px;">
+    <h2>⭐ Takip Ettiklerinin Son Çizimleri</h2>
+    <div id="following-feed-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+    <p>Akış yükleniyor...</p>
+    </div>
+    </section>
+    <?php endif; ?>
+
+    <section id="recent-drawings-container" class="card" style="margin-top: 40px; padding: 20px;">
+    <h2>🎨 Son Çizimler (Tüm Zamanlar)</h2>
+    <div id="drawing-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+    <p id="loading-message">Çizimler yükleniyor...</p>
+    </div>
+
+    <div id="pagination-controls" style="text-align: center; margin-top: 20px;">
+    </div>
+    </section>
+
+    <script>
+        // --- TEMEL TANIMLAMA VE SABİTLER (V6.5 SEZGİSEL GİRİŞ DÜZELTMESİ) ---
+        const DEFAULT_MATRIX_WIDTH = 11;
+        const SP_BS_MATRIX_WIDTH = 10;
+        const MATRIX_HEIGHT = 20; // Yükseklik 20'de tutulur
+        const MAX_CHARACTERS = 200; // YouTube'un genel 200 karakter sınırı
+        const EMOJI_JSON_URL = 'emoji.json';
+        const defaultHeart = '🖤';
+        // Çizimleri listeleme ve sayfalama mantığı
+        const DRAWING_LIST_ELEMENT = document.getElementById('drawing-list');
+        const PAGINATION_ELEMENT = document.getElementById('pagination-controls');
+
+        let currentMatrixWidth = DEFAULT_MATRIX_WIDTH;
+
+        /**
+         * EMOJİ/KARAKTER MALİYETİNİ KESİNLİKLE HESAPLAR (UTF-16 kod birimi uzunluğu)
+         */
+        function calculateChatChars(emojiString) {
+            return emojiString.length;
+        }
+
+        // Ayırıcı karakterlerin char ve name bilgileri (length artık dinamik hesaplanacak)
+        let SEPARATOR_MAP = {
+            'none': { char: '', length: 0, name: 'Hiçbiri' },
+            'ZWNJ': { char: '\u200C', name: 'ZWNJ' },
+            'ZWSP': { char: '\u200B', name: 'ZWSP' },
+            'ZWJ': { char: '\u200D', name: 'ZWJ' },
+            'WJ': { char: '\u2060', name: 'WJ' },
+            'SHY': { char: '\u00AD', name: 'SHY' },
+            'HAIR': { char: '\u200A', name: 'Hair Space' },
+            'LRM': { char: '\u200E', name: 'LRM' },
+            'RLM': { char: '\u200F', name: 'RLM' },
+            'ZWNBSP': { char: '\uFEFF', name: 'ZWNBSP' },
+            'LRE': { char: '\u202A', name: 'LRE' },
+            'RLE': { char: '\u202B', name: 'RLE' },
+            'PDF': { char: '\u202C', name: 'PDF' },
+            'LRI': { char: '\u2066', name: 'LRI' },
+            'RLI': { char: '\u2067', name: 'RLI' },
+            'PDI': { char: '\u2069', name: 'PDI' },
+            'CGJ': { char: '\u034F', name: 'CGJ' },
+            'SP_BS': { char: '\u0020\u0008', name: 'Space + Backspace' }
+        };
+
+        /**
+         * SEPARATOR_MAP'teki ayırıcıların karakter maliyetlerini dinamik olarak hesaplar.
+         */
+        function calculateSeparatorCharCosts() {
+            const separatorSelect = document.getElementById('separator-select');
+
+            for (const key in SEPARATOR_MAP) {
+                if (SEPARATOR_MAP.hasOwnProperty(key) && key !== 'none') {
+                    const separator = SEPARATOR_MAP[key];
+                    // length'i, char'ın gerçek karakter maliyetiyle güncelle
+                    separator.length = calculateChatChars(separator.char);
+
+                    // Dropdown metnini maliyetle güncelle
+                    const option = separatorSelect.querySelector(`option[value="${key}"]`);
+                    if (option) {
+                         option.textContent = `${separator.name} (${separator.length} Karakter)`;
+                    }
+                }
+            }
+        }
+
+        // --- DİĞER TEMEL DEĞİŞKENLER ---
+        let emojiCategories = {};
+        let selectedHeart = { emoji: defaultHeart, chars: 0, name: 'black heart' };
+        let currentCategory = "";
+
+        // --- DOM ELEMENTLERİ ---
+        const firstRowLengthInput = document.getElementById('firstRowLength');
+        const matrixTable = document.getElementById('matrix');
+        const currentCharsSpan = document.getElementById('currentChars');
+        const charWarningSpan = document.getElementById('charWarning');
+        const guideModal = document.getElementById('guide-modal');
+        const showGuideButton = document.getElementById('showGuideButton');
+        const closeGuideButton = document.getElementById('close-guide-btn');
+        const updateMatrixButton = document.getElementById('updateMatrixButton');
+        const copyButton = document.getElementById('copyButton');
+        const importButton = document.getElementById('importButton');
+        const saveButton = document.getElementById('saveButton');
+        const loadButton = document.getElementById('loadButton');
+        const fileInput = document.getElementById('fileInput');
+        const clearButton = document.getElementById('clearButton');
+        const colorOptionsContainer = document.getElementById('color-options-container');
+        const categoryTabsContainer = document.getElementById('category-tabs');
+        const notification = document.getElementById('notification');
+        const confirmModal = document.getElementById('confirm-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalConfirm = document.getElementById('modal-confirm');
+        const modalCancel = document.getElementById('modal-cancel');
+        const currentBrushEmoji = document.getElementById('current-brush-emoji');
+        const currentBrushName = document.getElementById('current-brush-name');
+        const separatorSelect = document.getElementById('separator-select');
+
+
+        // --- DİĞER TEMEL FONKSİYONLAR ---
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            notification.textContent = message;
+            notification.className = '';
+            notification.classList.add(type);
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        function showConfirm(title, message) {
+             return new Promise((resolve) => {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                confirmModal.classList.add('show');
+
+                modalConfirm.onclick = () => {
+                    confirmModal.classList.remove('show');
+                    resolve(true);
+                };
+
+                modalCancel.onclick = () => {
+                    confirmModal.classList.remove('show');
+                    resolve(false);
+                };
+            });
+        }
+
+        async function loadEmojis() {
+             try {
+                // Bu kodun, projenizde 'emoji.json' dosyasının bulunduğunu varsaydığını unutmayın.
+                // Gerçek bir uygulamada, fetch yerine emoji verilerini doğrudan buraya gömmeniz gerekebilir.
+                const response = await fetch(EMOJI_JSON_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP Hata kodu: ${response.status}`);
+                }
+                const rawEmojis = await response.json();
+
+                let processedCategories = {};
+
+                rawEmojis.forEach(item => {
+                    // Kategori ismini düzenle (İlk harf büyük, diğerleri küçük)
+                    const categoryName = (item.category || "Diğer").charAt(0).toUpperCase() + (item.category || "Diğer").slice(1);
+                    const emojiName = item.description || item.names[0];
+
+                    if (!processedCategories[categoryName]) {
+                        processedCategories[categoryName] = {};
+                    }
+
+                    const charCost = calculateChatChars(item.emoji);
+
+                    processedCategories[categoryName][emojiName] = {
+                        emoji: item.emoji,
+                        chars: charCost,
+                        name: emojiName
+                    };
+                });
+
+                emojiCategories = processedCategories;
+
+                // Başlangıçta en çok emojisi olan kategoriyi seç
+                const sortedCategories = Object.keys(emojiCategories).sort((a, b) =>
+                    Object.keys(emojiCategories[b]).length - Object.keys(emojiCategories[a]).length
+                );
+                currentCategory = sortedCategories[0];
+
+                // Başlangıç emojisini güncel, doğru maliyetli objeyle eşleştir
+                const heartData = Object.values(emojiCategories)
+                    .flatMap(Object.values)
+                    .find(data => data.emoji === defaultHeart);
+
+                if (heartData) {
+                    selectedHeart = heartData;
+                }
+
+                showNotification(`✅ ${rawEmojis.length} adet emoji başarıyla yüklendi ve maliyetleri hesaplandı!`, 'success');
+
+            } catch (error) {
+                console.error("Emoji yükleme hatası:", error);
+                showNotification('❌ Emoji yüklenemedi. "emoji.json" dosyasının mevcut ve doğru formatta olduğundan emin olun.', 'error', 8000);
+            }
+        }
+
+        /**
+         * Karakter sayımını hesaplar ve bütçeyi aşan hücreleri otomatik olarak kırpar (clipped).
+         * @param {NodeListOf<HTMLTableCellElement>} allCells - Matristeki tüm hücreler.
+         */
+        function calculateAndClip(allCells) {
+            let totalEmojiCharCost = 0;
+            let totalEmojis = 0;
+            let multiCharEmojisUsed = 0;
+
+            const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
+
+            // Sadece sabit olmayan (fixed) hücreleri al. Fixed hücreler çıktıya dahil edilmez.
+            let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
+            let totalEditableCount = editableCells.length;
+
+            // V6.5 Düzeltmesi: Giriş değeri, çizilebilir piksel sayısıdır.
+            const drawablePixelCount = parseInt(firstRowLengthInput.value) || 0;
+            const permanentFixedCount = currentMatrixWidth - drawablePixelCount;
+
+            let clippedCount = 0;
+
+            // Kırpmadan önce tüm kırpma işaretlerini temizle
+            editableCells.forEach(cell => cell.classList.remove('clipped'));
+
+            let currentRow = -1;
+            let emojisInCurrentRow = 0;
+
+            // İkinci döngü: Karakter bütçesini kontrol et ve kırpma noktasını bul/uygula
+            for (let i = 0; i < totalEditableCount; i++) {
+                const cell = editableCells[i];
+                const newRowIndex = parseInt(cell.getAttribute('data-row'));
+
+                // Yeni satıra geçiş kontrolü
+                if (newRowIndex !== currentRow) {
+                    currentRow = newRowIndex;
+                    emojisInCurrentRow = 0; // Yeni satırda emoji sayısı sıfırlanır
+                }
+
+                // Ayırıcı Maliyeti (Sadece emojilerin arasına konur)
+                let separatorCost = 0;
+
+                // Bulunduğumuz satırdaki toplam çizilebilir hücre sayısı
+                let effectiveRowWidth = (currentRow === 0)
+                    ? (currentMatrixWidth - permanentFixedCount) // Bu, drawablePixelCount'a eşittir.
+                    : currentMatrixWidth;
+
+                // Ayırıcı sadece ilk emojiden sonra (emojisInCurrentRow > 0) konur.
+                // Ayrıca, satır sonuna konmaması için (emojisInCurrentRow < effectiveRowWidth) kontrolü yapılır.
+                if (selectedSeparator.length > 0 && emojisInCurrentRow > 0 && (emojisInCurrentRow < effectiveRowWidth)) {
+                    separatorCost = selectedSeparator.length;
+                }
+
+                // Hücrenin maliyeti (Drawn state'e göre)
+                // data-chars, createMatrix veya handleCellClick'te ayarlanır.
+                const emojiCost = parseInt(cell.getAttribute('data-chars') || '1');
+
+                // Toplam maliyet (Emoji + Ayırıcı)
+                const combinedCost = emojiCost + separatorCost;
+
+                if (totalEmojiCharCost + combinedCost <= MAX_CHARACTERS) {
+                    // Bütçe dahilinde
+                    totalEmojiCharCost += combinedCost;
+                    totalEmojis++;
+                    emojisInCurrentRow++;
+
+                    if (emojiCost > 1) {
+                        multiCharEmojisUsed++;
+                    }
+                } else {
+                    // Bütçeyi aşıyor, bu hücreyi ve kalanları kırp
+                    clippedCount = totalEditableCount - i; // Kalan tüm hücre sayısı
+
+                    // Bu hücreden başlayarak tüm kalanları kırp
+                    for(let j = i; j < totalEditableCount; j++) {
+                        editableCells[j].classList.add('clipped');
+                    }
+                    break; // Kırpma noktası bulundu, döngüden çık
+                }
+            }
+
+            // Nihai toplam karakter sayısı (ASLA 200'ü aşmaz)
+            const totalOutputCharCount = totalEmojiCharCost;
+
+            return {
+                totalEmojiCharCost: totalOutputCharCount,
+                totalEmojis: totalEmojis,
+                multiCharEmojisUsed,
+                clippedCount: clippedCount,
+                totalOutputCharCount: totalOutputCharCount,
+            };
+        }
+
+        // --- MATRİS FONKSİYONLARI ---
+
+        function createMatrix() {
+            // Matris genişliğini seçili ayırıcıya göre ayarla
+            currentMatrixWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
+
+            matrixTable.innerHTML = '';
+
+            // V6.5 Düzeltmesi: Giriş değeri, çizilebilir piksel sayısıdır.
+            const drawablePixelCount = parseInt(firstRowLengthInput.value);
+            // permanentFixedCount, sabit (X) hücre sayısıdır.
+            let permanentFixedCount = currentMatrixWidth - drawablePixelCount;
+
+            if (drawablePixelCount > currentMatrixWidth) {
+                firstRowLengthInput.value = currentMatrixWidth;
+                permanentFixedCount = 0; // Eğer max girilmişse fixed=0
+            } else if (drawablePixelCount < 0) {
+                 firstRowLengthInput.value = 0;
+                 permanentFixedCount = currentMatrixWidth; // Eğer 0 girilmişse fixed=11
+            }
+
+            firstRowLengthInput.setAttribute('max', currentMatrixWidth.toString());
+
+            const defaultHeartChars = selectedHeart.chars;
+
+            for (let rowIndex = 0; rowIndex < MATRIX_HEIGHT; rowIndex++) {
+                const row = matrixTable.insertRow();
+
+                for (let colIndex = 0; colIndex < currentMatrixWidth; colIndex++) {
+                    const cell = row.insertCell();
+                    cell.setAttribute('data-row', rowIndex);
+                    cell.setAttribute('data-col', colIndex);
+
+                    // Sabitlemeyi SADECE İLK SATIRDA (rowIndex === 0) uygula.
+                    // Sabit hücreler daima SOL TARAFTA yer alır (colIndex < permanentFixedCount).
+                    const isPermanentlyFixed = (rowIndex === 0 && colIndex < permanentFixedCount);
+
+                    if (isPermanentlyFixed) {
+                        cell.innerHTML = '❌';
+                        cell.classList.add('fixed');
+                        cell.setAttribute('data-chars', '0'); // Maliyet 0
+                    } else {
+                        // Çizilebilir alan başlangıçta varsayılan emojiyle dolar
+                        cell.innerHTML = selectedHeart.emoji;
+                        cell.setAttribute('data-chars', defaultHeartChars.toString());
+                        cell.addEventListener('click', () => {
+                            handleCellClick(cell);
+                        });
+                        // Kırpma sınıfını temizle
+                        cell.classList.remove('clipped');
+                    }
+                }
+            }
+
+            updateCharacterCount();
+        }
+
+        function handleCellClick(cell) {
+            // Sadece sabit veya kırpılmış değilse çalıştır
+            if (cell.classList.contains('fixed') || cell.classList.contains('clipped')) return;
+
+            const newCost = selectedHeart.chars;
+
+            cell.innerHTML = selectedHeart.emoji;
+            cell.setAttribute('data-chars', newCost.toString());
+
+            updateCharacterCount();
+        }
+
+        function updateCharacterCount() {
+            const allCells = matrixTable.querySelectorAll('td');
+            // Maliyeti hesapla ve gerekli hücreleri otomatik olarak .clipped sınıfı ile işaretle
+            const stats = calculateAndClip(allCells);
+
+            // UI Güncelleme (ASLA 200'ü aşmayacak)
+            const totalOutputCharCount = stats.totalOutputCharCount;
+
+            currentCharsSpan.textContent = totalOutputCharCount;
+            // Kırpma yapıldıysa, sonuç 200'dür. Kırpma yapılmadıysa, 200'den azdır.
+            currentCharsSpan.style.color = (totalOutputCharCount < MAX_CHARACTERS) ? 'var(--accent-color)' : '#28a745';
+
+            // UYARI METNİ GÜNCELLEME
+            let warningText = '';
+            const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
+
+            // Eğer ayırıcı kullanılıyorsa, ayırıcı maliyeti göster
+            if (selectedSeparator.length > 0 && stats.totalEmojis > 0) {
+                const totalSeparators = stats.totalEmojis > 0 ? stats.totalEmojis - 1 : 0;
+                const separatorCharCost = totalSeparators * selectedSeparator.length;
+
+                warningText += `${selectedSeparator.name} (${separatorCharCost} Karakter Maliyeti) kullanılıyor.`;
+            }
+
+            if (stats.multiCharEmojisUsed > 0) {
+                if (warningText) warningText += ' | ';
+                 warningText += `${stats.multiCharEmojisUsed} adet çok karakterli emoji kullanılıyor.`;
+            }
+
+            if (stats.clippedCount > 0) {
+                 if (warningText) warningText += ' | ';
+                 warningText += `ÇIKTI LİMİTİ NEDENİYLE SON ${stats.clippedCount} HÜCRE OTOMATİK KIRPILDI.`;
+            }
+
+            if (warningText) {
+                charWarningSpan.textContent = ` - ⚠️ ${warningText}`;
+                charWarningSpan.style.display = 'inline';
+                charWarningSpan.style.color = stats.clippedCount > 0 ? '#e0a800' : 'var(--main-text)';
+            } else {
+                charWarningSpan.style.display = 'none';
+            }
+        }
+
+        // --- PALET VE SEKMELER ---
+
+        function updateSelectedEmojiDisplay() {
+            currentBrushEmoji.textContent = selectedHeart.emoji;
+            currentBrushName.textContent = ` (${selectedHeart.name} - ${selectedHeart.chars} Karakter Maliyeti)`;
+
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected-color'));
+
+            const activeOption = document.querySelector(`[data-color="${selectedHeart.name}"][data-category-name="${currentCategory}"]`);
+            if (activeOption) {
+                 activeOption.classList.add('selected-color');
+            }
+        }
+
+        function createCategoryTabs() {
+            categoryTabsContainer.innerHTML = '';
+
+            if (!emojiCategories || Object.keys(emojiCategories).length === 0) return;
+
+            Object.keys(emojiCategories).forEach(categoryName => {
+                const tabButton = document.createElement('button');
+                tabButton.className = 'category-tab';
+                tabButton.textContent = `${categoryName} (${Object.keys(emojiCategories[categoryName]).length})`;
+                tabButton.setAttribute('data-category', categoryName);
+
+                if (categoryName === currentCategory) {
+                    tabButton.classList.add('active');
+                }
+
+                tabButton.addEventListener('click', () => {
+                    document.querySelectorAll('.category-tab').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    tabButton.classList.add('active');
+                    currentCategory = categoryName;
+                    createPalette();
+                });
+
+                categoryTabsContainer.appendChild(tabButton);
+            });
+        }
+
+        function createPalette() {
+            colorOptionsContainer.innerHTML = '';
+
+            if (!currentCategory || !emojiCategories[currentCategory]) {
+                return;
+            }
+
+            const emojisToShow = emojiCategories[currentCategory];
+
+            Object.entries(emojisToShow).forEach(([name, emojiData]) => {
+                const span = document.createElement('span');
+                span.className = 'color-option';
+
+                if (emojiData.chars > 1) {
+                    span.classList.add('multi-char-emoji');
+                    span.setAttribute('data-chars', emojiData.chars.toString()); // Maliyeti göster
+                }
+
+                span.innerHTML = emojiData.emoji;
+                span.title = `${name} (${emojiData.chars} karakter maliyeti)`;
+                span.setAttribute('data-color', name);
+                span.setAttribute('data-chars', emojiData.chars.toString());
+                span.setAttribute('data-category-name', currentCategory);
+
+                if (emojiData.emoji === selectedHeart.emoji && emojiData.name === selectedHeart.name) {
+                     span.classList.add('selected-color');
+                }
+
+                span.addEventListener('click', () => {
+                    selectedHeart = emojiData;
+                    updateSelectedEmojiDisplay();
+                });
+
+                colorOptionsContainer.appendChild(span);
+            });
+
+            updateSelectedEmojiDisplay();
+        }
+
+        // --- İÇE/DIŞA AKTARMA FONKSİYONLARI ---
+
+        /**
+         * Çizimi düz emoji metni olarak döndürür. Sadece kırpılmamış (non-clipped) ve fixed olmayan hücreleri dahil eder.
+         */
+        function getDrawingText(formatted = false) {
+            let result = [];
+            const rows = matrixTable.rows;
+            const separatorCode = SEPARATOR_MAP[separatorSelect.value].char;
+            const separator = formatted ? '' : separatorCode;
+
+            // Sadece sabitlenmemiş ve kırpılmamış hücreleri dahil et
+            for (let i = 0; i < rows.length; i++) {
+                let emojisInRow = [];
+                const cells = rows[i].cells;
+                let isRowClipped = false;
+                let rowHasEmoji = false;
+
+                for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j];
+
+                    // Fixed hücreleri atla (onlar çıktı metninde yer almayacak)
+                    if (cell.classList.contains('fixed')) {
+                        continue;
+                    }
+
+                    if (cell.classList.contains('clipped')) {
+                        isRowClipped = true;
+                        // Kırpılan hücreye gelindi, bu satırın sadece kırpılmayan kısmı alınacak
+                        break;
+                    }
+
+                    // Fixed olmayan ve Clipped olmayan hücreleri ekle
+                    emojisInRow.push(cell.innerHTML);
+                    rowHasEmoji = true;
+                }
+
+                // DÜZELTME: Satır, kırpılmış olsa bile (isRowClipped=true), içinde emoji varsa eklenmeli
+                if (rowHasEmoji) {
+                    let rowText = emojisInRow.join(separator);
+                    // formatted=true ise her satırı ayrı tut
+                    result.push(rowText);
+                }
+
+                // Eğer bu satırda kırpılmış hücre varsa, sonraki satırlara bakmaya gerek yok.
+                if (isRowClipped) {
+                    break;
+                }
+            }
+
+            // formatted=false ise, tüm satırları birleştirilmiş tek bir dize döndürür.
+            return formatted ? result.join('\n') : result.join('');
+        }
+
+        function applyDrawingText(text) {
+            // Txt dosyasından yüklenen metin satır sonlarını içerebilir. Tüm whitespace'i kaldır.
+            // NOT: Ayırıcı karakterleri temizlemeyin, çünkü tespit için gerekli!
+            const textWithoutLineBreaks = text.replace(/[\n\r]/g, '');
+
+            // 1. Ayırıcıyı tespit et
+            let detectedSeparatorKey = 'none';
+            // En uzun ayırıcıdan başlayarak kontrol et
+            const keysToCheck = Object.keys(SEPARATOR_MAP).reverse().filter(k => k !== 'none');
+
+            for (const key of keysToCheck) {
+                const separatorData = SEPARATOR_MAP[key];
+                // Ayırıcının gerçekten bir karakteri varsa ve metinde geçiyorsa
+                if (separatorData.char && textWithoutLineBreaks.includes(separatorData.char)) {
+                    detectedSeparatorKey = key;
+                    break;
+                }
+            }
+
+            // 2. Dropdown'u otomatik seç
+            const isSeparatorChange = separatorSelect.value !== detectedSeparatorKey;
+            separatorSelect.value = detectedSeparatorKey;
+
+            // Eğer ayırıcı seçimi matris boyutunu değiştiriyorsa, matrisi yeniden çiz.
+            const newWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
+            const currentDisplayedWidth = matrixTable.rows.length > 0 ? matrixTable.rows[0].cells.length : DEFAULT_MATRIX_WIDTH;
+
+            if (newWidth !== currentDisplayedWidth || isSeparatorChange) {
+                // Matrisi yeniden oluştur (Offset'i ve matris boyutunu ayarlamak için)
+                // createMatrix, currentMatrixWidth'i yeni ayırıcıya göre ayarlar ve matrisi temizler.
+                createMatrix();
+            }
+
+            // 3. Ayırıcıyı temizle
+            const selectedSeparator = SEPARATOR_MAP[detectedSeparatorKey];
+            // Ayırıcı karakteri ile metni bölüp tekrar birleştirerek sadece emojileri/karakterleri tutar
+            const cleanText = textWithoutLineBreaks.split(selectedSeparator.char).join('');
+
+            // 4. Emojileri doldur ve bütçeyi koru
+            const allEmojis = Object.values(emojiCategories)
+                .flatMap(category => Object.values(category))
+                .sort((a, b) => b.emoji.length - a.emoji.length); // En uzun eşleşme için sırala
+
+            let charIndex = 0;
+            const allCells = matrixTable.querySelectorAll('td');
+
+            // Sadece çizilebilir hücreleri al (Fixed olmayanları)
+            let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
+            let totalEditableCount = editableCells.length;
+
+            const defaultHeartChars = selectedHeart.chars;
+            let currentEditableCellIndex = 0; // İçinde bulunduğumuz çizilebilir hücre indeksi
+
+            // DOLDURMA DÖNGÜSÜ
+            for (let i = 0; i < totalEditableCount; i++) {
+                const cell = editableCells[i];
+
+                // Metin bittiği an
+                if (charIndex >= cleanText.length) {
+                    // Kalan boş hücreleri varsayılan emoji ile doldur (kırpma yapmadan)
+                    cell.innerHTML = selectedHeart.emoji;
+                    cell.setAttribute('data-chars', defaultHeartChars.toString());
+                    cell.classList.remove('clipped');
+                    continue; // Bir sonraki hücreye geç
+                }
+
+                // --- Emoji Algılama ---
+                let tempString = cleanText.substring(charIndex);
+                let emojiLength = 1;
+                let detectedCharCost = 1;
+                let charContent = tempString.substring(0, 1);
+                let foundEmoji = null;
+
+                // En uzun eşleşen emojiyi bul
+                for (const data of allEmojis) {
+                    if (tempString.startsWith(data.emoji)) {
+                        foundEmoji = data;
+                        emojiLength = data.emoji.length;
+                        detectedCharCost = data.chars;
+                        charContent = data.emoji;
+                        break;
+                    }
+                }
+
+                if (!foundEmoji) {
+                    // Emoji değilse/Bulunamazsa, ilk karakteri al
+                    detectedCharCost = calculateChatChars(charContent);
+                }
+
+                // --- Hücreyi Doldur ---
+                cell.innerHTML = charContent;
+                cell.setAttribute('data-chars', detectedCharCost.toString());
+                cell.classList.remove('clipped');
+                charIndex += emojiLength;
+            }
+
+            // 5. Karakter sayımını güncelle (Bu çağrı BÜTÇE KONTROLÜNÜ yapar ve gerekirse otomatik olarak KIRPMA işlemini kesinleştirir)
+            updateCharacterCount();
+
+            const stats = calculateAndClip(allCells);
+            if (stats.clippedCount > 0) {
+                 showNotification(`⚠️ UYARI: İçe aktarılan metin 200 karakteri aşıyor. ${stats.clippedCount} hücre limit nedeniyle otomatik kırpıldı.`, 'warning', 7000);
+            } else if (charIndex < cleanText.length) {
+                 // Eğer metin matristen daha uzunsa ama 200 karakteri aşmıyorsa (çok nadir)
+                 showNotification(`⚠️ UYARI: İçe aktarılan metin matristeki ${totalEditableCount} hücreden daha uzundu. Fazla kısım atıldı.`, 'warning', 7000);
+            }
+
+            return true;
+        }
+
+        /**
+ * Mevcut matris içeriğini sunucuya kaydeder.
+ * (Bu fonksiyon, "Dosyaya Kaydet" veya "Panoya Kopyala" butonlarına eklenebilir)
+ */
+async function saveToDatabase() {
+    const drawingContent = generateCurrentMatrixOutput(); // Matris içeriğini düz metin olarak üreten fonksiyonunuz
+    const categoryName = document.getElementById('albumCategoryDropdown').value || 'Genel'; // Kategoriyi al
+
+    if (!drawingContent) {
+        showNotification('❌ Kaydedilecek çizim içeriği yok.', 'error');
+        return;
+    }
+
+    showNotification('⏳ Çizim kaydediliyor...', 'info');
+
+    try {
+        const response = await fetch('save_drawing.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                drawingContent: drawingContent,
+                category: categoryName
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification(`✅ Çizim başarıyla kaydedildi! ID: ${result.id}`, 'success', 4000);
+            // Başarılı kayıttan sonra liste alanının yenilenmesi gerekir (bir sonraki aşama)
+        } else {
+            showNotification(`❌ Kayıt hatası: ${result.message}`, 'error', 6000);
+        }
+
+    } catch (error) {
+        console.error('Kayıt işlemi hatası:', error);
+        showNotification('❌ Sunucuya erişilemiyor. Kayıt başarısız.', 'error', 6000);
+    }
+}
+
+/**
+ * Verilen bir çizim kaydı için HTML kartını oluşturur.
+ * @param {object} drawing - Çizim verilerini içeren nesne
+ */
+function createDrawingCard(drawing) {
+    const card = document.createElement('div');
+    card.className = 'drawing-card';
+    card.dataset.id = drawing.id;
+    card.style.cssText = `
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    /* Küçültme (Scale Transition) Etkisi */
+    transform: scale(0.95);
+    opacity: 0.9;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    `;
+
+    const drawingPreview = document.createElement('pre');
+    drawingPreview.className = 'drawing-preview';
+    drawingPreview.textContent = drawing.content;
+    drawingPreview.style.cssText = `
+    white-space: pre;
+    font-family: monospace;
+    font-size: 8px; /* Piksel sanatını küçültme */
+    overflow: hidden;
+    border: 1px dashed var(--border-color);
+    padding: 5px;
+    background: var(--fixed-bg);
+    margin-bottom: 10px;
+    max-height: 150px;
+    `;
+    card.appendChild(drawingPreview);
+
+    // Meta Bilgileri
+    const meta = document.createElement('div');
+    const authorLink = drawing.author_username
+    ? `<a href="/${drawing.author_username}/" style="color: var(--accent-color);">${drawing.author_username}</a>`
+    : 'Anonim';
+
+    const updatedAt = new Date(drawing.updated_at).toLocaleString('tr-TR');
+
+    meta.innerHTML = `
+    <p style="font-size: 11px; margin: 5px 0;">
+    <b>ID:</b> ${drawing.id} | <b>Çizer:</b> ${authorLink}
+    </p>
+    <p style="font-size: 11px; margin: 0;">
+    <b>Son Düzenleme:</b> ${updatedAt}
+    </p>
+    `;
+    card.appendChild(meta);
+
+    // Seçenekler
+    const actions = document.createElement('div');
+    actions.className = 'drawing-actions';
+    actions.style.marginTop = '10px';
+    actions.innerHTML = `
+    <button onclick="loadDrawingToEditor('${drawing.content}')" class="btn-sm btn-action">Düzenle</button>
+    <button onclick="copyToClipboard('${drawing.content}')" class="btn-sm btn-action">Panoya Kopyala</button>
+    <button onclick="saveDrawingToFile('${drawing.content}', ${drawing.id})" class="btn-sm btn-action">Dosyaya Kaydet</button>
+    `;
+    card.appendChild(actions);
+
+    return card;
+}
+
+/**
+ * Çizimi ana editöre yükler.
+ * (Mevcut JS'inizdeki matris oluşturma/güncelleme mantığını kullanmalıdır.)
+ */
+function loadDrawingToEditor(content) {
+    // 1. Matris içeriğini sıfırla/yeniden oluştur
+    // (Mevcut createMatrix() veya benzeri fonksiyonunuzu çağırın)
+    // 2. content'i işleyerek matris hücrelerine yerleştirin
+    // (Bu, mevcut uygulamanızdaki `loadFromClipboard` veya benzeri bir işleve benzer olmalıdır.)
+
+    // Örnek: Eğer ana editördeki input alanına yükleniyorsa:
+    // document.getElementById('matrixInput').value = content;
+    // updateMatrixFromInput();
+    showNotification('✏️ Çizim editöre yüklendi. Düzenlemeye başlayabilirsiniz.', 'info', 3000);
+}
+
+/**
+ * Çizimi panoya kopyalar.
+ */
+function copyToClipboard(content) {
+    navigator.clipboard.writeText(content)
+    .then(() => showNotification('📋 Çizim panoya kopyalandı.', 'success', 2000))
+    .catch(err => showNotification('❌ Kopyalama başarısız.', 'error', 3000));
+}
+
+/**
+ * Çizimi dosyaya kaydeder.
+ */
+function saveDrawingToFile(content, id) {
+    const filename = `pixel-art-cizim-${id}.txt`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showNotification('📥 Çizim dosyaya kaydedildi.', 'success', 2000);
+}
+
+/**
+ * Sayfalama kontrollerini oluşturur.
+ */
+function createPaginationControls(currentPage, totalPages) {
+    PAGINATION_ELEMENT.innerHTML = ''; // Önceki düğmeleri temizle
+
+    if (totalPages <= 1) return;
+
+    // Geri Düğmesi
+    const prevButton = document.createElement('button');
+    prevButton.textContent = '← Önceki';
+    prevButton.disabled = currentPage === 1;
+    prevButton.onclick = () => fetchDrawings(currentPage - 1);
+    prevButton.className = 'btn-secondary';
+    prevButton.style.marginRight = '10px';
+    PAGINATION_ELEMENT.appendChild(prevButton);
+
+    // Sayfa Bilgisi
+    const pageInfo = document.createElement('span');
+    pageInfo.textContent = `Sayfa ${currentPage} / ${totalPages}`;
+    PAGINATION_ELEMENT.appendChild(pageInfo);
+
+    // İleri Düğmesi
+    const nextButton = document.createElement('button');
+    nextButton.textContent = 'Sonraki →';
+    nextButton.disabled = currentPage === totalPages;
+    nextButton.onclick = () => fetchDrawings(currentPage + 1);
+    nextButton.className = 'btn-secondary';
+    nextButton.style.marginLeft = '10px';
+    PAGINATION_ELEMENT.appendChild(nextButton);
+}
+
+
+/**
+ * list_drawings.php'den verileri çeker ve listeyi günceller.
+ * @param {number} page - İstenen sayfa numarası.
+ */
+async function fetchDrawings(page = 1) {
+    DRAWING_LIST_ELEMENT.innerHTML = '<p id="loading-message">Çizimler yükleniyor...</p>';
+    PAGINATION_ELEMENT.innerHTML = '';
+
+    try {
+        const response = await fetch(`list_drawings.php?page=${page}`);
+        const result = await response.json();
+
+        if (result.success) {
+            DRAWING_LIST_ELEMENT.innerHTML = ''; // Yükleniyor mesajını temizle
+
+            if (result.drawings.length === 0) {
+                DRAWING_LIST_ELEMENT.innerHTML = '<p>Henüz kayıtlı çizim bulunmamaktadır.</p>';
+                return;
+            }
+
+            result.drawings.forEach(drawing => {
+                const card = createDrawingCard(drawing);
+                DRAWING_LIST_ELEMENT.appendChild(card);
+            });
+
+            createPaginationControls(result.currentPage, result.totalPages);
+
+        } else {
+            DRAWING_LIST_ELEMENT.innerHTML = `<p style="color: red;">❌ Liste yüklenirken hata oluştu: ${result.message}</p>`;
+        }
+    } catch (error) {
+        DRAWING_LIST_ELEMENT.innerHTML = '<p style="color: red;">❌ Sunucu ile iletişim kurulamadı. Listeleme başarısız.</p>';
+        console.error('Listeleme hatası:', error);
+    }
+}
+
+async function fetchFollowingFeed() {
+    const feedElement = document.getElementById('following-feed-list');
+    if (!feedElement) return;
+
+    feedElement.innerHTML = '<p>Akış yükleniyor...</p>';
+
+    try {
+        const response = await fetch('fetch_following_feed.php');
+        const result = await response.json();
+
+        if (result.success && result.drawings.length > 0) {
+            feedElement.innerHTML = '';
+            result.drawings.forEach(drawing => {
+                // createDrawingCard fonksiyonu (önceden tanımlanan) yeniden kullanılır
+                const card = createDrawingCard(drawing);
+                feedElement.appendChild(card);
+            });
+        } else if (result.success) {
+            feedElement.innerHTML = '<p>Takip ettiğiniz çizerlerin henüz yeni çizimi yok.</p>';
+        } else {
+            feedElement.innerHTML = `<p style="color: red;">❌ Akış yüklenemedi: ${result.message}</p>`;
+        }
+    } catch (error) {
+        feedElement.innerHTML = '<p style="color: red;">❌ Sunucu hatası.</p>';
+        console.error('Akış hatası:', error);
+    }
+}
+
+        // --- OLAY DİNLEYİCİLERİ ---
+
+        // Sayfa yüklendiğinde listeyi başlat
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchFollowingFeed();
+            fetchDrawings(1);
+        });
+
+        // Çıkış Yap butonu için JS
+        document.getElementById('logoutButton')?.addEventListener('click', () => {
+            window.location.href = 'logout.php'; // logout.php'ye yönlendir
+        });
+
+        firstRowLengthInput.addEventListener('input', () => {
+             // Sadece matrisi güncelleme butonuna basıldığında matrix yeniden çizilir.
+        });
+
+
+        updateMatrixButton.addEventListener('click', async () => {
+            const confirmed = await showConfirm(
+                "Matrisi Güncelle",
+                "İlk satır çizilebilir piksel sayısını değiştirmek mevcut çizimi temizleyecektir. Devam etmek istiyor musunuz?"
+            );
+
+            if (confirmed) {
+                createMatrix();
+                showNotification('Matris başarıyla güncellendi!', 'success');
+            }
+        });
+
+        separatorSelect.addEventListener('change', async () => {
+            const newWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
+            const currentDisplayedWidth = matrixTable.rows.length > 0 ? matrixTable.rows[0].cells.length : DEFAULT_MATRIX_WIDTH;
+
+            // Eğer matris boyutu değişiyorsa (11x20 -> 10x20), matrisi yeniden oluştur.
+            if (newWidth !== currentDisplayedWidth) {
+                const confirmed = await showConfirm(
+                    "Ayırıcı Değişikliği",
+                    "Ayırıcı türünü değiştirmek matris boyutunu değiştirecek ve çizimi temizleyecektir. Devam etmek istiyor musunuz?"
+                );
+
+                if (confirmed) {
+                    createMatrix();
+                    showNotification(`⚠️ Matris boyutu ${currentDisplayedWidth}x${MATRIX_HEIGHT}'dan ${newWidth}x${MATRIX_HEIGHT}'a değiştirildi. Çizim temizlendi.`, 'warning');
+                } else {
+                    // İptal edilirse, seçimi eski haline getir
+                    const prevValue = Array.from(separatorSelect.options).find(opt =>
+                        (opt.value === 'SP_BS' && currentDisplayedWidth === SP_BS_MATRIX_WIDTH) ||
+                        (opt.value !== 'SP_BS' && currentDisplayedWidth === DEFAULT_MATRIX_WIDTH)
+                    )?.value || 'none';
+                    separatorSelect.value = prevValue;
+                    return;
+                }
+            } else {
+                // Sadece ayırıcı değiştiyse, karakter sayımını güncelle ve kırpma işlemini tekrar çalıştır.
+                updateCharacterCount();
+                const separatorName = SEPARATOR_MAP[separatorSelect.value].name;
+                showNotification(`Ayırıcı ${separatorName} olarak ayarlandı.`, 'info');
+            }
+        });
+
+        copyButton.addEventListener('click', async () => {
+            const drawingText = getDrawingText(false);
+            const allCells = matrixTable.querySelectorAll('td');
+            const stats = calculateAndClip(allCells);
+            const totalChars = stats.totalOutputCharCount;
+
+            try {
+                const separatorName = SEPARATOR_MAP[separatorSelect.value].name;
+                await navigator.clipboard.writeText(drawingText);
+                showNotification(`✅ Çizim panoya kopyalandı! (${totalChars}/${MAX_CHARACTERS} Karakter - ${separatorName} kullanılıyor)`, 'success');
+            } catch (err) {
+                console.error('Kopyalama başarısız:', err);
+                showNotification('❌ Kopyalama başarısız oldu. Lütfen tarayıcı izinlerini kontrol edin.', 'error');
+            }
+        });
+
+        importButton.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text && applyDrawingText(text)) {
+                    showNotification('✅ Çizim panodan başarıyla içe aktarıldı!', 'success');
+                } else if (!text) {
+                     showNotification('❌ Panoda içe aktarılacak metin bulunamadı.', 'error');
+                }
+            } catch (err) {
+                console.error('İçe aktarma başarısız:', err);
+                showNotification('❌ İçe aktarma başarısız oldu. Panonuzda geçerli bir çizim metni olduğundan emin olun.', 'error');
+            }
+        });
+
+        saveButton.addEventListener('click', () => {
+            const drawingText = getDrawingText(true);
+            const blob = new Blob([drawingText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'emoji_cizimi.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('💾 Çizim başarıyla kaydedildi!', 'success');
+        });
+
+        loadButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    if (applyDrawingText(text)) {
+                        showNotification('✅ Çizim dosyadan başarıyla yüklendi!', 'success');
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            }
+        });
+
+        clearButton.addEventListener('click', async () => {
+            const confirmed = await showConfirm(
+                "Çizimi Temizle",
+                "Mevcut çizimi temizlemek istediğinizden emin misiniz?"
+            );
+
+            if (confirmed) {
+                createMatrix();
+                showNotification('🧹 Çizim temizlendi!', 'success');
+            }
+        });
+
+        // Kılavuz Modal Olayları
+        showGuideButton.addEventListener('click', () => {
+            guideModal.classList.add('show');
+        });
+
+        closeGuideButton.addEventListener('click', () => {
+            guideModal.classList.remove('show');
+        });
+
+        // --- BAŞLANGIÇ ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Ayırıcı maliyetlerini hesapla ve dropdown'u güncelle
+            calculateSeparatorCharCosts();
+
+            // 2. Varsayılan kalbi (🖤) maliyetiyle manuel olarak başlat
+            selectedHeart = {
+                emoji: defaultHeart,
+                chars: calculateChatChars(defaultHeart),
+                name: 'black heart'
+            };
+
+            // 3. Emojileri yükle
+            await loadEmojis();
+
+            // 4. Uygulama başlatma kontrolü ve Palet/Matris oluşturma
+            if (Object.keys(emojiCategories).length > 0) {
+                // loadEmojis içindeki güncel selectedHeart'ı kullan
+                updateSelectedEmojiDisplay();
+                createMatrix(); // Matris, selectedHeart'ın maliyetini kullanır
+                createCategoryTabs();
+                createPalette();
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü V.6.5 Hazır! (Sezgisel Giriş Düzeltmesi)', 'info', 4000);
+            } else {
+                showNotification('❌ Uygulama başlatılamadı. Emoji verisi yüklenemedi.', 'error', 5000);
+            }
+
+            guideModal.classList.add('show');
+        });
+    </script>
+</body>
+</html>
