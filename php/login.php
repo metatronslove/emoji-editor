@@ -1,5 +1,20 @@
 <?php
+// login_handler.php - DÜZELTİLMİŞ
 require_once 'config.php';
+require_once 'Auth.php';
+
+// SESSION BAŞLAT
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    exit;
+}
 
 // Google Client Objesini Oluştur
 $client = new Google_Client();

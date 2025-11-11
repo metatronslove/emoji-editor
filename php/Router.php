@@ -1,60 +1,44 @@
 <?php
-// Router.php
-// URL isteklerini ilgili PHP dosyalarına yönlendiren sınıf
+// Router.php - BASİT VE ETKİLİ VERSİYON
 require_once 'config.php';
-require_once 'Auth.php';
 
 class Router {
     public function run() {
-        // 1. İstenen URI yolunu al
-        $uri = trim($_SERVER['REQUEST_URI'], '/');
+        $path = trim($_SERVER['REQUEST_URI'], '/');
+        $path = parse_url($path, PHP_URL_PATH);
 
-        // Query string (GET parametreleri) varsa temizle
-        if (($pos = strpos($uri, '?')) !== false) {
-            $uri = substr($uri, 0, $pos);
-        }
+        $routes = [
+            'login_handler' => 'login_handler.php',
+            'register' => 'register.php',
+            'logout.php' => 'logout.php',
+            'login.php' => 'login.php',
+            'google_callback.php' => 'google_callback.php'
+        ];
 
-        // 2. Ana Sayfa (index) Yönlendirmesi
-        // Eğer kullanıcı index.php veya boş URL ile geldiyse (genellikle editörün olduğu yer)
-        if ($uri === '' || $uri === 'index.php') {
-            // NOT: index.html dosyasını buraya dahil ettiğiniz varsayılmıştır.
-            // Gerçek uygulamada burası index.php olmalı ve HTML'i render etmelidir.
-            require 'index.html';
-            return;
-        }
-
-        // 3. Statik Yollar
-        if ($uri === 'admin/dashboard') {
-            // Admin/Moderatör kontrolü (Yetkisiz erişim ise ana sayfaya yönlendir)
-            if (!Auth::isLoggedIn() || !in_array($_SESSION['user_role'] ?? 'user', ['admin', 'moderator'])) {
-                header('Location: /');
-                exit;
+        foreach ($routes as $route => $file) {
+            if ($path === $route || strpos($path, $route) === 0) {
+                if (file_exists($file)) {
+                    require $file;
+                    exit;
+                }
             }
-            require 'admin/dashboard.php';
-            return;
         }
 
-        // 4. Dinamik Yollar
-        $segments = explode('/', $uri);
-
-        // a) Çizim Yolu: /drawing/123
-        if ($segments[0] === 'drawing' && count($segments) === 2 && is_numeric($segments[1])) {
-            // URL'deki ID'yi GET parametresi olarak ayarla
-            $_GET['id'] = $segments[1];
-            require 'drawing.php';
-            return;
-        }
-
-        // b) Profil Yolu: /kullaniciadi
-        // Bu, .htaccess'in yönlendirdiği ana kuraldır.
-        if (count($segments) === 1 && $segments[0] !== '') {
-            $_GET['username'] = $segments[0];
+        // Profil sayfaları
+        if (preg_match('/^[a-zA-Z0-9_]+$/', $path)) {
+            $_GET['username'] = $path;
             require 'profile.php';
+            exit;
+        }
+
+        // Ana sayfa - hiçbir şey yapma, index.php devam etsin
+        if ($path === '' || $path === 'index.php') {
             return;
         }
 
-        // 5. 404 Sayfa Bulunamadı
+        // 404
         http_response_code(404);
-        echo "404 Sayfa Bulunamadı.";
+        die("404 - Sayfa Bulunamadı");
     }
 }
+?>

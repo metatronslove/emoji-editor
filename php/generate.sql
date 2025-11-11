@@ -158,3 +158,37 @@ CREATE TABLE IF NOT EXISTS `blocks` (
 -- # İŞLEMİ SONLANDIR
 -- ######################################################
 COMMIT;
+
+-- ######################################################
+-- # YENİ SAYAÇ TABLOLARI EKLE (counter_manager.php gereksinimi)
+-- ######################################################
+
+-- -----------------------------------------------------
+-- 7. İSTATİSTİKLER TABLOSU (stats)
+-- Total Views gibi kalıcı sayaçlar için
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `stats` (
+  `key_name` VARCHAR(50) NOT NULL,
+  `value` BIGINT(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`key_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Başlangıç değeri ekle (total_views = 0)
+INSERT IGNORE INTO `stats` (`key_name`, `value`) VALUES ('total_views', 0);
+
+
+-- -----------------------------------------------------
+-- 8. OTURUM KAYITLARI TABLOSU (sessions)
+-- Çevrimiçi kullanıcı/ziyaretçi takibi için
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sessions` (
+  `session_key` VARCHAR(255) NOT NULL, -- IP Adresi veya Kullanıcı ID'si
+  `user_id` INT(11) NULL DEFAULT NULL,
+  `last_active` DATETIME NOT NULL,
+  PRIMARY KEY (`session_key`),
+  KEY `idx_last_active` (`last_active`),
+  KEY `fk_session_user` (`user_id`),
+  CONSTRAINT `fk_session_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bu sorguları generate.sql dosyanıza ekleyip çalıştırdığınızda, sayaç sistemi hazır olacaktır.

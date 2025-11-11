@@ -1,66 +1,59 @@
 <?php
+// google_callback.php
+// Google OAuth'tan dönen isteği işler ve kullanıcıyı oturum açar.
+
 require_once 'config.php';
+require_once 'Auth.php'; // Artık Auth modelini kullanıyoruz
+require_once 'vendor/autoload.php'; // Google Client Library'nin yüklü olduğu varsayılmıştır.
 
-// Google Client Objesini Oluştur
-$client = new Google_Client();
-$client->setClientId(GOOGLE_CLIENT_ID);
-$client->setClientSecret(GOOGLE_CLIENT_SECRET);
-$client->setRedirectUri(GOOGLE_REDIRECT_URI);
+$auth = new Auth();
+$error_message = '';
 
-// 1. Google'dan gelen kodu al
-if (isset($_GET['code'])) {
-    try {
-        // Access Token'ı al
-        $token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
-        $client->setAccessToken($token);
+try {
+    // Google Client Objesini Oluştur
+    $client = new Google_Client();
+    $client->setClientId(GOOGLE_CLIENT_ID);
+    $client->setClientSecret(GOOGLE_CLIENT_SECRET);
+    $client->setRedirectUri(GOOGLE_REDIRECT_URI);
 
-        // Access Token'ı oturumda sakla
-        $_SESSION['google_access_token'] = $token;
-
-        // 2. Kullanıcı profil verilerini al
-        $oauth2 = new Google_Service_Oauth2($client);
-        $userInfo = $oauth2->userinfo->get();
-
-        $google_id = $userInfo->id;
-        $email = $userInfo->email;
-        $name = $userInfo->name;
-        $picture = $userInfo->picture;
-
-        // 3. Veritabanı İşlemleri (Kullanıcıyı kaydet/güncelle)
-        $db = getDbConnection();
-        $stmt = $db->prepare("SELECT id FROM users WHERE google_id = ?");
-        $stmt->execute([$google_id]);
-        $userExists = $stmt->fetch();
-
-        if ($userExists) {
-            // Kullanıcı zaten var: Güncelleme yap
-            $stmt = $db->prepare("UPDATE users SET username = ?, email = ?, profile_picture = ? WHERE google_id = ?");
-            $stmt->execute([$name, $email, $picture, $google_id]);
-            $user_id = $userExists['id'];
-
-        } else {
-            // Yeni kullanıcı: Kayıt yap
-            $stmt = $db->prepare("INSERT INTO users (google_id, username, email, profile_picture) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$google_id, $name, $email, $picture]);
-            $user_id = $db->lastInsertId();
-        }
-
-        // 4. Uygulama Oturumunu Başlat
-        $_SESSION['user_id'] = $user_id;
-        $_SESSION['username'] = $name;
-        $_SESSION['is_logged_in'] = true;
-
-        // Başarılı giriş sonrası ana sayfaya yönlendir
-        header('Location: index.php');
-        exit();
-
-    } catch (Exception $e) {
-        // Hata durumunda hata mesajı göster
-        echo "Giriş işlemi sırasında bir hata oluştu: " . $e->getMessage();
-        exit();
+    // 1. Geri Dönen Kodu Kontrol Et ve Access Token'ı Al
+    if (!isset($_GET['code'])) {
+        throw new Exception("Google'dan yetkilendirme kodu gelmedi.");
     }
-} else {
-    // Google'dan 'code' gelmezse (örneğin kullanıcı izni iptal ederse)
-    header('Location: index.php'); // Ana sayfaya geri dön
-    exit();
+
+    $token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
+
+    if (isset($token['error'])) {
+        throw new Exception("Token alma hatası: " . $token['error_description']);
+    }
+
+    $client->setAccessToken($token);
+    $_SESSION['google_access_token'] = $token;
+
+    // 2. Kullanıcı Profil Verilerini Çek
+    $google_oauth = new Google_Service_Oauth2($client);
+    $google_user_info = $google_oauth->userinfo->get();
+
+    $googleId = $google_user_info->id;
+    $email = $google_user_info->email;
+    $name = $google_user_info->name;
+    $picture = $google_user_info->picture;
+
+    // 3. Auth Sınıfı ile Giriş Yap/Kaydol (Tüm DB mantığı artık Auth/User içinde)
+    if ($auth->loginWithGoogle($googleId, $email, $name, $picture)) {
+        // Giriş/Kayıt başarılı, ana sayfaya yönlendir
+        header('Location: /?success=' . urlencode('Google ile giriş başarılı!'));
+        exit;
+    } else {
+        // Bu hata, DB bağlantısı başarısız olursa veya kullanıcı banlıysa tetiklenir.
+        $error_message = 'Google hesabı ile giriş başarısız. Hesabınız yasaklanmış olabilir veya sistem hatası.';
+    }
+
+} catch (Exception $e) {
+    error_log("Google OAuth Hatası: " . $e->getMessage());
+    $error_message = 'Giriş sırasında bir hata oluştu: ' . $e->getMessage();
 }
+
+// Hata durumunda kullanıcıyı ana sayfadaki login modalına yönlendir
+header('Location: /#login_modal?error=' . urlencode($error_message));
+exit;

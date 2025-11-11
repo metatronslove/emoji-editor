@@ -1,0 +1,760 @@
+/* ========================================
+ *  1. TEMEL VE TEMA TANIMLARI (DARK/LIGHT)
+ *  ======================================== */
+:root {
+    --bg-color-light: #f0f3f8;
+    --main-text-light: #2c3e50;
+    --accent-color-light: #007bff;
+    --card-bg-light: rgba(255, 255, 255, 0.66);
+    --border-color-light: #e0e6ed;
+    --fixed-bg-light: #d4e3f5;
+    --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a1a2e;
+        --main-text: #e0eaf1;
+        --accent-color: #3f72af;
+        --card-bg: rgba(25, 25, 45, 0.66);
+        --border-color: #3b3b64;
+        --fixed-bg: #2c2c4d;
+        --shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+}
+
+:root {
+    --bg-color: var(--bg-color-light);
+    --main-text: var(--main-text-light);
+    --accent-color: var(--accent-color-light);
+    --card-bg: var(--card-bg-light);
+    --border-color: var(--border-color-light);
+    --fixed-bg: var(--fixed-bg-light);
+    --shadow: var(--shadow-light);
+}
+
+body.dark-mode {
+    --bg-color: #1a1a2e;
+    --main-text: #e0eaf1;
+    --accent-color: #3f72af;
+    --card-bg: rgba(25, 25, 45, 0.66);
+    --border-color: #3b3b64;
+    --fixed-bg: #2c2c4d;
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* ========================================
+ *  2. ANATOMİ VE ARKA PLAN
+ *  ======================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Space Mono', 'Segoe UI', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    min-height: 100vh;
+    color: var(--main-text);
+    background-color: var(--bg-color);
+    transition: background-color 0.5s, color 0.5s;
+    position: relative;
+    z-index: 1;
+}
+
+#background-grid {
+position: fixed;
+top: 0; left: 0; width: 100%; height: 100%;
+pointer-events: none; z-index: 0;
+opacity: 0.18;
+background:
+linear-gradient(to right, var(--accent-color) 1px, transparent 1px),
+linear-gradient(to bottom, var(--accent-color) 1px, transparent 1px);
+background-size: 50px 50px;
+animation: grid-flow 80s linear infinite;
+}
+
+@keyframes grid-flow {
+    from { background-position: 0 0; }
+    to { background-position: 500px 500px; }
+}
+
+/* ========================================
+ *  3. LAYOUT
+ *  ======================================== */
+#stats-bar {
+max-width: 1400px;
+margin: 0 auto 20px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+gap: 20px;
+flex-wrap: wrap;
+}
+
+#main-layout {
+display: flex;
+gap: 20px;
+width: 100%;
+max-width: 1400px;
+z-index: 2;
+margin-top: 15px;
+}
+
+#left-panel {
+width: 350px;
+flex-shrink: 0;
+max-height: 80vh;
+overflow-y: auto;
+}
+#right-panel {
+flex-grow: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+}
+
+/* ========================================
+ *  4. KARTLAR - GÜNCELLENMİŞ
+ *  ======================================== */
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    width: 100%;
+    /* Başlangıç opacity değeri */
+}
+
+.card:hover {
+    transform: none;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    /* Hover durumunda opacity artışı */
+}
+
+.info-panel {
+    background: var(--fixed-bg);
+    padding: 12px 18px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 0.95em;
+    border-left: 4px solid var(--accent-color);
+    margin-bottom: 15px;
+}
+
+/* Çizim Grid Stili */
+.drawings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.drawing-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    transform: scale(0.95);
+    opacity: 0.9;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--card-bg);
+}
+
+.drawing-card:hover {
+    transform: scale(0.98);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.drawing-preview {
+    white-space: pre;
+    font-family: monospace;
+    font-size: 8px;
+    overflow: hidden;
+    border: 1px dashed var(--border-color);
+    padding: 5px;
+    background: var(--fixed-bg);
+    margin-bottom: 10px;
+    max-height: 150px;
+}
+
+.drawing-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-action {
+    background: var(--accent-color);
+    color: white;
+    flex: 1;
+    text-align: center;
+}
+
+.btn-action:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* ========================================
+ *  5. MATRİS
+ *  ======================================== */
+#matrix-container { overflow: auto; max-height: 70vh; }
+#matrix {
+margin: 0 auto;
+border-collapse: collapse;
+border: 4px solid var(--accent-color);
+border-radius: 10px;
+box-shadow: 0 0 20px var(--accent-color), 0 8px 25px rgba(0,0,0,0.2);
+background: var(--card-bg);
+}
+#matrix td {
+width: 35px; height: 35px;
+text-align: center; font-size: 20px;
+cursor: pointer;
+border: 1px solid var(--border-color);
+transition: all 0.1s ease;
+position: relative;
+}
+#matrix td:hover { background: rgba(255,255,255,0.25); transform: scale(1.06); }
+.fixed { background: var(--fixed-bg) !important; cursor: not-allowed; opacity: 0.7; }
+.clipped {
+    background: rgba(220,53,69,0.35) !important;
+    pointer-events: none;
+    opacity: 0.5;
+}
+.clipped:after {
+    content: '✂️';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+}
+
+/* ========================================
+ *  6. BUTONLAR + FORMLAR - GÜNCELLENMİŞ
+ *  ======================================== */
+.btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    /* Butonlara da opacity efekti */
+    opacity: 0.9;
+    border: 1px solid transparent;
+}
+
+.btn:hover {
+    transform: none;
+    box-shadow: none;
+    opacity: 1;
+    /* Hover durumunda border rengi değişimi */
+    border-color: var(--accent-color);
+}
+
+.btn-sm {
+    padding: 7px 12px;
+    font-size: 13px;
+    padding: 6px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--accent-color);
+    color: white;
+    padding: 6px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+    padding: 6px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    padding: 6px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+    padding: 6px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+    padding: 6px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    padding: 6px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.full-width { width: 100%; }
+
+/* Buton grupları için düzenleme */
+#main-controls, #auxiliary-controls, .server-actions {
+display: flex;
+flex-wrap: wrap;
+gap: 10px;
+margin-top: 15px;
+}
+
+/* Form elemanlarına da opacity efekti */
+.text-input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--fixed-bg);
+    color: var(--main-text);
+    font-family: inherit;
+    opacity: 0.9;
+    transition: all 0.2s;
+}
+
+.text-input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    opacity: 1;
+}
+
+/* ========================================
+ *  7. PALET + MODALLER
+ *  ======================================== */
+#category-tabs {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-bottom: 15px;
+}
+.category-tab {
+    padding: 8px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--fixed-bg);
+    font-size: 14px;
+    transition: all 0.2s;
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+}
+.category-tab.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+#emoji-container {
+max-height: 400px;
+overflow-y: auto;
+}
+
+#color-options-container {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+justify-content: center;
+padding: 5px;
+}
+
+.color-option {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--fixed-bg);
+}
+
+.color-option:hover {
+    border-color: var(--accent-color);
+    transform: scale(1.1);
+}
+
+.color-option.selected-color {
+    border-color: #ffc107;
+    box-shadow: 0 0 8px #ffc107;
+}
+
+.multi-char-emoji:before {
+    content: attr(data-chars);
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff6b6b;
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* MODAL STILLERİ */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.88);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.modal-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.modal-content, .modal-content-guide {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 16px;
+    max-width: 550px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    text-align: left;
+    border: 2px solid var(--accent-color);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    animation: pop 0.3s ease;
+}
+@keyframes pop {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+}
+.modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    color: white;
+    transition: background-color 0.2s;
+}
+.modal-btn.confirm { background: #28a745; }
+.modal-btn.cancel { background: #dc3545; }
+.modal-btn.confirm:hover { background: #218838; }
+.modal-btn.cancel:hover { background: #c82333; }
+
+#close-guide-btn {
+margin-top: 20px;
+padding: 12px 24px;
+background: var(--accent-color);
+color: white;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+width: 100%;
+font-weight: 600;
+transition: opacity 0.2s;
+}
+#close-guide-btn:hover {
+opacity: 0.9;
+}
+
+/* MODAL SİSTEMİ - YENİLENMİŞ */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    color: var(--main-text);
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: var(--shadow);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    transition: transform 0.3s ease;
+    border: 2px solid var(--accent-color);
+}
+
+.modal.show .modal-content {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: var(--main-text);
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1;
+    background: none;
+    border: none;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: var(--accent-color);
+}
+
+/* Form stilleri */
+.auth-form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-sizing: border-box;
+    background-color: var(--fixed-bg);
+    color: var(--main-text);
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.auth-form button {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s;
+}
+
+.auth-form button:hover {
+    opacity: 0.9;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+    color: var(--main-text);
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.divider span {
+    padding: 0 15px;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background-color: #4285F4;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.btn-google:hover {
+    background-color: #357ae8;
+}
+
+.auth-links {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.auth-links a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+/* BİLDİRİM */
+#notification {
+position: fixed;
+top: 20px;
+right: 20px;
+padding: 14px 24px;
+border-radius: 10px;
+color: white;
+font-weight: bold;
+z-index: 10000;
+transform: translateX(120%);
+transition: transform 0.4s ease;
+box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+#notification.show { transform: translateX(0); }
+#notification.success { background: #28a745; }
+#notification.error { background: #dc3545; }
+#notification.warning { background: #ffc107; color: #212529; }
+#notification.info { background: #17a2b8; }
+
+/* RESPONSIVE */
+@media (max-width: 1000px) {
+    #main-layout { flex-direction: column; }
+    #left-panel {
+    width: 100%;
+    max-height: none;
+    }
+    #stats-bar { flex-direction: column; text-align: center; gap: 12px; }
+
+    .category-tab {
+        min-width: 100px;
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    .color-option {
+        width: 35px;
+        height: 35px;
+        font-size: 18px;
+    }
+
+    .drawings-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    #controls-panel > div {
+    flex-direction: column;
+    align-items: stretch;
+    }
+    #controls-panel button, #controls-panel input, #controls-panel label, #separator-select {
+    width: 100%;
+    }
+    #auxiliary-controls {
+    flex-direction: row !important;
+    }
+    #auxiliary-controls button {
+    flex-grow: 1;
+    }
+
+    .modal-content, .modal-content-guide {
+        padding: 20px;
+        margin: 20px;
+    }
+
+    .drawings-grid {
+        grid-template-columns: 1fr;
+    }
+}
