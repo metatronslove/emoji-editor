@@ -36,3 +36,7 @@ function getDbConnection() {
         exit("Veritabanı bağlantı hatası: " . $e->getMessage());
     }
 }
+// Hata raporlama
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+?>
