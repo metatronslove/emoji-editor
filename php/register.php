@@ -1,9 +1,9 @@
 <?php
-// login_handler.php - DÜZELTİLMİŞ
+// register.php - GRAVATAR DESTEKLİ
 require_once 'config.php';
 require_once 'Auth.php';
 
-// SESSION BAŞLAT
+// SESSION BAŞLAT - MUTLAKA EN ÜSTTE
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -51,3 +51,4 @@ try {
     ]);
     exit;
 }
+?>

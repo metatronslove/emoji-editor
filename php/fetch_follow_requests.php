@@ -2,7 +2,6 @@
 require_once 'config.php';
 header('Content-Type: application/json');
 
-// Sadece oturum açmış kullanıcı (profil sahibi) erişebilir
 $currentUserId = $_SESSION['user_id'] ?? null;
 if (!$currentUserId) {
     http_response_code(401);
@@ -13,21 +12,29 @@ if (!$currentUserId) {
 try {
     $db = getDbConnection();
 
-    // Bekleyen takip isteklerini çeker (profil sahibine gelenleri)
     $stmt = $db->prepare("
-        SELECT
-            fr.follower_id AS requester_id,
-            u.username AS requester_username,
-            u.profile_picture AS requester_picture,
-            fr.requested_at
-        FROM follow_requests fr
-        JOIN users u ON fr.follower_id = u.id
-        WHERE fr.following_id = :owner_id AND fr.status = 'pending'
-        ORDER BY fr.requested_at ASC
+    SELECT
+    fr.follower_id AS requester_id,
+    u.username AS requester_username,
+    u.profile_picture AS requester_picture,
+    fr.requested_at
+    FROM follow_requests fr
+    JOIN users u ON fr.follower_id = u.id
+    WHERE fr.following_id = :owner_id AND fr.status = 'pending'
+    ORDER BY fr.requested_at ASC
     ");
     $stmt->bindParam(':owner_id', $currentUserId, PDO::PARAM_INT);
     $stmt->execute();
     $requests = $stmt->fetchAll();
+
+    // PROFİL FOTOĞRAFLARINI DÜZENLE
+    foreach ($requests as &$request) {
+        if ($request['requester_picture'] && $request['requester_picture'] !== 'default.png') {
+            $request['requester_picture'] = 'data:image/jpeg;base64,' . $request['requester_picture'];
+        } else {
+            $request['requester_picture'] = '/images/default.png';
+        }
+    }
 
     echo json_encode(['success' => true, 'requests' => $requests]);
 

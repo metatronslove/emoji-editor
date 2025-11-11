@@ -5,6 +5,7 @@
     --bg-color-light: #f0f3f8;
     --main-text-light: #2c3e50;
     --accent-color-light: #007bff;
+    --accent-hover-light: #209bff;
     --card-bg-light: rgba(255, 255, 255, 0.66);
     --border-color-light: #e0e6ed;
     --fixed-bg-light: #d4e3f5;
@@ -16,6 +17,7 @@
         --bg-color: #1a1a2e;
         --main-text: #e0eaf1;
         --accent-color: #3f72af;
+        --accent-hover: #4f92cf;
         --card-bg: rgba(25, 25, 45, 0.66);
         --border-color: #3b3b64;
         --fixed-bg: #2c2c4d;
@@ -104,7 +106,6 @@ margin-top: 15px;
 #left-panel {
 width: 350px;
 flex-shrink: 0;
-max-height: 80vh;
 overflow-y: auto;
 }
 #right-panel {
@@ -136,7 +137,7 @@ align-items: center;
     /* Hover durumunda opacity artışı */
 }
 
-.info-panel {
+#info-panel {
     background: var(--fixed-bg);
     padding: 12px 18px;
     border-radius: 10px;
@@ -147,76 +148,132 @@ align-items: center;
 }
 
 /* Çizim Grid Stili */
-.drawings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 15px;
-    margin-top: 15px;
-}
-
 .drawing-card {
+    display: inline-block;
+    margin: 10px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 15px;
-    box-shadow: var(--shadow);
-    transition: transform 0.2s, box-shadow 0.2s;
-    transform: scale(0.95);
-    opacity: 0.9;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: var(--card-bg);
+    padding: 12px;
+    background-color: var(--fixed-bg);
+    vertical-align: top;
+    /* Boyut çizime göre otomatik ayarlanacak */
 }
 
-.drawing-card:hover {
-    transform: scale(0.98);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-}
-
+/* Çizim önizleme - çizimin boyutuna tam uyumlu */
 .drawing-preview {
     white-space: pre;
-    font-family: monospace;
-    font-size: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 16px; /* Daha küçük emoji boyutu */
+    line-height: 1.1;
+    margin: 0;
+    padding: 8px;
+    background-color: var(--card-bg);
+    border-radius: 4px;
+    display: block;
     overflow: hidden;
-    border: 1px dashed var(--border-color);
-    padding: 5px;
-    background: var(--fixed-bg);
-    margin-bottom: 10px;
-    max-height: 150px;
+    /* Çizim boyutuna göre genişlik ve yükseklik */
 }
 
-.drawing-actions {
-    margin-top: 10px;
+/* Genişlik için dinamik stil - emoji başına ~16px */
+.drawing-preview[data-width="10"] {
+    width: auto; /* 10 emoji × 16px */
+}
+
+.drawing-preview[data-width="11"] {
+    width: auto; /* 11 emoji × 16px */
+}
+
+/* Yükseklik için - 20 satır × 18px */
+.drawing-preview {
+    height: 360px; /* 20 satır × 18px */
+}
+
+/* Grid layout - kartları sıkı paketleme */
+.drawings-grid {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    width: 100%;
+}
+
+/* Profil fotoğrafı stilleri */
+.profile-pic-small {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 5px;
+}
+
+/* Çizim meta bilgisi */
+.drawing-meta {
+    margin-top: 8px;
+    font-size: 10px;
+    line-height: 1.3;
+}
+
+.drawing-meta p {
+    margin: 2px 0;
+}
+
+/* Aksiyon butonları - kompakt */
+.drawing-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .btn-sm {
-    padding: 6px 12px;
-    font-size: 13px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+}
+
+/* Responsive düzenlemeler */
+@media (max-width: 768px) {
+    .drawings-grid {
+        gap: 10px;
+    }
+
+    .drawing-card {
+        margin: 5px;
+        padding: 8px;
+    }
+
+    .drawing-preview {
+        font-size: 14px;
+    }
+
+    .drawing-preview[data-width="10"] {
+        width: 140px;
+    }
+
+    .drawing-preview[data-width="11"] {
+        width: 154px;
+    }
+
+    .drawing-preview {
+        height: 320px;
+    }
 }
 
 .btn-action {
-    background: var(--accent-color);
+    background-color: var(--accent-color);
     color: white;
-    flex: 1;
-    text-align: center;
 }
 
 .btn-action:hover {
-    opacity: 0.9;
+    background-color: var(--accent-hover);
     transform: translateY(-1px);
 }
 
 /* ========================================
  *  5. MATRİS
  *  ======================================== */
-#matrix-container { overflow: auto; max-height: 70vh; }
+#matrix-container { overflow: auto;}
 #matrix {
 margin: 0 auto;
 border-collapse: collapse;
@@ -459,26 +516,6 @@ padding: 5px;
 }
 
 /* MODAL STILLERİ */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.88);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-}
-.modal-overlay.show {
-    opacity: 1;
-    pointer-events: all;
-}
-
 .modal-content, .modal-content-guide {
     background: var(--card-bg);
     padding: 30px;
@@ -533,9 +570,8 @@ transition: opacity 0.2s;
 opacity: 0.9;
 }
 
-/* MODAL SİSTEMİ - YENİLENMİŞ */
+/* MODAL SİSTEMİ - TAMAMEN DÜZELTİLMİŞ */
 .modal {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -543,6 +579,8 @@ opacity: 0.9;
     height: 100%;
     background: rgba(0, 0, 0, 0.85);
     z-index: 10000;
+
+    /* display: none YERİNE opacity/visibility kullan */
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -573,28 +611,30 @@ opacity: 0.9;
     transform: translate(-50%, -50%) scale(1);
 }
 
-.modal-close {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    color: var(--main-text);
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    text-decoration: none;
-    line-height: 1;
-    background: none;
-    border: none;
-    padding: 0;
-    width: 30px;
-    height: 30px;
+/* Modal overlay için de aynı düzeltme */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.88);
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    z-index: 9999;
+
+    /* display: none YERİNE */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
 }
 
-.modal-close:hover {
-    color: var(--accent-color);
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
 }
 
 /* Form stilleri */
@@ -707,6 +747,278 @@ box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 #notification.error { background: #dc3545; }
 #notification.warning { background: #ffc107; color: #212529; }
 #notification.info { background: #17a2b8; }
+
+/* ========================================
+ *  8. YÖNETİM PANELİ SEKMELERİ
+ *  ======================================== */
+
+/* Sekme konteyneri */
+.tabs-container {
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* Sekme butonları */
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.tab-link {
+    padding: 12px 20px;
+    background: var(--fixed-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    color: var(--main-text);
+    text-decoration: none;
+    border-bottom: none;
+    position: relative;
+    opacity: 0.8;
+}
+
+.tab-link:hover {
+    background: rgba(63, 114, 175, 0.1);
+    border-color: var(--accent-color);
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.tab-link.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    opacity: 1;
+    transform: none;
+}
+
+.tab-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent-color);
+}
+
+/* Sekme içerikleri */
+.tab-content {
+    display: none;
+    padding: 20px;
+    background: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Sekme içeriği başlıkları */
+.tab-content h2 {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-color);
+    color: var(--accent-color);
+}
+
+/* İstatistik grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stats-grid .card {
+    text-align: center;
+    padding: 20px;
+    transition: transform 0.3s ease;
+}
+
+.stats-grid .card:hover {
+    transform: translateY(-5px);
+}
+
+/* Kullanıcı listesi tablosu */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    background: var(--card-bg);
+}
+
+table th {
+    background: var(--fixed-bg);
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+}
+
+table td {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+}
+
+table tr:hover {
+    background: rgba(63, 114, 175, 0.05);
+}
+
+/* Moderasyon grid */
+.moderation-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.moderation-item {
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    transition: all 0.3s ease;
+}
+
+.moderation-item:hover {
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow);
+}
+
+/* Duyuru öğeleri */
+.announcement-item {
+    border-left: 4px solid;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: var(--fixed-bg);
+    border-radius: 0 8px 8px 0;
+    transition: all 0.3s ease;
+}
+
+.announcement-item:hover {
+    transform: translateX(5px);
+}
+
+/* Platform öğeleri */
+.platform-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s ease;
+}
+
+.platform-item:hover {
+    background: var(--fixed-bg);
+}
+
+.platform-item:last-child {
+    border-bottom: none;
+}
+
+/* Form grupları */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--main-text);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--fixed-bg);
+    color: var(--main-text);
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(63, 114, 175, 0.2);
+}
+
+/* Responsive düzenlemeler */
+@media (max-width: 768px) {
+    .tabs {
+        flex-direction: column;
+    }
+
+    .tab-link {
+        border-radius: 6px;
+        margin-bottom: 5px;
+        text-align: center;
+    }
+
+    .tab-link.active {
+        border-radius: 6px 6px 0 0;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .platform-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .platform-item > div:last-child {
+        align-self: stretch;
+    }
+
+    .platform-item > div:last-child button {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tab-content {
+        padding: 15px;
+    }
+
+    .tab-link {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+
+    table {
+        font-size: 12px;
+    }
+
+    table th,
+    table td {
+        padding: 8px 6px;
+    }
+}
 
 /* RESPONSIVE */
 @media (max-width: 1000px) {

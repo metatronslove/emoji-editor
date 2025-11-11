@@ -1,4 +1,5 @@
 <?php
+// counter_manager.php - DÜZELTİLMİŞ
 // Bu dosya config.php'den sonra çağrılmalıdır.
 // Oturum zaten config.php'de başlatılmıştır.
 
@@ -25,9 +26,9 @@ function updateCounters($db) {
     $session_key = $currentUserId ? 'user_' . $currentUserId : 'ip_' . $ip_address;
 
     $stmt = $db->prepare("
-        INSERT INTO sessions (session_key, user_id, last_active)
-        VALUES (:key, :user_id, NOW())
-        ON DUPLICATE KEY UPDATE last_active = NOW()
+    INSERT INTO sessions (session_key, user_id, last_active)
+    VALUES (:key, :user_id, NOW())
+    ON DUPLICATE KEY UPDATE last_active = NOW()
     ");
 
     $stmt->bindParam(':key', $session_key);
@@ -43,34 +44,49 @@ function updateCounters($db) {
  * Tüm sayaç değerlerini tek bir dizide döndürür.
  * @return array
  */
-function getCounters($db) {
-    // Toplam ziyaret sayısını al
-    $totalViews = $db->query("SELECT value FROM stats WHERE key_name = 'total_views'")->fetchColumn() ?? 0;
+function getCounters($db = null) {
+    // Eğer DB bağlantısı verilmediyse, kendimiz oluşturalım
+    if ($db === null) {
+        try {
+            $db = getDbConnection();
+        } catch (PDOException $e) {
+            error_log("getCounters DB bağlantı hatası: " . $e->getMessage());
+            return [
+                'total_views' => 0,
+                'online_users' => 0
+            ];
+        }
+    }
 
-    // Çevrimiçi kullanıcı sayısını al
-    $onlineUsers = $db->query("SELECT COUNT(DISTINCT session_key) FROM sessions")->fetchColumn() ?? 0;
+    try {
+        // Toplam ziyaret sayısını al
+        $totalViews = $db->query("SELECT value FROM stats WHERE key_name = 'total_views'")->fetchColumn() ?? 0;
 
-    return [
-        'total_views' => (int)$totalViews,
-        'online_users' => (int)$onlineUsers
-    ];
+        // Çevrimiçi kullanıcı sayısını al
+        $onlineUsers = $db->query("SELECT COUNT(DISTINCT session_key) FROM sessions")->fetchColumn() ?? 0;
+
+        return [
+            'total_views' => (int)$totalViews,
+            'online_users' => (int)$onlineUsers
+        ];
+    } catch (PDOException $e) {
+        error_log("getCounters sorgu hatası: " . $e->getMessage());
+        return [
+            'total_views' => 0,
+            'online_users' => 0
+        ];
+    }
 }
 
 // Sayaçları başlatmak için
-if (isset($db_connection)) { // Eğer DB bağlantısı config.php'de $db_connection olarak tanımlandıysa
-    // Bu kontrolü config.php'ye göre ayarlayın. Eğer getDbConnection() fonksiyonu kullanılıyorsa:
-    try {
-        $db = getDbConnection();
-        $currentUserId = $_SESSION['user_id'] ?? null;
-        updateCounters($db);
-        $counters = getCounters($db);
-    } catch (PDOException $e) {
-        // Sayaçlar veritabanı hatası, uygulamayı durdurma
-        error_log("Sayaç hatası: " . $e->getMessage());
-        $counters = ['total_views' => 'Hata', 'online_users' => 'Hata'];
-    }
-} else {
-    // Hata durumunda varsayılan
+try {
+    $db = getDbConnection();
+    $currentUserId = $_SESSION['user_id'] ?? null;
+    updateCounters($db);
+    $counters = getCounters($db);
+} catch (PDOException $e) {
+    // Sayaçlar veritabanı hatası, uygulamayı durdurma
+    error_log("Sayaç hatası: " . $e->getMessage());
     $counters = ['total_views' => 0, 'online_users' => 0];
 }
 ?>

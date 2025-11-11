@@ -44,4 +44,58 @@ class Drawing {
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    public function addVote($voterId, $targetType, $targetId, $voteType) {
+        try {
+            $db = getDbConnection();
+
+            // Mükerrer oy kontrolü
+            $checkStmt = $db->prepare("
+            SELECT id FROM votes
+            WHERE voter_id = ? AND target_type = ? AND target_id = ?
+            ");
+            $checkStmt->execute([$voterId, $targetType, $targetId]);
+
+            if ($checkStmt->fetch()) {
+                // Oy zaten var, güncelle
+                $updateStmt = $db->prepare("
+                UPDATE votes SET vote_type = ?
+                WHERE voter_id = ? AND target_type = ? AND target_id = ?
+                ");
+                return $updateStmt->execute([$voteType, $voterId, $targetType, $targetId]);
+            } else {
+                // Yeni oy ekle
+                $insertStmt = $db->prepare("
+                INSERT INTO votes (voter_id, target_type, target_id, vote_type)
+                VALUES (?, ?, ?, ?)
+                ");
+                return $insertStmt->execute([$voterId, $targetType, $targetId, $voteType]);
+            }
+
+        } catch (PDOException $e) {
+            error_log("Oy ekleme hatası: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getVoteCount($targetType, $targetId) {
+        try {
+            $db = getDbConnection();
+
+            $stmt = $db->prepare("
+            SELECT
+            SUM(CASE WHEN vote_type = 'up' THEN 1 ELSE 0 END) as upvotes,
+                                 SUM(CASE WHEN vote_type = 'down' THEN 1 ELSE 0 END) as downvotes
+                                 FROM votes
+                                 WHERE target_type = ? AND target_id = ?
+                                 ");
+            $stmt->execute([$targetType, $targetId]);
+
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            error_log("Oy sayısı getirme hatası: " . $e->getMessage());
+            return ['upvotes' => 0, 'downvotes' => 0];
+        }
+    }
 }

@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php'; // Oturum, DB bağlantı fonksiyonu ve Composer yüklemesi
+require_once 'config.php';
 header('Content-Type: application/json');
 
 // Sadece POST isteklerini kabul et
@@ -20,29 +20,52 @@ if (!isset($data['drawingContent']) || empty($data['drawingContent'])) {
 }
 
 $drawingContent = $data['drawingContent'];
-$category = $data['category'] ?? 'Genel'; // JS'ten kategori bilgisi gelmezse 'Genel' kullan
+$rawCategory = $data['category'] ?? 'Genel';
+$firstRowLength = isset($data['firstRowLength']) ? (int)$data['firstRowLength'] : 6;
+$width = $data['width'] ?? 11; // Frontend'den genişlik bilgisini al
 
-// 2. Kullanıcı kimliğini belirle
-$userId = $_SESSION['user_id'] ?? null; // Oturum açmışsa user_id, yoksa NULL (Anonim)
+// 2. Kategori güvenliği
+$category = cleanCategoryName($rawCategory);
+
+// 3. Kullanıcı kimliğini belirle
+$userId = $_SESSION['user_id'] ?? null;
 
 try {
-    $db = getDbConnection(); // config.php'deki bağlantı fonksiyonu
+    $db = getDbConnection();
 
-    // Yeni kayıt ekleme sorgusu
-    $stmt = $db->prepare("
-        INSERT INTO drawings (user_id, content, category)
-        VALUES (?, ?, ?)
+    // 4. MÜKERRER KAYIT KONTROLÜ - Aynı içerik var mı?
+    $checkStmt = $db->prepare("
+    SELECT id FROM drawings
+    WHERE content = ? AND (user_id = ? OR (? IS NULL AND user_id IS NULL))
+    LIMIT 1
     ");
+    $checkStmt->execute([$drawingContent, $userId, $userId]);
+    $existingDrawing = $checkStmt->fetch();
 
-    $success = $stmt->execute([$userId, $drawingContent, $category]);
+    if ($existingDrawing) {
+        http_response_code(409); // Conflict
+        echo json_encode([
+            'success' => false,
+            'message' => 'Bu çizim zaten kayıtlı!'
+        ]);
+        exit;
+    }
+
+    // 5. Yeni kayıt ekleme
+    $stmt = $db->prepare("
+    INSERT INTO drawings (user_id, content, first_row_length, width, category)
+    VALUES (?, ?, ?, ?, ?)
+    ");
+    $success = $stmt->execute([$userId, $drawingContent, $firstRowLength, $width, $category]);
 
     if ($success) {
         $drawingId = $db->lastInsertId();
-        http_response_code(201); // Created
+        http_response_code(201);
         echo json_encode([
             'success' => true,
             'message' => 'Çizim başarıyla kaydedildi.',
-            'id' => $drawingId
+            'id' => $drawingId,
+            'category' => $category
         ]);
     } else {
         http_response_code(500);
@@ -55,5 +78,26 @@ try {
         'success' => false,
         'message' => 'Veritabanı hatası: ' . $e->getMessage()
     ]);
+}
+
+/**
+ * Kategori ismini temizle
+ */
+function cleanCategoryName($category) {
+    // HTML taglarını temizle
+    $cleaned = strip_tags($category);
+
+    // Özel karakterleri filtrele
+    $cleaned = preg_replace('/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s\-_]/u', '', $cleaned);
+
+    // Boşsa varsayılan değer
+    if (empty(trim($cleaned))) {
+        return 'Genel';
+    }
+
+    // Maksimum uzunluk
+    $cleaned = substr($cleaned, 0, 50);
+
+    return trim($cleaned);
 }
 ?>

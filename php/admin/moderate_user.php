@@ -4,13 +4,20 @@ require_once '../config.php';
 header('Content-Type: application/json');
 
 $db = getDbConnection();
-$userRole = $_SESSION['user_role'] ?? 'user';
+// TÜM ADMIN DOSYALARINA EKLENECEK GÜVENLİK KONTROLÜ
 $currentUserId = $_SESSION['user_id'] ?? null;
+$userRole = $_SESSION['user_role'] ?? 'user';
 
-// Yetki kontrolü (Admin veya Moderatör)
+// GELİŞMİŞ YETKİ KONTROLÜ
 if (!$currentUserId || !in_array($userRole, ['admin', 'moderator'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Yetkisiz işlem.']);
+    exit;
+}
+
+// ADMIN KENDİNİ YÖNETEMEZ KONTROLÜ
+if ($targetUserId == $currentUserId && in_array($action, ['ban', 'mute', 'set_role'])) {
+    echo json_encode(['success' => false, 'message' => 'Kendi hesabınızı yönetemezsiniz.']);
     exit;
 }
 

@@ -1,14 +1,41 @@
 <?php
+// index.php - DEBUG MODE
 require_once 'config.php';
-require_once 'DB.php';
 require_once 'Auth.php';
-require_once 'User.php';
 require_once 'Drawing.php';
+require_once 'functions.php';
 require_once 'counter_manager.php';
 require_once 'Router.php';
 
-$router = new Router();
-$router->run();
+// Hata ayıklama modu
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// GÜVENLİK KONTROLLERİ
+if (!isset($_SESSION)) {
+    session_start();
+}
+
+// AUTH KONTROLÜ
+$isLoggedIn = false;
+$userRole = 'user';
+$username = '';
+
+if (class_exists('Auth') && method_exists('Auth', 'isLoggedIn')) {
+    $isLoggedIn = Auth::isLoggedIn();
+    $userRole = $_SESSION['user_role'] ?? 'user';
+    $username = $_SESSION['username'] ?? '';
+}
+
+// Router'ı başlat
+try {
+    $router = new Router();
+    $router->run();
+} catch (Exception $e) {
+    error_log("Router Error: " . $e->getMessage());
+    echo "Router Hatası: " . $e->getMessage();
+    exit;
+}
 
 $totalViews = $counters['total_views'] ?? 0;
 $onlineUsers = $counters['online_users'] ?? 0;
@@ -39,6 +66,9 @@ $onlineUsers = $counters['online_users'] ?? 0;
 <span class="greeting">Hoş geldin,
 <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>!
 </span>
+<?php if (in_array($_SESSION['user_role'] ?? 'user', ['admin', 'moderator'])): ?>
+<a href="/admin/dashboard.php" class="btn btn-sm btn-primary">Yönetim Paneli</a>
+<?php endif; ?>
 <a href="/logout.php" class="btn btn-sm btn-danger" id="logoutButton">Çıkış</a>
 <?php else: ?>
 <button class="btn btn-sm btn-primary" data-modal-toggle="login_modal">Giriş</button>
@@ -78,7 +108,7 @@ $onlineUsers = $counters['online_users'] ?? 0;
 <!-- Giriş Modal -->
 <div id="login_modal" class="modal">
 <div class="modal-content">
-<button class="modal-close">&times;</button>
+<button class="modal-close">❎</button>
 <h2>Giriş Yap</h2>
 
 <form action="/login_handler" method="POST" class="auth-form">
@@ -107,7 +137,7 @@ Google ile Giriş Yap
 <!-- Kayıt Modal -->
 <div id="register_modal" class="modal">
 <div class="modal-content">
-<button class="modal-close">&times;</button>
+<button class="modal-close">❎</button>
 <h2>Yeni Kayıt</h2>
 
 <form action="/register" method="POST" class="auth-form">
@@ -117,6 +147,15 @@ Google ile Giriş Yap
 <input type="password" name="password_confirm" placeholder="Şifre (Tekrar)" required>
 <button type="submit">Kayıt Ol</button>
 </form>
+
+<div class="divider">
+<span>YA DA</span>
+</div>
+
+<a href="login.php" class="btn-google">
+<img src="google_logo.svg" alt="Google Logo" style="width: 20px; height: 20px; margin-right: 10px;">
+Google ile Kayıt Ol
+</a>
 
 <div class="auth-links">
 <p>Zaten hesabın var mı?
@@ -181,7 +220,7 @@ Google ile Giriş Yap
 <div class="card" id="controls-panel">
 <div id="main-controls" style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
 <label for="firstRowLength" style="color: var(--accent-color);">İlk Satır Çizim Piksel Sayısı (0-11):</label>
-<input type="number" id="firstRowLength" value="5" min="0" max="11" style="width: 70px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--fixed-bg); color: var(--main-text);">
+<input type="number" id="firstRowLength" value="6" min="0" max="11" style="width: 70px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--fixed-bg); color: var(--main-text);">
 <button id="updateMatrixButton" class="btn-success">Matrisi Güncelle</button>
 <button id="showGuideButton" class="btn-primary">Kılavuz</button>
 </div>
@@ -215,7 +254,7 @@ Google ile Giriş Yap
 <button id="importButton" class="btn-primary" style="width: 100%;">Panodan İçe Aktar</button>
 
 <div style="display: flex; gap: 8px; width: 100%;">
-<button id="saveButton" class="btn-warning" style="flex-grow: 1;">Kaydet (.txt)</button>
+<button id="saveButton" class="btn-warning" style="flex-grow: 1;">💾 Kaydet (Dosya/Site Kaydı)</button>
 <input type="file" id="fileInput" accept=".txt" style="display: none;">
 <button id="loadButton" class="btn-warning" style="flex-grow: 1;">Dosya Aç</button>
 </div>
@@ -234,7 +273,14 @@ Google ile Giriş Yap
 </div>
 </div>
 </div>
-
+<script>
+// Current User bilgisini global olarak ayarla
+window.currentUser = {
+    id: <?php echo json_encode($_SESSION['user_id'] ?? null); ?>,
+    username: <?php echo json_encode($_SESSION['username'] ?? null); ?>,
+    role: <?php echo json_encode($_SESSION['role'] ?? 'user'); ?>
+};
+</script>
 <script src="main.js"></script>
 </body>
 </html>

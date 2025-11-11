@@ -1,5 +1,5 @@
 <?php
-// Auth.php - Geliştirilmiş versiyon
+// Auth.php - PROFİL FOTOĞRAFI ENTEGRASYONLU
 require_once 'User.php';
 
 class Auth {
@@ -36,7 +36,7 @@ class Auth {
             throw new Exception('Bu e-posta adresi zaten kayıtlı.');
         }
 
-        // Kullanıcı oluştur
+        // Kullanıcı oluştur (profil fotoğrafı otomatik Gravatar'dan alınacak)
         if ($this->userModel->create($username, $email, $password)) {
             // Otomatik giriş yap
             $user = $this->userModel->findByUsername($username);
@@ -69,27 +69,99 @@ class Auth {
     }
 
     public function loginWithGoogle($googleId, $email, $name, $picture) {
-        $user = $this->userModel->createOrUpdateFromGoogle($googleId, $email, $name, $picture);
+        try {
+            $user = $this->userModel->createOrUpdateFromGoogle($googleId, $email, $name, $picture);
+
+            if ($user) {
+                if ($user['is_banned']) {
+                    throw new Exception('Hesabınız yasaklanmıştır.');
+                }
+
+                $this->loginUser($user);
+                return true;
+            }
+
+            throw new Exception('Kullanıcı oluşturulamadı veya güncellenemedi.');
+
+        } catch (Exception $e) {
+            error_log("Google login hatası: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function handleGoogleAuth($googleId, $email, $name, $picture) {
+        // 1. Önce Google ID ile kullanıcı ara
+        $user = $this->userModel->findByGoogleId($googleId);
 
         if ($user) {
+            // Google ID ile kullanıcı bulundu -> Giriş yap
             if ($user['is_banned']) {
                 throw new Exception('Hesabınız yasaklanmıştır.');
             }
-
             $this->loginUser($user);
-            return true;
+            return 'login';
         }
 
-        throw new Exception('Google ile giriş başarısız.');
+        // 2. Google ID yoksa, email ile ara
+        $userByEmail = $this->userModel->findByEmail($email);
+
+        if ($userByEmail) {
+            // Email ile kullanıcı bulundu -> Google hesabını ilişkilendir
+            $this->userModel->linkGoogleAccount($userByEmail['id'], $googleId);
+
+            // Profil fotoğrafını Google'dan güncelle
+            $this->userModel->updateProfilePictureFromGoogle($userByEmail['id'], $picture);
+
+            $this->loginUser($userByEmail);
+            return 'linked';
+        }
+
+        // 3. Hiçbiri yoksa -> Yeni kayıt oluştur
+        return $this->registerWithGoogle($googleId, $email, $name, $picture);
+    }
+
+    private function registerWithGoogle($googleId, $email, $name, $picture) {
+        // Otomatik username oluştur (email'in kullanıcı adı kısmı)
+        $username = $this->generateUsernameFromEmail($email);
+
+        // Username benzersiz mi kontrol et
+        $counter = 0;
+        $originalUsername = $username;
+
+        while ($this->userModel->findByUsername($username)) {
+            $counter++;
+            $username = $originalUsername . $counter;
+        }
+
+        // Google ile kullanıcı oluştur
+        if ($this->userModel->createNewGoogleUser($googleId, $username, $email, $name, $picture)) {
+            $user = $this->userModel->findByGoogleId($googleId);
+            if ($user) {
+                $this->loginUser($user);
+                return 'registered';
+            }
+        }
+
+        throw new Exception('Google ile kayıt işlemi başarısız.');
+    }
+
+    private function generateUsernameFromEmail($email) {
+        $username = strtolower(explode('@', $email)[0]);
+        $username = preg_replace('/[^a-z0-9_]/', '', $username);
+        if (strlen($username) < 3) {
+            $username = 'user' . time();
+        }
+        return $username;
     }
 
     private function loginUser($user) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
+        $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_role'] = $user['role'];
         $_SESSION['logged_in'] = true;
 
-        // Son giriş zamanını güncelle
+        // Son giriş zamanını güncelle (profil fotoğrafı da güncellenecek)
         $this->userModel->updateLastLogin($user['id']);
     }
 
@@ -102,3 +174,4 @@ class Auth {
         session_destroy();
     }
 }
+?>

@@ -1,38 +1,42 @@
-# .htaccess
-
 # Mod_Rewrite motorunu aç
 RewriteEngine On
 
-# Base dizinini ayarla (Eğer sub-folder'da çalışmıyorsanız / bırakın)
+# Base dizinini ayarla
 RewriteBase /
 
 # -----------------------------------------------------------------
 # 1. VAROLAN DOSYALARI VE KLASÖRLERİ ATLA
 # -----------------------------------------------------------------
-# İstek, var olan bir dosya ise yönlendirme yapma
 RewriteCond %{REQUEST_FILENAME} -f [OR]
-# İstek, var olan bir klasör ise yönlendirme yapma
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
+# -----------------------------------------------------------------
+# 2. API VE ÖZEL DOSYALARI KORU
+# -----------------------------------------------------------------
+RewriteRule ^(admin|includes|config|vendor)/ - [L]
 
 # -----------------------------------------------------------------
-# 2. ÖZEL ROTALARIN YÖNLENDİRİLMESİ
+# 3. ÖZEL ROTALARIN YÖNLENDİRİLMESİ
 # -----------------------------------------------------------------
 
 # a) Admin Paneli Yönlendirmesi
-# /admin/dashboard isteğini admin/dashboard.php'ye yönlendir
 RewriteRule ^admin/dashboard/?$ admin/dashboard.php [L]
 
-# b) Tekil Çizim Yönlendirmesi
-# /drawing/123 -> drawing.php?id=123
+# b) Çizim Sayfası
 RewriteRule ^drawing/([0-9]+)/?$ drawing.php?id=$1 [L,QSA]
 
+# c) API endpoint'leri
+RewriteRule ^api/(.*)$ api/$1 [L]
 
 # -----------------------------------------------------------------
-# 3. PROFİL SAYFASI YÖNLENDİRMESİ (Genel Yakalama Kuralı)
+# 4. PROFİL SAYFASI YÖNLENDİRMESİ
 # -----------------------------------------------------------------
-# Geriye kalan tüm istekler, bir kullanıcı adı kabul edilerek
-# profile.php?username=kullaniciadi olarak yönlendirilir.
-# (Bu, /profile.php?username=X yerine /X/ adresini mümkün kılar)
-RewriteRule ^([a-zA-Z0-9_-]+)/?$ profile.php?username=$1 [L,QSA]
+# Sadece kullanıcı adı benzeri pattern'leri yakala
+# Rakam, harf, tire ve alt çizgi içeren 3-20 karakterli kullanıcı adları
+RewriteRule ^([a-zA-Z0-9_-]{3,20})/?$ profile.php?username=$1 [L,QSA]
+
+# -----------------------------------------------------------------
+# 5. DİĞER TÜM İSTEKLERİ INDEX'E YÖNLENDİR
+# -----------------------------------------------------------------
+RewriteRule ^(.*)$ index.php [L,QSA]

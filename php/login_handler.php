@@ -1,7 +1,12 @@
 <?php
-// login_handler.php - Basitleştirilmiş
+// login_handler.php - TAMAMEN DÜZELTİLMİŞ
 require_once 'config.php';
 require_once 'Auth.php';
+
+// SESSION BAŞLAT - MUTLAKA EN ÜSTTE
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 header('Content-Type: application/json');
 
@@ -28,6 +33,8 @@ try {
             'message' => 'Giriş başarılı!'
         ]);
         exit;
+    } else {
+        throw new Exception('Giriş başarısız.');
     }
 
 } catch (Exception $e) {
@@ -38,3 +45,4 @@ try {
     ]);
     exit;
 }
+?>

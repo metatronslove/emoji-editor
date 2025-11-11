@@ -2,7 +2,6 @@
 require_once 'config.php';
 header('Content-Type: application/json');
 
-// Oturum Kontrolü (Giriş yapmamışsa akış gösterilmez)
 $currentUserId = $_SESSION['user_id'] ?? null;
 if (!$currentUserId) {
     http_response_code(401);
@@ -11,41 +10,41 @@ if (!$currentUserId) {
 }
 
 $LIMIT = 50;
-$PAGE = (isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0) ? (int)$_GET['page'] : 1;
-$OFFSET = ($PAGE - 1) * $LIMIT;
 
 try {
     $db = getDbConnection();
 
-    // Sadece takip edilen kullanıcıların çizimlerini çeker.
+    // GELİŞTİRİLMİŞ SORGU - author_id ve profil fotoğrafı dahil
     $stmt = $db->prepare("
-        SELECT
-            d.id,
-            d.content,
-            d.updated_at,
-            u.username AS author_username,
-            u.id AS author_id
-        FROM drawings d
-        JOIN users u ON d.user_id = u.id
-        -- TAKİP EDİLENLERİN KONTROLÜ
-        WHERE d.user_id IN (
-            SELECT following_id FROM follows WHERE follower_id = :current_user_id
-        )
-        -- ENGELLEME KONTROLÜ (Takip edilen, beni engelledi mi? Veya ben onu engelledim mi?)
-        AND d.user_id NOT IN (
-            SELECT blocked_id FROM blocks WHERE blocker_id = :current_user_id
-            UNION
-            SELECT blocker_id FROM blocks WHERE blocked_id = :current_user_id
-        )
-        -- Sadece görünür çizimleri gösterir
-        AND d.is_visible = TRUE
-        ORDER BY d.updated_at DESC
-        LIMIT :limit OFFSET :offset
+    SELECT
+    d.id,
+    d.content,
+    d.first_row_length,
+    d.width,
+    d.updated_at,
+    u.username AS author_username,
+    u.profile_picture AS author_profile_picture,
+    u.id AS author_id
+    FROM drawings d
+    INNER JOIN users u ON d.user_id = u.id
+    WHERE d.user_id IN (
+        SELECT following_id FROM follows WHERE follower_id = :current_user_id
+    )
+    AND d.user_id NOT IN (
+        SELECT blocked_id FROM blocks WHERE blocker_id = :current_user_id_block
+        UNION
+        SELECT blocker_id FROM blocks WHERE blocked_id = :current_user_id_blocked
+    )
+    AND d.is_visible = TRUE
+    ORDER BY d.updated_at DESC
+    LIMIT :limit
     ");
 
     $stmt->bindParam(':current_user_id', $currentUserId, PDO::PARAM_INT);
+    $stmt->bindParam(':current_user_id_block', $currentUserId, PDO::PARAM_INT);
+    $stmt->bindParam(':current_user_id_blocked', $currentUserId, PDO::PARAM_INT);
     $stmt->bindParam(':limit', $LIMIT, PDO::PARAM_INT);
-    $stmt->bindParam(':offset', $OFFSET, PDO::PARAM_INT);
+
     $stmt->execute();
     $drawings = $stmt->fetchAll();
 

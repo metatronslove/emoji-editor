@@ -1,7 +1,8 @@
 // main.js – index.php ile %100 UYUMLU, TÜM ÖZELLİKLER ÇALIŞIR
-const EMOJI_JSON_URL = 'emoji.json';
-const SAVE_DRAWING_URL = 'save_drawing.php';
-const LOAD_DRAWING_URL = 'load_drawing.php';
+const SITE_BASE_URL = 'https://flood.page.gd/'
+const EMOJI_JSON_URL = SITE_BASE_URL + 'emoji.json';
+const SAVE_DRAWING_URL = SITE_BASE_URL + 'save_drawing.php';
+const LOAD_DRAWING_URL = SITE_BASE_URL + 'load_drawing.php';
 const MAX_CHARACTERS = 200;
 const MATRIX_HEIGHT = 20;
 const DEFAULT_MATRIX_WIDTH = 11;
@@ -664,7 +665,94 @@ function generateCurrentMatrixOutput() {
 // --- TOPLULUK ÇİZİMLERİ FONKSİYONLARI ---
 
 /**
- * Verilen bir çizim kaydı için HTML kartını oluşturur.
+ * SEPARATOR_MAP'teki tüm ayırıcı karakterleri metinden temizler
+ * @param {string} text - Temizlenecek metin
+ * @returns {string} Ayırıcılardan arındırılmış metin
+ */
+function cleanSeparators(text) {
+    if (!text || typeof text !== 'string') return text;
+
+    let cleaned = text;
+
+    // SEPARATOR_MAP'teki tüm ayırıcı karakterleri temizle (none hariç)
+    for (const key in SEPARATOR_MAP) {
+        if (key !== 'none') {
+            const separator = SEPARATOR_MAP[key];
+            // Global replace ile tüm ayırıcı örneklerini temizle
+            cleaned = cleaned.split(separator.char).join('');
+        }
+    }
+
+    return cleaned;
+}
+
+/**
+ * Çizim içeriğini firstRowLength ve width bilgisine göre formatla
+ * İlk satır sağa yaslanır, diğer satırlar normal
+ */
+function formatDrawingContent(content, firstRowLength, width) {
+    if (!content) return '';
+
+
+    const emojis = Array.from(cleanSeparators(content));
+    const totalEmojis = emojis.length;
+
+    let result = '';
+    let currentIndex = 0;
+    const totalRows = ((totalEmojis - firstRowLength) / width) + 1;
+
+    // İlk satır: firstRowLength kadar emoji SAĞA YASLI
+    if (currentIndex < totalEmojis) {
+        // İlk satırdaki emoji sayısı
+        const firstLineCount = Math.min(firstRowLength, totalEmojis);
+        const firstLineEmojis = emojis.slice(currentIndex, currentIndex + firstLineCount);
+        currentIndex += firstLineCount;
+
+        // Sağa yaslamak için boşluk ekle
+        const padding = '❌'.repeat(width - firstLineCount);
+        result += padding + firstLineEmojis.join('');
+    }
+
+    // Kalan satırlar: tam genişlikte
+    for (let row = 1; row < totalRows; row++) {
+        result += '\n';
+
+        if (currentIndex < totalEmojis) {
+            const lineCount = Math.min(width, totalEmojis - currentIndex);
+            const lineEmojis = emojis.slice(currentIndex, currentIndex + lineCount);
+            result += lineEmojis.join('');
+            currentIndex += lineCount;
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Basit dosya kaydetme - sadece ham içeriği kaydeder
+ */
+function saveDrawingToFile(content, id) {
+    try {
+        const filename = `pixel-art-cizim-${id}.txt`;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showNotification(`📥 Çizim #${id} dosyaya kaydedildi.`, 'success', 2000);
+    } catch (error) {
+        console.error('Dosya kaydetme hatası:', error);
+        showNotification('❌ Dosya kaydedilirken hata oluştu.', 'error', 3000);
+    }
+}
+
+/**
+ * Çizim kartı oluştur - Silme butonu eklendi
  */
 function createDrawingCard(drawing) {
     const card = document.createElement('div');
@@ -673,31 +761,72 @@ function createDrawingCard(drawing) {
 
     const drawingPreview = document.createElement('pre');
     drawingPreview.className = 'drawing-preview';
-    drawingPreview.textContent = drawing.content || drawing.drawing_content || '';
+
+    const firstRowLength = drawing.first_row_length || 6;
+    const width = drawing.width || 11;
+
+    drawingPreview.setAttribute('data-width', width);
+
+    const formattedContent = formatDrawingContent(
+        drawing.content || drawing.drawing_content || '',
+        firstRowLength,
+        width
+    );
+    drawingPreview.textContent = formattedContent;
 
     const meta = document.createElement('div');
-    const authorLink = drawing.author_username
-    ? `<a href="/${drawing.author_username}/" style="color: var(--accent-color);">${drawing.author_username}</a>`
-    : 'Anonim';
+    meta.className = 'drawing-meta';
+
+    // Çizer bilgisi - PROFİL FOTOĞRAFI DAHİL (DÜZELTİLMİŞ)
+    let authorDisplay = 'Anonim';
+    let authorProfilePic = '';
+
+    if (drawing.author_username) {
+        authorDisplay = `<a href="/${drawing.author_username}/" style="color: var(--accent-color);">${drawing.author_username}</a>`;
+        if (drawing.author_profile_picture) {
+            // PROFİL FOTOĞRAFI İŞLEME
+            let profilePicSrc;
+            if (drawing.author_profile_picture.startsWith('data:image')) {
+                profilePicSrc = drawing.author_profile_picture;
+            } else if (drawing.author_profile_picture === 'default.png') {
+                profilePicSrc = '/images/default.png';
+            } else {
+                profilePicSrc = 'data:image/jpeg;base64,' + drawing.author_profile_picture;
+            }
+            authorProfilePic = `<img src="${profilePicSrc}" alt="Profil" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; margin-right: 5px;">`;
+        }
+    }
 
     const updatedAt = drawing.updated_at ? new Date(drawing.updated_at).toLocaleString('tr-TR') : 'Bilinmiyor';
 
     meta.innerHTML = `
-    <p style="font-size: 11px; margin: 5px 0;">
-    <b>ID:</b> ${drawing.id} | <b>Çizer:</b> ${authorLink}
-    </p>
-    <p style="font-size: 11px; margin: 0;">
-    <b>Son Düzenleme:</b> ${updatedAt}
-    </p>
+    <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
+    ${authorProfilePic}
+    <span><b>Çizer:</b> ${authorDisplay}</span>
+    </div>
+    <p><b>ID:</b> ${drawing.id} | <b>İlk Satır:</b> ${firstRowLength} | <b>Genişlik:</b> ${width}</p>
+    <p><b>Son Düzenleme:</b> ${updatedAt}</p>
     `;
 
     const actions = document.createElement('div');
     actions.className = 'drawing-actions';
     const content = drawing.content || drawing.drawing_content || '';
+
+    // SİLME BUTONU - Sadece çizerin kendisi ve admin için
+    let deleteButton = '';
+    if (window.currentUser && (window.currentUser.id === drawing.author_id || window.currentUser.role === 'admin')) {
+        deleteButton = `
+        <button onclick="deleteDrawing(${drawing.id})" class="btn-sm" title="Çizimi Sil">
+        ✖️
+        </button>
+        `;
+    }
+
     actions.innerHTML = `
-    <button onclick="loadDrawingToEditor('${content.replace(/'/g, "\\'")}')" class="btn-sm btn-action">Düzenle</button>
-    <button onclick="copyToClipboard('${content.replace(/'/g, "\\'")}')" class="btn-sm btn-action">Panoya Kopyala</button>
-    <button onclick="saveDrawingToFile('${content.replace(/'/g, "\\'")}', ${drawing.id})" class="btn-sm btn-action">Dosyaya Kaydet</button>
+    <button onclick="loadDrawingToEditor('${content.replace(/'/g, "\\'")}', ${firstRowLength}, ${width})" class="btn-sm btn-action">Düzenle</button>
+    <button onclick="copyToClipboard('${content.replace(/'/g, "\\'")}')" class="btn-sm btn-action">Kopyala</button>
+    <button onclick="saveDrawingToFile('${content.replace(/'/g, "\\'")}', ${drawing.id})" class="btn-sm btn-action">Kaydet</button>
+    ${deleteButton}
     `;
 
     card.appendChild(drawingPreview);
@@ -706,10 +835,67 @@ function createDrawingCard(drawing) {
 
     return card;
 }
+/**
+ * Çizimi silme fonksiyonu
+ */
+async function deleteDrawing(drawingId) {
+    if (!window.currentUser) {
+        showNotification('Bu işlem için giriş yapmalısınız.', 'error');
+        return;
+    }
 
-function loadDrawingToEditor(content) {
+    const confirmed = await showConfirm(
+        'Çizimi Sil',
+        'Bu çizimi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch('delete_drawing.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ drawing_id: drawingId })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('✅ Çizim başarıyla silindi.', 'success');
+            // Kartı DOM'dan kaldır
+            const card = document.querySelector(`.drawing-card[data-id="${drawingId}"]`);
+            if (card) {
+                card.style.opacity = '0';
+                setTimeout(() => card.remove(), 300);
+            }
+        } else {
+            showNotification('❌ ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Silme hatası:', error);
+        showNotification('❌ Silme işlemi sırasında hata oluştu.', 'error');
+    }
+}
+
+/**
+ * Çizimi editöre yükle - firstRowLength ve width bilgisiyle
+ */
+function loadDrawingToEditor(content, firstRowLength = 6, width = 11) {
+    // firstRowLength input'unu güncelle
+    if (firstRowLengthInput) {
+        firstRowLengthInput.value = firstRowLength;
+    }
+
+    // Width'e göre separator seç (SP_BS ise 10, diğerleri 11)
+    if (separatorSelect) {
+        separatorSelect.value = width === 10 ? 'SP_BS' : 'none';
+    }
+
+    // Çizimi uygula
     if (applyDrawingText(content)) {
-        showNotification('✏️ Çizim editöre yüklendi. Düzenlemeye başlayabilirsiniz.', 'info', 3000);
+        showNotification('✏️ Çizim editöre yüklendi. İlk satır: ' + firstRowLength + ', Genişlik: ' + width, 'info', 3000);
     }
 }
 
@@ -722,18 +908,76 @@ function copyToClipboard(content) {
     });
 }
 
-function saveDrawingToFile(content, id) {
-    const filename = `pixel-art-cizim-${id}.txt`;
-    const blob = new Blob([content], { type: 'text/plain' });
+/**
+ * Dosyaya kaydetme (ORJİNAL İŞLEV)
+ */
+function saveToFile() {
+    const drawingText = getDrawingText(true);
+    const blob = new Blob([drawingText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename;
+    a.download = 'emoji_cizimi.txt';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showNotification('📥 Çizim dosyaya kaydedildi.', 'success', 2000);
+    showNotification('💾 Çizim dosyaya kaydedildi!', 'success');
+}
+
+/**
+ * Veritabanına kaydetme (YENİ İŞLEV)
+ */
+async function saveToDatabase(drawingContent) {
+    // Kategori seç
+    const category = await showCategorySelector();
+    if (!category) return; // Kullanıcı iptal etti
+    const firstRowLength = parseInt(firstRowLengthInput.value) || 6;
+    const width = (separatorSelect.value === 'SP_BS') ? 10 : 11;
+
+    // Sunucuya gönder
+    const response = await fetch('/save_drawing.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            drawingContent: drawingContent,
+            category: category,
+            firstRowLength: firstRowLength,
+            width: width
+        })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+        showNotification(`✅ Çizim #${result.id} "${result.category}" kategorisinde kaydedildi!`, 'success');
+        // Liste yenile
+        if (typeof fetchDrawings === 'function') {
+            setTimeout(() => fetchDrawings(1), 1000);
+        }
+    } else {
+        if (response.status === 409) {
+            showNotification('ℹ️ ' + result.message, 'info');
+        } else {
+            showNotification('❌ ' + result.message, 'error');
+        }
+    }
+}
+
+/**
+ * Kategori seçici
+ */
+async function showCategorySelector() {
+    return new Promise((resolve) => {
+        const category = prompt(
+            'Çizim kategorisini girin:\n(Örnek: Sanat, Pixel Art, Duygular, Soyut, Figüratif, Anime, Doğa, vs.)',
+                                'Genel'
+        );
+
+        resolve(category === null ? null : (category || 'Genel'));
+    });
 }
 
 /**
@@ -835,226 +1079,16 @@ async function fetchFollowingFeed() {
     }
 }
 
-// GELİŞTİRİLMİŞ MODAL YÖNETİM SİSTEMİ
-class ModalManager {
-    constructor() {
-        this.modals = new Map();
-        this.currentModal = null;
-        this.hashChangeTimeout = null;
-        this.init();
-    }
-
-    init() {
-        // Modal elementlerini topla
-        document.querySelectorAll('.modal').forEach(modal => {
-            const id = modal.id;
-            this.modals.set(id, modal);
-
-            // Kapatma butonları
-            modal.querySelectorAll('.modal-close').forEach(closeBtn => {
-                closeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.closeModal(id);
-                });
-            });
-
-            // Modal dışına tıklama ile kapatma
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    this.closeModal(id);
-                }
-            });
-        });
-
-        // ESC tuşu ile kapatma
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.currentModal) {
-                this.closeModal(this.currentModal);
-            }
-        });
-
-        // Hash değişikliklerini dinle (debounce ile)
-        window.addEventListener('hashchange', () => {
-            clearTimeout(this.hashChangeTimeout);
-            this.hashChangeTimeout = setTimeout(() => {
-                this.handleHashChange();
-            }, 50);
-        });
-
-        // İlk hash kontrolü
-        this.handleHashChange();
-    }
-
-    openModal(modalId) {
-        if (this.currentModal === modalId) return;
-
-        this.closeCurrentModal();
-
-        const modal = this.modals.get(modalId);
-        if (modal) {
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-            this.currentModal = modalId;
-
-            // URL hash'ini güncelle (debounce ile)
-            this.updateHash(modalId);
-
-            // Input'a focus
-            setTimeout(() => {
-                const firstInput = modal.querySelector('input');
-                if (firstInput) firstInput.focus();
-            }, 300);
-        }
-    }
-
-    closeModal(modalId) {
-        const modal = this.modals.get(modalId);
-        if (modal) {
-            modal.classList.remove('show');
-            this.currentModal = null;
-
-            document.body.style.overflow = '';
-            this.updateHash('');
-        }
-    }
-
-    closeCurrentModal() {
-        if (this.currentModal) {
-            this.closeModal(this.currentModal);
-        }
-    }
-
-    closeAllModals() {
-        this.modals.forEach((modal, id) => {
-            modal.classList.remove('show');
-        });
-        this.currentModal = null;
-        document.body.style.overflow = '';
-        this.updateHash('');
-    }
-
-    updateHash(hash) {
-        // Debounce mekanizması - çok sık çağrıları önle
-        clearTimeout(this.hashChangeTimeout);
-        this.hashChangeTimeout = setTimeout(() => {
-            const currentHash = window.location.hash.replace('#', '');
-            if (currentHash !== hash) {
-                if (hash) {
-                    window.location.hash = hash;
-                } else {
-                    // Hash'i temizle (history API ile)
-                    history.replaceState(null, null, ' ');
-                }
-            }
-        }, 100);
-    }
-
-    handleHashChange() {
-        const hash = window.location.hash.replace('#', '');
-
-        // Mevcut modal ile aynıysa işlem yapma
-        if (hash === this.currentModal) return;
-
-        if (this.modals.has(hash)) {
-            this.openModal(hash);
-        } else {
-            this.closeCurrentModal();
-        }
-    }
-}
-
-let modalManager = new ModalManager();
-
-// Giriş/Kayıt bağlantılarını yönet
-function initAuthLinks() {
-    // Giriş/Kayıt butonları - event delegation kullan
-    document.addEventListener('click', (e) => {
-        const button = e.target.closest('[data-modal-toggle]');
-        if (button) {
-            e.preventDefault();
-            const modalId = button.getAttribute('data-modal-toggle');
-            modalManager.openModal(modalId);
-        }
-    });
-
-    // Modal içi geçiş bağlantıları - event delegation
-    document.addEventListener('click', (e) => {
-        const link = e.target.closest('[data-modal-switch]');
-        if (link) {
-            e.preventDefault();
-            const currentModal = link.closest('.modal')?.id;
-            const targetModal = link.getAttribute('data-modal-switch');
-
-            if (currentModal) {
-                modalManager.closeModal(currentModal);
-            }
-
-            setTimeout(() => {
-                modalManager.openModal(targetModal);
-            }, 300);
-        }
-    });
-}
-
-// Form gönderimlerini yönet
-function initAuthForms() {
-    document.querySelectorAll('.auth-form').forEach(form => {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const formData = new FormData(form);
-            const submitButton = form.querySelector('button[type="submit"]');
-            const originalText = submitButton.textContent;
-
-            // Butonu devre dışı bırak
-            submitButton.disabled = true;
-            submitButton.textContent = 'İşleniyor...';
-
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                let result;
-                try {
-                    result = await response.json();
-                } catch (jsonError) {
-                    throw new Error('Sunucu yanıtı işlenemedi.');
-                }
-
-                if (result.success) {
-                    showNotification(result.message, 'success');
-                    // Modalı kapat
-                    const modal = form.closest('.modal');
-                    if (modal) {
-                        modalManager.closeModal(modal.id);
-                    }
-                    // Sayfayı yenile
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                } else {
-                    showNotification(result.message || 'Bir hata oluştu', 'error');
-                }
-            } catch (error) {
-                console.error('Form gönderim hatası:', error);
-                showNotification('Bir hata oluştu. Lütfen tekrar deneyin.', 'error');
-            } finally {
-                // Butonu tekrar etkinleştir
-                submitButton.disabled = false;
-                submitButton.textContent = originalText;
-            }
-        });
-    });
-}
-
-function initSimpleModalSystem() {
+// YERİNE BU BASİT MODAL SİSTEMİNİ EKLE:
+function initModalSystem() {
     // Modal açma
     document.addEventListener('click', (e) => {
-        if (e.target.matches('[data-modal-toggle]')) {
+        const target = e.target;
+
+        // Modal aç butonları
+        if (target.matches('[data-modal-toggle]')) {
             e.preventDefault();
-            const modalId = e.target.getAttribute('data-modal-toggle');
+            const modalId = target.getAttribute('data-modal-toggle');
             const modal = document.getElementById(modalId);
             if (modal) {
                 modal.classList.add('show');
@@ -1063,20 +1097,20 @@ function initSimpleModalSystem() {
         }
 
         // Modal kapatma
-        if (e.target.matches('.modal-close') || e.target.matches('.modal')) {
+        if (target.matches('.modal-close') || target.matches('.modal')) {
             e.preventDefault();
-            const modal = e.target.closest('.modal');
+            const modal = target.closest('.modal');
             if (modal) {
                 modal.classList.remove('show');
                 document.body.style.overflow = '';
             }
         }
 
-        // Modal geçiş
-        if (e.target.matches('[data-modal-switch]')) {
+        // Modal geçiş bağlantıları
+        if (target.matches('[data-modal-switch]')) {
             e.preventDefault();
-            const currentModal = e.target.closest('.modal');
-            const targetModalId = e.target.getAttribute('data-modal-switch');
+            const currentModal = target.closest('.modal');
+            const targetModalId = target.getAttribute('data-modal-switch');
 
             if (currentModal) {
                 currentModal.classList.remove('show');
@@ -1103,10 +1137,229 @@ function initSimpleModalSystem() {
     });
 }
 
-// --- OLAY DİNLEYİCİLERİ ---
+// Form gönderimlerini yönet
+function initAuthForms() {
+    document.addEventListener('submit', async (e) => {
+        if (e.target.matches('.auth-form')) {
+            e.preventDefault();
 
-// Event listener'ları sadece elementler mevcutsa ekle
+            const form = e.target;
+            const formData = new FormData(form);
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+
+            // Butonu devre dışı bırak
+            submitButton.disabled = true;
+            submitButton.textContent = 'İşleniyor...';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonError) {
+                    throw new Error('Sunucu yanıtı işlenemedi.');
+                }
+
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    // Modalı kapat
+                    const modal = form.closest('.modal');
+                    if (modal) {
+                        modal.classList.remove('show');
+                        document.body.style.overflow = '';
+                    }
+                    // Sayfayı yenile
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showNotification(result.message || 'Bir hata oluştu', 'error');
+                }
+            } catch (error) {
+                console.error('Form gönderim hatası:', error);
+                showNotification('Bir hata oluştu. Lütfen tekrar deneyin.', 'error');
+            } finally {
+                // Butonu tekrar etkinleştir
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
+        }
+    });
+}
+
+function initGoogleAuthLinks() {
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('.btn-google') || e.target.closest('.btn-google')) {
+            e.preventDefault();
+            const link = e.target.matches('.btn-google') ? e.target : e.target.closest('.btn-google');
+            const currentModal = link.closest('.modal')?.id;
+
+            if (currentModal) {
+                // Hangi modal üzerinden tıklandığını session'a kaydetmek için
+                const googleUrl = `login.php?source=${currentModal}`;
+                window.location.href = googleUrl;
+            }
+        }
+    });
+}
+
+// URL'den hata ve başarı mesajlarını oku ve göster
+function handleUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    const success = urlParams.get('success');
+    const hash = window.location.hash;
+
+    if (error) {
+        showNotification(decodeURIComponent(error), 'error', 8000);
+
+        // Hash'te belirtilen modalı aç
+        if (hash && hash.includes('_modal')) {
+            const modalId = hash.split('?')[0].replace('#', '');
+            if (modalId) {
+                setTimeout(() => {
+                    const modal = document.getElementById(modalId);
+                    if (modal) {
+                        modal.classList.add('show');
+                        document.body.style.overflow = 'hidden';
+                    }
+                }, 1000);
+            }
+        }
+    }
+
+    if (success) {
+        showNotification(decodeURIComponent(success), 'success', 5000);
+    }
+
+    // URL'yi temizle (yeniden yükleme durumunda mesajın tekrar gösterilmemesi için)
+    if (error || success) {
+        const cleanUrl = window.location.pathname + (hash ? hash.split('?')[0] : '');
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+}
+
+/**
+ * Gelişmiş kaydetme fonksiyonu - Hem dosyaya hem DB'ye kaydetme seçeneği sunar
+ */
+async function handleSaveDrawing() {
+    try {
+        const drawingContent = getDrawingText(false);
+
+        if (!drawingContent || drawingContent.length < 5) {
+            showNotification('❌ Kaydetmek için geçerli bir çizim oluşturun.', 'error');
+            return;
+        }
+
+        // Kaydetme seçeneklerini göster
+        const saveOption = await showSaveOptions();
+
+        if (saveOption === 'file') {
+            // DOSYAYA KAYDET (Orjinal işlev)
+            saveToFile();
+        } else if (saveOption === 'database') {
+            // VERİTABANINA KAYDET (Yeni işlev)
+            await saveToDatabase(drawingContent);
+        }
+        // 'cancel' ise hiçbir şey yapma
+
+    } catch (error) {
+        console.error('Kaydetme hatası:', error);
+        showNotification('❌ Kayıt sırasında hata oluştu.', 'error');
+    }
+}
+
+/**
+ * Kaydetme seçeneklerini göster
+ */
+async function showSaveOptions() {
+    return new Promise((resolve) => {
+        // Basit bir seçim kutusu
+        const choice = confirm(
+            'Çizimi nasıl kaydetmek istiyorsunuz?\n\n' +
+            'OK: Veritabanına Kaydet (Toplulukla paylaş)\n' +
+            'Cancel: Dosyaya Kaydet (.txt) - Sadece bilgisayarınıza kaydeder'
+        );
+
+        resolve(choice ? 'database' : 'file');
+    });
+}
+
+/**
+ * Sağ tık menüsüne dosyaya kaydet seçeneği ekle (isteğe bağlı)
+ */
+function addContextMenuOption() {
+    // Çizim alanına sağ tık menüsü ekle
+    const matrixContainer = document.getElementById('matrix-container');
+    if (matrixContainer) {
+        matrixContainer.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showContextMenu(e.pageX, e.pageY);
+        });
+    }
+}
+
+function showContextMenu(x, y) {
+    // Basit bir context menu oluştur
+    const menu = document.createElement('div');
+    menu.style.position = 'absolute';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.style.background = 'var(--fixed-bg)';
+    menu.style.border = '1px solid var(--border-color)';
+    menu.style.borderRadius = '4px';
+    menu.style.padding = '5px 0';
+    menu.style.zIndex = '1000';
+    menu.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+
+    const option = document.createElement('div');
+    option.textContent = '📁 Dosyaya Kaydet (.txt)';
+    option.style.padding = '8px 15px';
+    option.style.cursor = 'pointer';
+    option.style.fontSize = '14px';
+
+    option.addEventListener('click', () => {
+        saveToFile();
+        document.body.removeChild(menu);
+    });
+
+    menu.appendChild(option);
+    document.body.appendChild(menu);
+
+    // Menüyü kapat
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu() {
+            if (document.body.contains(menu)) {
+                document.body.removeChild(menu);
+            }
+            document.removeEventListener('click', closeMenu);
+        });
+    }, 100);
+}
+
+// --- OLAY DİNLEYİCİLERİ ---
+// Event listener'ları güncelle
 document.addEventListener('DOMContentLoaded', () => {
+    // Save butonunu veritabanına kaydet işlevi ile değiştir
+    const saveButton = document.getElementById('saveButton');
+    if (saveButton) {
+        // Buton metnini biraz daha açıklayıcı yap
+        saveButton.textContent = '💾 Kaydet (Dosya/DB)';
+
+        // Önceki event listener'ı kaldır ve yeni ekle
+        saveButton.replaceWith(saveButton.cloneNode(true));
+        const newSaveButton = document.getElementById('saveButton');
+        newSaveButton.addEventListener('click', handleSaveDrawing);
+    }
+
+    // Alternatif: Sağ tık menüsüne dosyaya kaydet ekleyelim
+    addContextMenuOption();
+
     // First Row Length Input
     if (firstRowLengthInput) {
         firstRowLengthInput.addEventListener('input', () => {
@@ -1160,7 +1413,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Copy Button
+    // Copy Button - ORJİNAL
+    const copyButton = document.getElementById('copyButton');
     if (copyButton) {
         copyButton.addEventListener('click', async () => {
             const drawingText = getDrawingText(false);
@@ -1179,7 +1433,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Import Button
+    // Import Button - ORJİNAL
+    const importButton = document.getElementById('importButton');
     if (importButton) {
         importButton.addEventListener('click', async () => {
             try {
@@ -1196,24 +1451,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Save Button
-    if (saveButton) {
-        saveButton.addEventListener('click', () => {
-            const drawingText = getDrawingText(true);
-            const blob = new Blob([drawingText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'emoji_cizimi.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showNotification('💾 Çizim başarıyla kaydedildi!', 'success');
-        });
-    }
-
-    // Load Button
+    // Load Button - ORJİNAL
+    const loadButton = document.getElementById('loadButton');
     if (loadButton) {
         loadButton.addEventListener('click', () => {
             if (fileInput) {
@@ -1222,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // File Input
+    // File Input - ORJİNAL
     if (fileInput) {
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -1240,7 +1479,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Clear Button
+    // Clear Button - ORJİNAL
+    const clearButton = document.getElementById('clearButton');
     if (clearButton) {
         clearButton.addEventListener('click', async () => {
             const confirmed = await showConfirm(
@@ -1287,31 +1527,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Emoji Sanat Uygulaması Başlatılıyor...');
 
     try {
-        // 1. Modal sistemini başlat - SADECE BİR KEZ ÇAĞIR
-        initAuthLinks();
+        // Mevcut kodlar aynı kalacak...
+        initModalSystem();
         initAuthForms();
-        initSimpleModalSystem();
+        initGoogleAuthLinks();
+        handleUrlParameters();
 
-        // 2. Ayırıcı maliyetlerini hesapla
-        calculateSeparatorCharCosts();
-
-        // 3. Emojileri yükle
-        await loadEmojis();
-
-        // 4. Uygulama bileşenlerini başlat
-        if (Object.keys(emojiCategories).length > 0) {
-            updateSelectedEmojiDisplay();
-            createMatrix();
-            createCategoryTabs();
-            createPalette();
-            showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü Hazır!', 'info', 3000);
+        if (document.getElementById('separator-select')) {
+            calculateSeparatorCharCosts();
         }
 
-        // 5. Topluluk çizimlerini yükle
+        await loadEmojis();
+
+        if (Object.keys(emojiCategories).length > 0) {
+            if (document.getElementById('matrix')) {
+                updateSelectedEmojiDisplay();
+                createMatrix();
+                createCategoryTabs();
+                createPalette();
+                showNotification('⚡ Kalp Emoji Piksel Sanatı Editörü Hazır!', 'info', 3000);
+            }
+        }
+
         setTimeout(() => {
-            if (typeof fetchFollowingFeed === 'function') fetchFollowingFeed();
-            if (typeof fetchDrawings === 'function') fetchDrawings(1);
+            if (typeof fetchFollowingFeed === 'function' && document.getElementById('following-feed-list')) {
+                fetchFollowingFeed();
+            }
+            if (typeof fetchDrawings === 'function' && document.getElementById('drawing-list')) {
+                fetchDrawings(1);
+            }
         }, 2000);
+
+        document.querySelectorAll('.btn-google').forEach(link => {
+            const currentModal = link.closest('.modal')?.id;
+            if (currentModal) {
+                link.href = `login.php?source=${currentModal}`;
+            }
+        });
 
     } catch (error) {
         console.error('Uygulama başlatma hatası:', error);

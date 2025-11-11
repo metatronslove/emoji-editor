@@ -18,6 +18,18 @@ define('DB_NAME', 'pixel_editor_db');
 define('DB_USER', 'root');
 define('DB_PASS', 'sifreniz');
 
+// Avatar Ayarları
+define('GRAVATAR_URL', 'https://www.gravatar.com/avatar/');
+
+// Rütbe Sistemi Sabitleri
+define('RANK_SETTINGS', [
+    'comment_points' => 1.0,
+    'drawing_points' => 2.0,
+    'follower_points' => 0.5,
+    'upvote_points' => 0.2,
+    'profile_comment_points' => 0.3
+]);
+
 /**
  * Veritabanı bağlantısını kurar.
  * @return PDO
@@ -40,3 +52,4 @@ function getDbConnection() {
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ?>
+

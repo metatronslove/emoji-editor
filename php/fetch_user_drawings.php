@@ -3,7 +3,7 @@ require_once 'config.php';
 header('Content-Type: application/json');
 
 $targetUserId = $_GET['user_id'] ?? null;
-$currentUserId = $_SESSION['user_id'] ?? null; // Profil sahibi miyiz kontrolü için
+$currentUserId = $_SESSION['user_id'] ?? null;
 
 if (!$targetUserId) {
     http_response_code(400);
@@ -14,35 +14,35 @@ if (!$targetUserId) {
 try {
     $db = getDbConnection();
 
-    // Sadece görünür (is_visible = TRUE) olan çizimleri çekeriz.
-    // Ancak profil sahibi kendi görünmez çizimlerini görebilmelidir.
     $WHERE_CLAUSE = "d.user_id = :user_id AND (d.is_visible = TRUE";
 
-    // Eğer oturum açan kişi profilin sahibi ise, görünmez çizimlerini de görebilir.
     if ($currentUserId == $targetUserId) {
         $WHERE_CLAUSE .= " OR d.is_visible = FALSE)";
     } else {
-         $WHERE_CLAUSE .= ")";
+        $WHERE_CLAUSE .= ")";
     }
 
     $stmt = $db->prepare("
-        SELECT
-            d.id,
-            d.content,
-            d.category,
-            d.comments_allowed,
-            d.is_visible,
-            d.updated_at
-        FROM drawings d
-        WHERE {$WHERE_CLAUSE}
-        ORDER BY d.category ASC, d.updated_at DESC
+    SELECT
+    d.id,
+    d.content,
+    d.category,
+    d.comments_allowed,
+    d.is_visible,
+    d.updated_at,
+    u.username AS author_username,
+    u.profile_picture AS author_profile_picture,
+    u.id AS author_id
+    FROM drawings d
+    INNER JOIN users u ON d.user_id = u.id
+    WHERE {$WHERE_CLAUSE}
+    ORDER BY d.category ASC, d.updated_at DESC
     ");
 
     $stmt->bindParam(':user_id', $targetUserId, PDO::PARAM_INT);
     $stmt->execute();
     $drawings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Çizimleri kategoriye göre grupla
     $categorizedDrawings = [];
     foreach ($drawings as $drawing) {
         $category = $drawing['category'] ?? 'Genel';
@@ -52,7 +52,6 @@ try {
         $categorizedDrawings[$category][] = $drawing;
     }
 
-    // Öne çıkan çizimi (son güncellenen) bul
     $featuredDrawing = $drawings[0] ?? null;
 
     echo json_encode([
