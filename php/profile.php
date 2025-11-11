@@ -11,7 +11,7 @@ $profileUsername = $_GET['username'] ?? null;
 $currentUserId = $_SESSION['user_id'] ?? null;
 
 if (!$profileUsername) {
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit;
 }
 
@@ -97,6 +97,14 @@ $onlineUsers = $counters['online_users'] ?? 0;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Emoji Piksel Sanatı ve Sosyal Sohbet Platformu">
+<meta property="og:description" content="YouTube Sohbetleri için emojilerle sanat mesajları (Flood Mesajları) oluşturan bir eğlence ve sosyal platformdur!">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://flood.page.gd/">
+<meta property="og:image" content="../four-hundred-eighty-kilograms-of-gold-worth-open-graph-image.png">
+<meta property="og:site_name" content="Emoji Piksel Sanatı">
+<meta property="og:locale" content="tr_TR">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?php echo htmlspecialchars($profileUser['username'] ?? ''); ?> - Profil</title>
 <link rel="stylesheet" href="../styles.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -110,6 +118,7 @@ $onlineUsers = $counters['online_users'] ?? 0;
 <!-- STATS BAR -->
 <div id="stats-bar" class="card">
 <div class="info-group">
+<a href="/" class="btn btn-sm btn-primary">Ana Sayfa</a>
 <span>Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
 <span>Aktif Kullanıcı: <strong style="color:#4CAF50"><?php echo number_format($onlineUsers); ?></strong></span>
 </div>
@@ -490,13 +499,13 @@ if (!empty($socialLinks)):
     <div class="modal-content">
     <button class="modal-close">&times;</button>
     <h2>Giriş Yap</h2>
-    <form action="/login_handler" method="POST" class="auth-form">
+    <form action="../login_handler" method="POST" class="auth-form">
     <input type="text" name="username" placeholder="Kullanıcı Adı" required>
     <input type="password" name="password" placeholder="Şifre" required>
     <button type="submit">Giriş Yap</button>
     </form>
     <div class="divider"><span>YA DA</span></div>
-    <a href="login.php" class="btn-google">
+    <a href="../login.php" class="btn-google">
     <img src="../google_logo.svg" alt="Google Logo" style="width: 20px; height: 20px; margin-right: 10px;">
     Google ile Giriş Yap
     </a>
@@ -510,7 +519,7 @@ if (!empty($socialLinks)):
     <div class="modal-content">
     <button class="modal-close">&times;</button>
     <h2>Yeni Kayıt</h2>
-    <form action="/register" method="POST" class="auth-form">
+    <form action="../register" method="POST" class="auth-form">
     <input type="text" name="username" placeholder="Kullanıcı Adı" required minlength="3" maxlength="20">
     <input type="email" name="email" placeholder="E-posta" required>
     <input type="password" name="password" placeholder="Şifre (Min 6 Karakter)" required minlength="6">
@@ -518,7 +527,7 @@ if (!empty($socialLinks)):
     <button type="submit">Kayıt Ol</button>
     </form>
     <div class="divider"><span>YA DA</span></div>
-    <a href="login.php" class="btn-google">
+    <a href="../login.php" class="btn-google">
     <img src="../google_logo.svg" alt="Google Logo" style="width: 20px; height: 20px; margin-right: 10px;">
     Google ile Kayıt Ol
     </a>

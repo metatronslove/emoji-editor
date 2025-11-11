@@ -45,6 +45,14 @@ $onlineUsers = $counters['online_users'] ?? 0;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Emoji Piksel Sanatı ve Sosyal Sohbet Platformu">
+<meta property="og:description" content="YouTube Sohbetleri için emojilerle sanat mesajları (Flood Mesajları) oluşturan bir eğlence ve sosyal platformdur!">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://flood.page.gd/">
+<meta property="og:image" content="four-hundred-eighty-kilograms-of-gold-worth-open-graph-image.png">
+<meta property="og:site_name" content="Emoji Piksel Sanatı">
+<meta property="og:locale" content="tr_TR">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kalp Emoji Piksel Sanatı Editörü</title>
 <link rel="stylesheet" href="styles.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -58,6 +66,7 @@ $onlineUsers = $counters['online_users'] ?? 0;
 <!-- STATS BAR -->
 <div id="stats-bar" class="card">
 <div class="info-group">
+<a href="/" class="btn btn-sm btn-primary">Ana Sayfa</a>
 <span>Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
 <span>Aktif Kullanıcı: <strong style="color:#4CAF50"><?php echo number_format($onlineUsers); ?></strong></span>
 </div>
