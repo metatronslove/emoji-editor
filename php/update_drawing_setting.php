@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php';
+require_once('config.php');
 header('Content-Type: application/json');
 
 // Sadece POST ve oturum açık isteği kabul et
@@ -57,20 +57,14 @@ try {
     // Değeri BOOLEAN'dan veritabanına uygun INT'e çevir (TRUE -> 1, FALSE -> 0)
     $dbValue = $value ? 1 : 0;
 
-    $updateStmt = $db->prepare("
-        UPDATE drawings SET {$columnToUpdate} = :value WHERE id = :id AND user_id = :user_id
-    ");
-
+    $updateStmt = $db->prepare("UPDATE drawings SET {$columnToUpdate} = :value WHERE id = :id AND user_id = :user_id");
     $updateStmt->bindParam(':value', $dbValue, PDO::PARAM_INT);
     $updateStmt->bindParam(':id', $drawingId, PDO::PARAM_INT);
     $updateStmt->bindParam(':user_id', $currentUserId, PDO::PARAM_INT);
     $success = $updateStmt->execute();
 
     if ($success) {
-        echo json_encode([
-            'success' => true,
-            'message' => 'Ayarlar başarıyla güncellendi.'
-        ]);
+        echo json_encode(['success' => true, 'message' => 'Ayarlar başarıyla güncellendi.']);
     } else {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Veritabanı güncelleme hatası.']);
@@ -79,9 +73,6 @@ try {
 } catch (PDOException $e) {
     http_response_code(500);
     error_log("Çizim ayarı güncelleme hatası: " . $e->getMessage());
-    echo json_encode([
-        'success' => false,
-        'message' => 'Sunucu hatası: ' . $e->getMessage()
-    ]);
+    echo json_encode(['success' => false, 'message' => 'Sunucu hatası: ' . $e->getMessage()]);
 }
 ?>

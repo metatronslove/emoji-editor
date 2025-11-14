@@ -12,20 +12,10 @@ if (!$currentUserId) {
 try {
     $db = getDbConnection();
 
-    $stmt = $db->prepare("
-    SELECT
-    fr.follower_id AS requester_id,
-    u.username AS requester_username,
-    u.profile_picture AS requester_picture,
-    fr.requested_at
-    FROM follow_requests fr
-    JOIN users u ON fr.follower_id = u.id
-    WHERE fr.following_id = :owner_id AND fr.status = 'pending'
-    ORDER BY fr.requested_at ASC
-    ");
+    $stmt = $db->prepare("SELECT fr.follower_id AS requester_id, u.username AS requester_username, u.profile_picture AS requester_picture, fr.requested_at FROM follow_requests fr JOIN users u ON fr.follower_id = u.id WHERE fr.following_id = :owner_id AND fr.status = 'pending' ORDER BY fr.requested_at ASC");
     $stmt->bindParam(':owner_id', $currentUserId, PDO::PARAM_INT);
     $stmt->execute();
-    $requests = $stmt->fetchAll();
+    $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // PROFİL FOTOĞRAFLARINI DÜZENLE
     foreach ($requests as &$request) {

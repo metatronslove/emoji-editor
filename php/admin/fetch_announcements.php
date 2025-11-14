@@ -1,29 +1,36 @@
 <?php
 require_once '../config.php';
-header('Content-Type: application/json');
-
+session_start(); // Start session before checking user role
 $userRole = $_SESSION['user_role'] ?? 'user';
 if ($userRole !== 'admin') {
-    echo json_encode(['success' => false, 'message' => 'Sadece adminler platform ekleyebilir.']);
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Forbidden. Only admins can add platforms.']);
     exit;
 }
-
-$name = $_POST['name'] ?? '';
-$emoji = $_POST['emoji'] ?? '';
-$regex = $_POST['regex'] ?? '';
-
-if (empty($name) || empty($emoji)) {
-    echo json_encode(['success' => false, 'message' => 'Platform adı ve emoji gereklidir.']);
+$input = filter_input_array(INPUT_POST, [
+    'name' => FILTER_SANITIZE_STRING,
+    'emoji' => FILTER_SANITIZE_STRING,
+    'regex' => FILTER_VALIDATE_REGEXP,
+]);
+if (empty($input['name']) || empty($input['emoji'])) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Platform name and emoji are required.']);
     exit;
 }
-
+$db = getDbConnection();
 try {
-    $db = getDbConnection();
     $stmt = $db->prepare("INSERT INTO social_media_platforms (name, emoji, url_regex, is_active) VALUES (?, ?, ?, 1)");
-    $stmt->execute([$name, $emoji, $regex]);
-
-    echo json_encode(['success' => true, 'message' => 'Sosyal medya platformu başarıyla eklendi.']);
+    $stmt->bindValue(1, htmlspecialchars($input['name'])); // XSS Protection
+    $stmt->bindValue(2, htmlspecialchars($input['emoji'])); // XSS Protection
+    $stmt->bindValue(3, $input['regex']);
+    $result = $stmt->execute();
+    if ($result) {
+        echo json_encode(['success' => true, 'message' => 'Social media platform added successfully.']);
+    } else {
+        throw new Exception('Platform could not be added.');
+    }
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Platform eklenemedi: ' . $e->getMessage()]);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Platform addition failed: ' . $e->getMessage()]);
 }
 ?>

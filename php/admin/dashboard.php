@@ -1,10 +1,12 @@
 <?php
+
 // admin/dashboard.php - GÜNCELLENMİŞ
 require_once '../config.php';
+require_once '../User.php';
 require_once '../Auth.php';
-require_once '../Drawing.php';
 require_once '../functions.php';
 require_once '../counter_manager.php';
+require_once '../Drawing.php';
 require_once '../Router.php';
 $db = getDbConnection();
 
@@ -39,6 +41,15 @@ try {
 } catch (PDOException $e) {
     error_log("Dashboard istatistik hatası: " . $e->getMessage());
 }
+
+$counters = getCounters();
+$totalViews = $counters['total_views'] ?? 0;
+
+// Sayaçları başlat
+if (!defined('COUNTERS_INITIALIZED')) {
+    define('COUNTERS_INITIALIZED', true);
+    updateCounters();
+}
 ?>
 
 <!DOCTYPE html>
@@ -54,12 +65,12 @@ try {
 <!-- FÜTÜRİSTİK ARKA PLAN -->
 <div id="background-grid"></div>
 
-<div id="notification"></div>
-
 <!-- STATS BAR -->
 <div id="stats-bar" class="card">
 <div class="info-group">
-<span>Toplam Kullanıcı: <strong><?php echo number_format($stats['total_users'] ?? 0); ?></strong></span>
+<a href="../" class="btn btn-sm btn-primary">Ana Sayfa</a>
+<span>Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
+<span style="color:#4CAF50"><strong><?php echo getOnlineUsersText(); ?></strong></span>
 <span>Bugünkü Kayıt: <strong style="color:#4CAF50"><?php echo number_format($stats['new_users_today'] ?? 0); ?></strong></span>
 </div>
 <div class="user-actions">

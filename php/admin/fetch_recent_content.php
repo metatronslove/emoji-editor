@@ -16,7 +16,7 @@ if (!$currentUserId || !in_array($userRole, ['admin', 'moderator'])) {
 
 try {
     // 1. Son Çizimleri Çek (Son 50)
-    $stmtDrawings = $db->query("
+    $stmtDrawings = $db->prepare("
         SELECT
             d.id,
             d.content,
@@ -29,10 +29,11 @@ try {
         ORDER BY d.updated_at DESC
         LIMIT 50
     ");
+    $stmtDrawings->execute();
     $drawings = $stmtDrawings->fetchAll(PDO::FETCH_ASSOC);
 
     // 2. Son Yorumları Çek (Son 50)
-    $stmtComments = $db->query("
+    $stmtComments = $db->prepare("
         SELECT
             c.id,
             c.content,
@@ -47,6 +48,7 @@ try {
         ORDER BY c.created_at DESC
         LIMIT 50
     ");
+    $stmtComments->execute();
     $comments = $stmtComments->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([

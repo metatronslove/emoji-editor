@@ -120,14 +120,16 @@ try {
         }
     }
 
-
     // 4. Veritabanına Kayıt
-    $stmt = $db->prepare("
-        INSERT INTO comments (commenter_id, target_id, target_type, content, is_visible)
-        VALUES (?, ?, ?, ?, 1)
-    ");
+    $stmt = $db->prepare("INSERT INTO comments (commenter_id, target_id, target_type, content, is_visible) VALUES (:commenter_id, :target_id, :target_type, :content, :is_visible)");
 
-    $success = $stmt->execute([$commenterId, $targetId, $targetType, $sanitizedContent]);
+    $success = $stmt->execute([
+        ':commenter_id' => $commenterId,
+        ':target_id' => $targetId,
+        ':target_type' => $targetType,
+        ':content' => $sanitizedContent,
+        ':is_visible' => 1
+    ]);
 
     if ($success) {
         http_response_code(201); // Created
@@ -137,9 +139,11 @@ try {
         ]);
     } else {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Veritabanı kayıt hatası.']);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.'
+        ]);
     }
-
 } catch (PDOException $e) {
     http_response_code(500);
     error_log("Yorum kayıt hatası: " . $e->getMessage());

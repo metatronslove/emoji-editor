@@ -1,6 +1,8 @@
 <?php
 // Auth.php - PROFİL FOTOĞRAFI ENTEGRASYONLU
+require_once 'config.php';
 require_once 'User.php';
+require_once 'functions.php';
 
 class Auth {
     private $userModel;
@@ -122,7 +124,11 @@ class Auth {
 
     private function registerWithGoogle($googleId, $email, $name, $picture) {
         // Otomatik username oluştur (email'in kullanıcı adı kısmı)
-        $username = $this->generateUsernameFromEmail($email);
+        $username = strtolower(explode('@', $email)[0]);
+        $username = preg_replace('/[^a-z0-9_]/', '', $username);
+        if (strlen($username) < 3) {
+            $username = 'user' . time();
+        }
 
         // Username benzersiz mi kontrol et
         $counter = 0;
@@ -143,15 +149,6 @@ class Auth {
         }
 
         throw new Exception('Google ile kayıt işlemi başarısız.');
-    }
-
-    private function generateUsernameFromEmail($email) {
-        $username = strtolower(explode('@', $email)[0]);
-        $username = preg_replace('/[^a-z0-9_]/', '', $username);
-        if (strlen($username) < 3) {
-            $username = 'user' . time();
-        }
-        return $username;
     }
 
     private function loginUser($user) {
