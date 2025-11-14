@@ -16,6 +16,11 @@ let currentCategory = null;
 // Mesaj kutusu değişkenleri
 // let currentConversation = null;
 let allConversations = [];
+// Pano için dosya değişkenleri
+let boardFileData = null;
+let boardFileName = null;
+let boardFileType = null;
+
 
 // Ayırıcı karakterlerin char ve name bilgileri
 let SEPARATOR_MAP = {
@@ -225,6 +230,251 @@ async function loadEmojis() {
         selectedHeart = emojiCategories['Kalpler']['Siyah Kalp'];
     }
 }
+
+function handleBoardFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Dosya boyutu kontrolü (2MB)
+    if (file.size > 2097152) {
+        showNotification('Dosya boyutu 2MB\'dan küçük olmalı.', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    const allowedTypes = [
+        'image/', 'video/', 'audio/',
+        'application/pdf', 'text/',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+
+    const isValidType = allowedTypes.some(type => file.type.startsWith(type));
+
+    if (!isValidType) {
+        showNotification('Desteklenmeyen dosya türü.', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        boardFileData = e.target.result.split(',')[1];
+        boardFileName = file.name;
+        boardFileType = file.type;
+
+        // Dosya bilgisini göster
+        document.getElementById('boardFileInfo').style.display = 'block';
+        document.getElementById('boardFileName').textContent = `${file.name} (${formatFileSize(file.size)})`;
+
+        showNotification(`"${file.name}" dosyası eklendi.`, 'success');
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearBoardFile() {
+    boardFileData = null;
+    boardFileName = null;
+    boardFileType = null;
+    document.getElementById('boardFileInput').value = '';
+    document.getElementById('boardFileInfo').style.display = 'none';
+}
+
+// Pano mesajı gönderme - GİZLİLİK KONTROLLÜ
+async function postProfileComment() {
+    if (!window.PROFILE_DATA.canViewContent) {
+        showNotification('Bu profilin panosuna mesaj yazma izniniz yok.', 'error');
+        return;
+    }
+
+    const inputElement = document.getElementById('boardCommentInput');
+    const content = inputElement.value.trim();
+
+    if (content === '' && !boardFileData) {
+        showNotification('Lütfen bir mesaj yazın veya dosya ekleyin.', 'error');
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('target_type', 'profile');
+        formData.append('target_id', window.PROFILE_DATA.userId);
+        formData.append('content', content);
+
+        // Dosya varsa ekle
+        if (boardFileData) {
+            formData.append('file_data', boardFileData);
+            formData.append('file_name', boardFileName);
+            formData.append('mime_type', boardFileType);
+            formData.append('message_type', getMessageType(boardFileType));
+        }
+
+        const response = await fetch('../comment_action.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification(result.message, 'success');
+
+            // Formu temizle
+            inputElement.value = '';
+            clearBoardFile();
+
+            // Yorumları yenile
+            fetchProfileComments();
+        } else {
+            showNotification(result.message, 'error');
+
+            // Eğer gizlilik hatası ise, sayfayı yenile
+            if (result.message.includes('gizli profil') || result.message.includes('takipçiler')) {
+                setTimeout(() => window.location.reload(), 2000);
+            }
+        }
+    } catch (error) {
+        console.error('Yorum gönderme hatası:', error);
+        showNotification('Yorum gönderilirken hata oluştu.', 'error');
+    }
+}
+
+// Yorumları getirme - GİZLİLİK KONTROLLÜ
+async function fetchProfileComments() {
+    const listElement = document.getElementById('board-comments-list');
+    if (!listElement) return;
+
+    listElement.innerHTML = '<p style="text-align: center; color: var(--main-text); opacity: 0.7;">Mesajlar yükleniyor...</p>';
+
+    try {
+        const response = await fetch(`../fetch_comments.php?type=profile&id=${window.PROFILE_DATA.userId}`);
+        const result = await response.json();
+
+        if (result.access_denied) {
+            listElement.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: var(--main-text);">
+            <div style="font-size: 48px; margin-bottom: 15px;">🔒</div>
+            <p style="margin-bottom: 15px; opacity: 0.8;">Bu gizli profilin panosunu görmek için takipçi olmalısınız.</p>
+            ${window.PROFILE_DATA.currentUserId ? `
+                <button onclick="handleProfileFollowAction(document.getElementById('followRequestBtn'))"
+                class="btn-primary">Takip İsteği Gönder</button>
+                ` : `
+                <p style="opacity: 0.6;">Giriş yaparak takip isteği gönderebilirsiniz.</p>
+                `}
+                </div>
+                `;
+                return;
+        }
+
+        if (result.success && result.comments.length > 0) {
+            listElement.innerHTML = result.comments.map(comment => {
+                let profilePicSrc = formatProfilePicture(comment.profile_picture);
+
+                const profilePic = `<img src="${profilePicSrc}" alt="Profil" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">`;
+
+                // Medya içeriğini oluştur
+                let mediaContent = '';
+                if (comment.message_type === 'image') {
+                    mediaContent = `<img src="data:${comment.mime_type};base64,${comment.file_data}" alt="${comment.file_name}" style="max-width: 300px; max-height: 300px; border-radius: 8px; margin-top: 8px; cursor: pointer;" onclick="openMediaViewer('data:${comment.mime_type};base64,${comment.file_data}')">`;
+                } else if (comment.message_type === 'video') {
+                    mediaContent = `
+                    <div style="margin-top: 8px;">
+                    <video controls style="max-width: 300px; max-height: 300px; border-radius: 8px;">
+                    <source src="data:${comment.mime_type};base64,${comment.file_data}" type="${comment.mime_type}">
+                    </video>
+                    </div>
+                    `;
+                } else if (comment.message_type === 'audio') {
+                    mediaContent = `
+                    <div style="margin-top: 8px;">
+                    <audio controls style="width: 100%;">
+                    <source src="data:${comment.mime_type};base64,${comment.file_data}" type="${comment.mime_type}">
+                    </audio>
+                    </div>
+                    `;
+                } else if (comment.message_type === 'file') {
+                    mediaContent = `
+                    <div style="margin-top: 8px;">
+                    <a href="data:${comment.mime_type};base64,${comment.file_data}" download="${comment.file_name}" class="btn-secondary">
+                    📎 ${comment.file_name}
+                    </a>
+                    </div>
+                    `;
+                }
+
+                // Silme butonu (sadece yorum sahibi, admin veya moderatör)
+                let deleteButton = '';
+                if (comment.can_delete) {
+                    deleteButton = `
+                    <button onclick="deleteComment(${comment.id})"
+                    style="background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 11px; cursor: pointer; margin-left: 8px;">
+                    ✖
+                    </button>
+                    `;
+                }
+
+                return `
+                <div class="comment-item" style="border-bottom: 1px solid var(--border-color); padding: 15px 0;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                ${profilePic}
+                <div style="flex-grow: 1;">
+                <strong><a href="/${comment.username}/" style="color: var(--accent-color); text-decoration: none;">${comment.username}</a></strong>
+                <div style="color: var(--main-text); opacity: 0.7; font-size: 0.85em;">
+                ${new Date(comment.created_at).toLocaleString('tr-TR')}
+                ${!comment.is_visible ? '<span style="color: #ffc107; margin-left: 5px;">(Silinmiş)</span>' : ''}
+                </div>
+                </div>
+                ${deleteButton}
+                </div>
+                <div style="white-space: pre-wrap; margin: 0; padding: 12px; background: var(--fixed-bg); border-radius: 8px; font-size: 0.95em; position: relative;">
+                ${comment.is_visible ? (comment.content ? formatMessageContent(comment.content) : '') : '<em style="opacity: 0.6;">Bu mesaj silinmiş</em>'}
+                ${comment.is_visible ? mediaContent : ''}
+                </div>
+                </div>
+                `;
+            }).join('');
+        } else {
+            listElement.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: var(--main-text);">
+            <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
+            <p style="margin-bottom: 15px; opacity: 0.8;">Panoda henüz mesaj yok...</p>
+            <p style="opacity: 0.6; font-size: 0.9em;">İlk mesajı yazmak ister misin? ✨</p>
+            </div>
+            `;
+        }
+    } catch (error) {
+        listElement.innerHTML = '<p style="text-align: center; color: #dc3545;">Pano mesajları yüklenirken hata oluştu.</p>';
+    }
+}
+
+// Yorum silme fonksiyonu
+async function deleteComment(commentId) {
+    const confirmed = await showConfirm(
+        'Mesajı Sil',
+        'Bu mesajı silmek istediğinizden emin misiniz?'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch('../delete_comment.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `comment_id=${commentId}`
+        });
+
+        const result = await response.json();
+        showNotification(result.message, result.success ? 'success' : 'error');
+
+        if (result.success) {
+            fetchProfileComments();
+        }
+    } catch (error) {
+        console.error('Yorum silme hatası:', error);
+        showNotification('Yorum silinirken hata oluştu.', 'error');
+    }
+}
+
 
 /**
  * Karakter sayımını hesaplar ve bütçeyi aşan hücreleri otomatik olarak kırpar (clipped).
@@ -723,6 +973,253 @@ function initMessagingSystem() {
     initMessageModalEvents();
 }
 
+/**
+ * Profil sayfasından doğrudan mesaj gönderme modalını açar
+ */
+function openSimpleMessageModalFromProfile(userId, username) {
+    console.log('📨 Profilden mesaj gönderilecek:', userId, username);
+
+    if (!window.currentUser || !window.currentUser.id) {
+        showNotification('Mesaj göndermek için giriş yapmalısınız.', 'error');
+        return;
+    }
+
+    // Basit mesaj modalını aç
+    createSimpleMessageModal(userId, username);
+}
+
+/**
+ * Basit mesaj modalı oluşturur (mesaj kutusu yerine doğrudan mesaj gönderme)
+ */
+function createSimpleMessageModal(userId, username) {
+    // Modal HTML'ini oluştur
+    const modalHtml = `
+    <div id="direct-message-modal" class="modal show">
+    <div class="modal-content" style="max-width: 500px;">
+    <button class="modal-close" onclick="closeDirectMessageModal()">❎</button>
+    <h3 style="margin-bottom: 20px; color: var(--accent-color);">
+    💬 ${username} - Mesaj Gönder
+    </h3>
+
+    <!-- Dosya bilgisi gösterimi -->
+    <div id="direct-modal-file-info" style="display: none; margin-bottom: 10px; padding: 8px; background: var(--fixed-bg); border-radius: 6px; border: 1px solid var(--accent-color);">
+    <span style="font-weight: bold;">📎 Dosya seçildi:</span>
+    <span id="direct-modal-file-name" style="margin-left: 5px;"></span>
+    <button onclick="clearDirectModalFile()" style="margin-left: 10px; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 12px; cursor: pointer;">✖</button>
+    </div>
+
+    <textarea id="direct-message-input"
+    placeholder="Mesajınızı yazın... (Resim, video veya ses de ekleyebilirsiniz)"
+    style="width: 100%; height: 120px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--fixed-bg); color: var(--main-text); font-family: inherit; resize: vertical; margin-bottom: 15px; box-sizing: border-box; font-size: 16px;"></textarea>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+    <button onclick="document.getElementById('direct-modal-file-input').click()"
+    class="btn-secondary" style="flex: 1;">
+    📎 Dosya Ekle
+    </button>
+    <button onclick="openDirectMediaGallery()"
+    class="btn-info" style="flex: 1;">
+    🖼️ Galeriden Seç
+    </button>
+    </div>
+
+    <input type="file" id="direct-modal-file-input" style="display: none;"
+    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.mp3,.mp4,.wav">
+
+    <div style="display: flex; gap: 10px;">
+    <button onclick="sendDirectMessageFromModal()"
+    class="btn-primary" style="flex: 1;">
+    📤 Gönder
+    </button>
+    <button onclick="closeDirectMessageModal()"
+    class="btn-danger">
+    İptal
+    </button>
+    </div>
+
+    <div style="font-size: 12px; color: var(--main-text); opacity: 0.7; margin-top: 10px;">
+    💡 İpucu: Resim, video, ses veya dosya ekleyebilirsiniz (max 2MB)
+    </div>
+    </div>
+    </div>
+    `;
+
+    // Eski modal varsa kaldır
+    const existingModal = document.getElementById('direct-message-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Yeni modalı ekle
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Event listener'ları ekle
+    document.getElementById('direct-modal-file-input').addEventListener('change', handleDirectModalFileSelect);
+
+    // Değişkenleri ayarla
+    window.directModalReceiverId = userId;
+    window.directModalReceiverUsername = username;
+    window.directModalFileData = null;
+    window.directModalFileName = null;
+    window.directModalFileType = null;
+
+    // Input'a odaklan
+    setTimeout(() => {
+        document.getElementById('direct-message-input').focus();
+    }, 100);
+}
+
+/**
+ * Doğrudan mesaj modalını kapat
+ */
+function closeDirectMessageModal() {
+    const modal = document.getElementById('direct-message-modal');
+    if (modal) {
+        modal.remove();
+    }
+    window.directModalReceiverId = null;
+    window.directModalReceiverUsername = null;
+    window.directModalFileData = null;
+    window.directModalFileName = null;
+    window.directModalFileType = null;
+}
+
+/**
+ * Doğrudan mesaj modalı için dosya seçimi
+ */
+function handleDirectModalFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Dosya boyutu kontrolü (2MB)
+    if (file.size > 2097152) {
+        showNotification('Dosya boyutu 2MB\'dan küçük olmalı.', 'error');
+        return;
+    }
+
+    const allowedTypes = [
+        'image/', 'video/', 'audio/',
+        'application/pdf', 'text/',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+
+    const isValidType = allowedTypes.some(type => file.type.startsWith(type));
+
+    if (!isValidType) {
+        showNotification('Desteklenmeyen dosya türü.', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        window.directModalFileData = e.target.result.split(',')[1];
+        window.directModalFileName = file.name;
+        window.directModalFileType = file.type;
+
+        // Dosya bilgisini göster
+        document.getElementById('direct-modal-file-info').style.display = 'block';
+        document.getElementById('direct-modal-file-name').textContent = `${file.name} (${formatFileSize(file.size)})`;
+
+        showNotification(`"${file.name}" dosyası eklendi.`, 'success');
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * Doğrudan mesaj modalındaki dosyayı temizle
+ */
+function clearDirectModalFile() {
+    window.directModalFileData = null;
+    window.directModalFileName = null;
+    window.directModalFileType = null;
+    document.getElementById('direct-modal-file-input').value = '';
+    document.getElementById('direct-modal-file-info').style.display = 'none';
+}
+
+/**
+ * Doğrudan mesaj modalından mesaj gönder
+ */
+async function sendDirectMessageFromModal() {
+    if (!window.directModalReceiverId) {
+        showNotification('Alıcı bulunamadı.', 'error');
+        return;
+    }
+
+    const input = document.getElementById('direct-message-input');
+    const content = input.value.trim();
+
+    if (!content && !window.directModalFileData) {
+        showNotification('Lütfen mesaj yazın veya dosya ekleyin.', 'error');
+        return;
+    }
+
+    // Gönder butonunu devre dışı bırak
+    const sendButton = document.querySelector('#direct-message-modal .btn-primary');
+    const originalText = sendButton.textContent;
+    sendButton.disabled = true;
+    sendButton.textContent = '⏳ Gönderiliyor...';
+
+    try {
+        const formData = new FormData();
+        formData.append('receiver_id', window.directModalReceiverId);
+        formData.append('content', content);
+
+        if (window.directModalFileData) {
+            formData.append('file_data', window.directModalFileData);
+            formData.append('file_name', window.directModalFileName);
+            formData.append('mime_type', window.directModalFileType);
+            formData.append('message_type', getMessageType(window.directModalFileType));
+        } else {
+            formData.append('message_type', 'text');
+        }
+
+        console.log('📤 Mesaj gönderiliyor...');
+        const response = await fetch('send_message.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        console.log('📨 Mesaj gönderme sonucu:', result);
+
+        if (result.success) {
+            showNotification('✅ Mesajınız gönderildi!', 'success');
+            closeDirectMessageModal();
+
+            // İsteğe bağlı: Mesaj kutusunu aç ve konuşmayı göster
+            setTimeout(() => {
+                if (typeof openMessagesModal === 'function') {
+                    openMessagesModal();
+                    // Konuşmayı seçmek için kısa gecikme
+                    setTimeout(() => {
+                        if (typeof selectConversation === 'function') {
+                            selectConversation(window.directModalReceiverId, window.directModalReceiverUsername);
+                        }
+                    }, 1000);
+                }
+            }, 1500);
+        } else {
+            showNotification('❌ ' + (result.message || 'Mesaj gönderilemedi'), 'error');
+        }
+    } catch (error) {
+        console.error('Mesaj gönderme hatası:', error);
+        showNotification('❌ Mesaj gönderilirken hata oluştu.', 'error');
+    } finally {
+        // Butonu tekrar etkinleştir
+        sendButton.disabled = false;
+        sendButton.textContent = originalText;
+    }
+}
+
+/**
+ * Doğrudan mesaj modalı için medya galerisi
+ */
+function openDirectMediaGallery() {
+    // Basit bir dosya seçici aç
+    document.getElementById('direct-modal-file-input').click();
+}
+
 // ACİL ÇÖZÜM: Eksik fonksiyonları tanımla
 function openSimpleMessageModalFromButton(button) {
     console.log('🔧 Mesaj butonu tıklandı:', button);
@@ -748,77 +1245,42 @@ function openSimpleMessageModalFromButton(button) {
     createSimpleMessageModal(targetId, targetUsername);
 }
 
-// Basit mesaj modalı oluştur (zaten varsa yeniden tanımla)
-function createSimpleMessageModal(userId, username) {
-    console.log(`🎯 Basit mesaj modalı açılıyor: ${userId} - ${username}`);
-
-    // Önceki modalı temizle
-    const existingModal = document.getElementById('simple-message-modal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-
-    const modalHTML = `
-    <div id="simple-message-modal" class="modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
-    <div style="background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; border: 2px solid var(--accent-color); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h3 style="margin: 0; color: var(--accent-color);">💬 ${username} - Mesaj Gönder</h3>
-    <button onclick="closeSimpleMessageModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--main-text); padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
-    </div>
-
-    <textarea id="simple-message-input"
-    placeholder="Mesajınızı yazın..."
-    style="width: 100%; height: 120px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--fixed-bg); color: var(--main-text); font-family: inherit; resize: vertical; margin-bottom: 15px; box-sizing: border-box;"></textarea>
-
-    <div style="display: flex; gap: 10px;">
-    <button onclick="sendSimpleMessage(${userId})"
-    style="flex: 1; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">
-    📤 Gönder
-    </button>
-    <button onclick="closeSimpleMessageModal()"
-    style="padding: 12px 20px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
-    İptal
-    </button>
-    </div>
-    </div>
-    </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    console.log('✅ Basit mesaj modalı oluşturuldu');
+/**
+ * Profil sayfasından mesaj gönderme - TAM MEDYA DESTEKLİ
+ */
+function openMessagesModalForUser(userId, username) {
+    console.log('📨 Eski fonksiyon, yeni fonksiyona yönlendiriliyor:', userId, username);
+    openSimpleMessageModalFromProfile(userId, username);
 }
 
-// Basit modalı kapat
-function closeSimpleMessageModal() {
-    const modal = document.getElementById('simple-message-modal');
-    if (modal) {
-        modal.remove();
-        console.log('✅ Basit mesaj modalı kapatıldı');
+/**
+ * Fallback mesaj gönderme (ana mesaj kutusu açılmazsa)
+ */
+function fallbackMessageSend(userId, username) {
+    const message = prompt(`${username} kullanıcısına göndermek istediğiniz mesajı yazın:`);
+
+    if (message && message.trim() !== '') {
+        sendDirectMessage(userId, message.trim());
     }
 }
 
-// Basit mesaj gönder
-async function sendSimpleMessage(receiverId) {
-    console.log(`📨 Mesaj gönderiliyor: ${receiverId}`);
-
-    const input = document.getElementById('simple-message-input');
-    if (!input) {
-        showNotification('Mesaj alanı bulunamadı.', 'error');
-        return;
-    }
-
-    const content = input.value.trim();
-
-    if (!content) {
-        showNotification('Lütfen mesaj yazın.', 'error');
-        return;
-    }
-
+/**
+ * Doğrudan mesaj gönderme (API çağrısı)
+ */
+async function sendDirectMessage(receiverId, content, fileData = null, fileName = null, fileType = null) {
     try {
         const formData = new FormData();
         formData.append('receiver_id', receiverId);
         formData.append('content', content);
-        formData.append('message_type', 'text');
+
+        if (fileData) {
+            formData.append('file_data', fileData);
+            formData.append('file_name', fileName);
+            formData.append('mime_type', fileType);
+            formData.append('message_type', getMessageType(fileType));
+        } else {
+            formData.append('message_type', 'text');
+        }
 
         console.log('📤 Mesaj gönderiliyor...');
         const response = await fetch('send_message.php', {
@@ -831,7 +1293,16 @@ async function sendSimpleMessage(receiverId) {
 
         if (result.success) {
             showNotification('✅ Mesajınız gönderildi!', 'success');
-            closeSimpleMessageModal();
+
+            // Mesaj kutusunu güncelle
+            if (typeof loadConversations === 'function') {
+                setTimeout(() => {
+                    loadConversations();
+                    if (currentConversation && currentConversation.id == receiverId) {
+                        loadConversationMessages(receiverId);
+                    }
+                }, 500);
+            }
         } else {
             showNotification('❌ ' + (result.message || 'Mesaj gönderilemedi'), 'error');
         }
@@ -1967,6 +2438,10 @@ function showContextMenu(x, y) {
 // --- OLAY DİNLEYİCİLERİ ---
 // Event listener'ları güncelle
 document.addEventListener('DOMContentLoaded', () => {
+    const boardFileInput = document.getElementById('boardFileInput');
+    if (boardFileInput) {
+        boardFileInput.addEventListener('change', handleBoardFileSelect);
+    }
     // Save butonunu veritabanına kaydet işlevi ile değiştir
     const saveButton = document.getElementById('saveButton');
     if (saveButton) {

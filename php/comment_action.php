@@ -1,15 +1,13 @@
 <?php
-require_once 'config.php'; // Oturum, DB bağlantısı ve Composer yüklemesi
+require_once 'config.php';
 header('Content-Type: application/json');
 
-// Sadece POST isteklerini kabul et
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Yönteme izin verilmiyor.']);
     exit;
 }
 
-// 1. Oturum Kontrolü (Yorum yapmak için giriş zorunludur)
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Yorum yapmak için oturum açmalısınız.']);
@@ -17,54 +15,91 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $commenterId = $_SESSION['user_id'];
-$db = getDbConnection(); // Veritabanı bağlantısı
+$db = getDbConnection();
 
-// Gelen JSON verisini al
-$input = file_get_contents('php://input');
-$data = json_decode($input, true);
+$targetType = $_POST['target_type'] ?? null;
+$targetId = $_POST['target_id'] ?? null;
+$content = $_POST['content'] ?? null;
+$messageType = $_POST['message_type'] ?? 'text';
+$fileName = $_POST['file_name'] ?? null;
+$fileData = $_POST['file_data'] ?? null;
+$mimeType = $_POST['mime_type'] ?? null;
 
-$targetType = $data['target_type'] ?? null; // 'drawing' veya 'profile'
-$targetId = $data['target_id'] ?? null;
-$content = $data['content'] ?? null;
-
-// Temel Veri Doğrulaması
-if (!$targetType || !$targetId || empty($content) || !in_array($targetType, ['drawing', 'profile'])) {
+// Temel doğrulama
+if (!$targetType || !$targetId || (!$content && !$fileData)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Eksik veya geçersiz yorum bilgisi.']);
     exit;
 }
 
-// Yorum İçeriği Güvenliği: Metni temizle
-// XSS saldırılarını önlemek için tüm HTML etiketlerini kaldır.
-// Eğer özel bir format (Markdown/BBCode) kullanılıyorsa, sanitizasyon burada yapılmalıdır.
-$sanitizedContent = strip_tags(trim($content));
+// Profil yorumları için özel kontroller
+if ($targetType === 'profile') {
+    // Profil sahibini bul
+    $profileStmt = $db->prepare("SELECT id, privacy_mode FROM users WHERE id = ?");
+    $profileStmt->execute([$targetId]);
+    $profileUser = $profileStmt->fetch();
 
-if (empty($sanitizedContent)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Yorum içeriği boş olamaz.']);
+    if (!$profileUser) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Profil bulunamadı.']);
+        exit;
+    }
+
+    $isProfileOwner = ($commenterId == $profileUser['id']);
+    $isProfilePrivate = ($profileUser['privacy_mode'] === 'private');
+
+    // Gizlilik kontrolleri
+    if (!$isProfileOwner) {
+        if ($isProfilePrivate) {
+            // Gizli profil - sadece takipçiler yorum yapabilir
+            $followStmt = $db->prepare("SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?");
+            $followStmt->execute([$commenterId, $targetId]);
+            $isFollowing = $followStmt->fetch();
+
+            if (!$isFollowing) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Bu gizli profilde sadece takipçiler yorum yapabilir.']);
+                exit;
+            }
+        }
+
+        // Engelleme kontrolü
+        $blockStmt = $db->prepare("SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)");
+        $blockStmt->execute([$commenterId, $targetId, $targetId, $commenterId]);
+        $isBlocked = $blockStmt->fetch();
+
+        if ($isBlocked) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Engellenmiş kullanıcılar yorum yapamaz.']);
+            exit;
+        }
+    }
+}
+
+// Dosya boyutu kontrolü (2MB)
+if ($fileData && strlen($fileData) > 2097152) {
+    echo json_encode(['success' => false, 'message' => 'Dosya boyutu 2MB\'dan küçük olmalı.']);
     exit;
 }
 
 try {
-    // 2. Yorum Yapan Kullanıcı Kısıtlamalarını Kontrol Et
+    // Kullanıcı kısıtlamalarını kontrol et
     $userStmt = $db->prepare("SELECT is_banned, comment_mute_until FROM users WHERE id = ?");
     $userStmt->execute([$commenterId]);
     $commenter = $userStmt->fetch();
 
     if (!$commenter) {
-         http_response_code(401);
-         echo json_encode(['success' => false, 'message' => 'Kullanıcı bulunamadı. Oturumu yeniden açın.']);
-         exit;
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Kullanıcı bulunamadı.']);
+        exit;
     }
 
-    // A. Genel Ban Kontrolü
     if ($commenter['is_banned']) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Genel yasaklama nedeniyle yorum yapamazsınız.']);
         exit;
     }
 
-    // B. Yorum Yasağı Süresi Kontrolü
     if ($commenter['comment_mute_until'] && strtotime($commenter['comment_mute_until']) > time()) {
         $muteTime = date('d.m.Y H:i', strtotime($commenter['comment_mute_until']));
         http_response_code(403);
@@ -72,83 +107,31 @@ try {
         exit;
     }
 
-    // 3. Hedef Kullanıcı Kontrolü ve Engelleme Kontrolleri
-    $targetOwnerId = null;
+    // Yorumu kaydet
+    $stmt = $db->prepare("
+    INSERT INTO comments
+    (commenter_id, target_type, target_id, content, message_type, file_data, file_name, mime_type, is_visible)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    ");
 
-    if ($_POST['target_type'] === 'profile' && isset($_POST['content'])) {
-        $content = $_POST['content'];
+    $sanitizedContent = strip_tags(trim($content));
 
-        // URL'leri tespit et ve Open Graph verilerini topla
-        $urls = extractUrls($content);
-        $metadata = [];
-
-        foreach ($urls as $url) {
-            $ogData = fetchOpenGraphData($url);
-            if ($ogData) {
-                $metadata[] = $ogData;
-            }
-        }
-
-        // Metadata'yı JSON olarak kaydet
-        $metadataJson = !empty($metadata) ? json_encode($metadata) : null;
-
-        $stmt = $db->prepare("
-        INSERT INTO comments (commenter_id, content, target_type, target_id, metadata)
-        VALUES (?, ?, 'profile', ?, ?)
-        ");
-        $stmt->execute([$user_id, $content, $target_id, $metadataJson]);
-    }
-
-    // D. Engelleme Kontrolleri (Sadece yorum yapan ve yorumun sahibi farklıysa geçerli)
-    if ($targetOwnerId !== null && $targetOwnerId != $commenterId) {
-
-        // Yorumun sahibi beni engelledi mi? (Target Owner -> Commenter)
-        $isBlockedByOwner = $db->query("SELECT 1 FROM blocks WHERE blocker_id = {$targetOwnerId} AND blocked_id = {$commenterId}")->fetchColumn();
-        if ($isBlockedByOwner) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Bu kullanıcı tarafından engellendiniz. Yorum yapamazsınız.']);
-            exit;
-        }
-
-        // Ben yorumun sahibini engelledim mi? (Commenter -> Target Owner)
-        $didBlockOwner = $db->query("SELECT 1 FROM blocks WHERE blocker_id = {$commenterId} AND blocked_id = {$targetOwnerId}")->fetchColumn();
-        if ($didBlockOwner) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Yorum yapmak istediğiniz kullanıcıyı engellediniz.']);
-            exit;
-        }
-    }
-
-    // 4. Veritabanına Kayıt
-    $stmt = $db->prepare("INSERT INTO comments (commenter_id, target_id, target_type, content, is_visible) VALUES (:commenter_id, :target_id, :target_type, :content, :is_visible)");
-
-    $success = $stmt->execute([
-        ':commenter_id' => $commenterId,
-        ':target_id' => $targetId,
-        ':target_type' => $targetType,
-        ':content' => $sanitizedContent,
-        ':is_visible' => 1
+    $stmt->execute([
+        $commenterId,
+        $targetType,
+        $targetId,
+        $sanitizedContent,
+        $messageType,
+        $fileData,
+        $fileName,
+        $mimeType
     ]);
 
-    if ($success) {
-        http_response_code(201); // Created
-        echo json_encode([
-            'success' => true,
-            'message' => 'Yorum başarıyla gönderildi.'
-        ]);
-    } else {
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.'
-        ]);
-    }
+    echo json_encode(['success' => true, 'message' => 'Mesaj başarıyla gönderildi.']);
+
 } catch (PDOException $e) {
     http_response_code(500);
     error_log("Yorum kayıt hatası: " . $e->getMessage());
-    echo json_encode([
-        'success' => false,
-        'message' => 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.'
-    ]);
+    echo json_encode(['success' => false, 'message' => 'Sunucu hatası.']);
 }
 ?>

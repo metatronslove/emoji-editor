@@ -137,6 +137,7 @@ $totalViews = $counters['total_views'] ?? 0;
 <body>
 <!-- FÜTÜRİSTİK ARKA PLAN -->
 <div id="background-grid"></div>
+<?php include 'messages_modal.php'; ?>
 
 <div id="notification"></div>
 
@@ -226,11 +227,9 @@ if (!empty($socialLinks)):
     </div>
 
     <!-- Aksiyon Butonları kısmını şu şekilde güncelleyin -->
-    <!-- PROFİL SAYFASINDAKİ MESAJ BUTONU - ACİL DÜZELTME -->
+    <!-- PROFİL SAYFASINDAKİ MESAJ BUTONU - DÜZELTİLMİŞ -->
     <?php if ($currentUserId && !$isProfileOwner && !$isBlockingMe): ?>
-    <button onclick="openSimpleMessageModalFromButton(this)"
-    data-target-id="<?php echo $profileUser['id']; ?>"
-    data-target-username="<?php echo htmlspecialchars($profileUser['username']); ?>"
+    <button onclick="openSimpleMessageModalFromProfile(<?php echo $profileUser['id']; ?>, '<?php echo htmlspecialchars($profileUser['username']); ?>')"
     class="btn btn-sm btn-primary"
     style="margin-left: 10px;">
     💬 Mesaj Gönder
@@ -248,7 +247,6 @@ if (!empty($socialLinks)):
     class="btn btn-sm btn-danger" style="margin-left: 10px;">
     <?php echo $isBlockedByMe ? 'Engellemeyi Kaldır' : 'Engelle'; ?>
     </button>
-    </div>
     <?php endif; ?>
     </div>
     </header>
@@ -710,8 +708,6 @@ if (!empty($socialLinks)):
     </section>
     <?php endif; ?>
 
-    <?php include 'messages_modal.php'; ?>
-
     <?php if ($canViewContent): ?>
     <!-- ANA İÇERİK LAYOUT'U -->
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; max-width: 1400px; width: 100%;">
@@ -741,20 +737,55 @@ if (!empty($socialLinks)):
     </section>
     </div>
 
-    <!-- SAĞ SÜTUN: Pano ve İstatistikler -->
-    <div>
+    <!-- PROFİL PANOSU - GİZLİLİK KONTROLLÜ -->
     <section id="profile-board" class="card" style="position: sticky; top: 20px;">
     <h2 style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
     💬 Çizer Panosu
     </h2>
+    <?php if ($canViewContent): ?>
+    <span style="font-size: 0.8em; opacity: 0.7;">
+    (<?php echo $isProfilePrivate ? '🔒 Sadece takipçiler' : '🌍 Herkese açık'; ?>)
+    </span>
+    <?php endif; ?>
 
-    <?php if ($currentUserId): ?>
+    <?php if ($currentUserId && $canViewContent): ?>
     <div style="margin-bottom: 20px;">
     <textarea id="boardCommentInput"
-    placeholder="Panoya bir mesaj yaz... İlk yorumu sen yap!"
+    placeholder="Panoya bir mesaj yaz... İlk yorumu sen yap! (Resim, video veya ses de ekleyebilirsin)"
     style="width: 100%; margin-bottom: 10px; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--fixed-bg); color: var(--main-text); resize: vertical; min-height: 80px; font-family: inherit;"></textarea>
+
+    <!-- Dosya yükleme alanı -->
+    <div style="margin-bottom: 10px;">
+    <input type="file" id="boardFileInput" style="display: none;"
+    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.mp3,.mp4,.wav">
+    <button onclick="document.getElementById('boardFileInput').click()"
+    class="btn-secondary" style="width: 100%; margin-bottom: 5px;">
+    📎 Dosya Ekle (Resim, Video, Ses)
+    </button>
+    <div id="boardFileInfo" style="font-size: 12px; color: var(--main-text); opacity: 0.7; display: none; padding: 8px; background: var(--fixed-bg); border-radius: 4px; border: 1px solid var(--accent-color);">
+    <span>Seçilen dosya:</span>
+    <span id="boardFileName" style="font-weight: bold; margin-left: 5px;"></span>
+    <button onclick="clearBoardFile()" style="margin-left: 10px; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 12px; cursor: pointer;">✖</button>
+    </div>
+    </div>
+
     <button id="postCommentBtn" class="btn-primary" style="width: 100%;">
     📝 Panoya Gönder
+    </button>
+
+    <?php if ($isProfilePrivate && !$isProfileOwner): ?>
+    <div style="font-size: 12px; color: var(--accent-color); margin-top: 8px; text-align: center;">
+    🔒 Bu gizli profilde sadece takipçiler pano mesajı yazabilir
+    </div>
+    <?php endif; ?>
+    </div>
+    <?php elseif ($currentUserId && !$canViewContent): ?>
+    <div style="background: var(--fixed-bg); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
+    <p style="margin: 0; color: var(--main-text);">
+    🔒 Bu gizli profilin panosunu görmek için takip isteği göndermelisiniz.
+    </p>
+    <button id="followRequestBtn" data-action="follow" class="btn-primary" style="margin-top: 10px;">
+    Takip İsteği Gönder
     </button>
     </div>
     <?php else: ?>
@@ -767,25 +798,9 @@ if (!empty($socialLinks)):
 
     <div id="board-comments-list" style="max-height: 400px; overflow-y: auto;">
     <p style="text-align: center; color: var(--main-text); opacity: 0.7;">
-    Panoda henüz mesaj yok... İlk mesajı sen yaz! ✨
+    <?php echo $canViewContent ? 'Panoda henüz mesaj yok... İlk mesajı sen yaz! ✨' : '🔒 Gizli profil - panoyu görmek için takipçi olmalısınız'; ?>
     </p>
     </div>
-    </section>
-    </div>
-    </div>
-
-    <?php else: ?>
-    <section class="card" style="text-align: center; padding: 40px;">
-    <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
-    <h2 style="color: var(--accent-color); margin-bottom: 15px;">Gizli Profil</h2>
-    <p style="margin-bottom: 20px; color: var(--main-text);">
-    Bu profil gizlidir. İçeriği görmek için takip isteği göndermelisiniz.
-    </p>
-    <?php if ($currentUserId && !$isProfileOwner): ?>
-    <button id="followRequestBtn" data-action="follow" class="btn-primary">
-    Takip İsteği Gönder
-    </button>
-    <?php endif; ?>
     </section>
     <?php endif; ?>
 
@@ -833,6 +848,398 @@ if (!empty($socialLinks)):
     </div>
     </div>
     </div>
+
+    <!-- BASİT MESAJ MODALI - MEDYA DESTEKLİ -->
+    <div id="simple-message-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+    <button class="modal-close" onclick="closeSimpleMessageModal()">❎</button>
+    <h3 style="margin-bottom: 20px; color: var(--accent-color);">
+    💬 <span id="simple-modal-username">Kullanıcı</span> - Mesaj Gönder
+    </h3>
+
+    <!-- Dosya bilgisi gösterimi -->
+    <div id="simple-modal-file-info" style="display: none; margin-bottom: 10px; padding: 8px; background: var(--fixed-bg); border-radius: 6px; border: 1px solid var(--accent-color);">
+    <span style="font-weight: bold;">📎 Dosya seçildi:</span>
+    <span id="simple-modal-file-name" style="margin-left: 5px;"></span>
+    <button onclick="clearSimpleModalFile()" style="margin-left: 10px; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 12px; cursor: pointer;">✖</button>
+    </div>
+
+    <textarea id="simple-message-input"
+    placeholder="Mesajınızı yazın... (Resim, video veya ses de ekleyebilirsiniz)"
+    style="width: 100%; height: 120px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--fixed-bg); color: var(--main-text); font-family: inherit; resize: vertical; margin-bottom: 15px; box-sizing: border-box; font-size: 16px;"></textarea>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+    <button onclick="document.getElementById('simple-modal-file-input').click()"
+    class="btn-secondary" style="flex: 1;">
+    📎 Dosya Ekle
+    </button>
+    <button onclick="openSimpleMediaGallery()"
+    class="btn-info" style="flex: 1;">
+    🖼️ Galeriden Seç
+    </button>
+    </div>
+
+    <input type="file" id="simple-modal-file-input" style="display: none;"
+    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.mp3,.mp4,.wav">
+
+    <div style="display: flex; gap: 10px;">
+    <button onclick="sendSimpleMessage()"
+    class="btn-primary" style="flex: 1;">
+    📤 Gönder
+    </button>
+    <button onclick="closeSimpleMessageModal()"
+    class="btn-danger">
+    İptal
+    </button>
+    </div>
+
+    <div style="font-size: 12px; color: var(--main-text); opacity: 0.7; margin-top: 10px;">
+    💡 İpucu: Resim, video, ses veya dosya ekleyebilirsiniz (max 2MB)
+    </div>
+    </div>
+    </div>
+
+    <!-- BASİT MEDYA GALERİSİ MODALI -->
+    <div id="simple-media-gallery-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 700px;">
+    <button class="modal-close" onclick="closeSimpleMediaGallery()">❎</button>
+    <h3 style="margin-bottom: 15px;">🖼️ Medya Galerisi</h3>
+
+    <div style="margin-bottom: 15px;">
+    <button onclick="document.getElementById('simple-gallery-file-input').click()"
+    class="btn-primary">
+    📁 Yeni Medya Yükle
+    </button>
+    <input type="file" id="simple-gallery-file-input" style="display: none;"
+    accept="image/*,video/*,audio/*">
+    </div>
+
+    <div id="simple-media-gallery-container"
+    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 300px; overflow-y: auto; padding: 10px; background: var(--fixed-bg); border-radius: 8px;">
+    <p style="text-align: center; grid-column: 1 / -1; opacity: 0.7;">Medya yükleniyor...</p>
+    </div>
+
+    <div style="margin-top: 15px; text-align: center;">
+    <button onclick="closeSimpleMediaGallery()" class="btn-secondary">Kapat</button>
+    </div>
+    </div>
+    </div>
+
+    <script>
+    // Basit modal için değişkenler
+    let simpleModalReceiverId = null;
+    let simpleModalReceiverUsername = null;
+    let simpleModalFileData = null;
+    let simpleModalFileName = null;
+    let simpleModalFileType = null;
+
+    // Basit mesaj modalını aç
+    function openSimpleMessageModalFromButton(button) {
+        console.log('🔧 Mesaj butonu tıklandı:', button);
+
+        // Butondan verileri al
+        const targetId = button.getAttribute('data-target-id') ||
+        button.dataset.targetId ||
+        button.getAttribute('data-user-id');
+
+        const targetUsername = button.getAttribute('data-target-username') ||
+        button.dataset.targetUsername ||
+        button.textContent.replace('💬 Mesaj Gönder', '').trim() ||
+        'Kullanıcı';
+
+        console.log(`📨 Mesaj gönderilecek: ${targetId} - ${targetUsername}`);
+
+        if (!targetId) {
+            showNotification('Kullanıcı ID bulunamadı.', 'error');
+            return;
+        }
+
+        // Değişkenleri ayarla
+        simpleModalReceiverId = targetId;
+        simpleModalReceiverUsername = targetUsername;
+
+        // Modal içeriğini güncelle
+        document.getElementById('simple-modal-username').textContent = targetUsername;
+
+        // Formu temizle
+        document.getElementById('simple-message-input').value = '';
+        clearSimpleModalFile();
+
+        // Modalı göster
+        const modal = document.getElementById('simple-message-modal');
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        // Medya galerisini yükle
+        loadSimpleMediaGallery();
+
+        console.log('✅ Basit mesaj modalı oluşturuldu ve gösterildi');
+    }
+
+    // Basit mesaj modalını kapat
+    function closeSimpleMessageModal() {
+        const modal = document.getElementById('simple-message-modal');
+        if (modal) {
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+
+            // Modalı tamamen gizle
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+
+            console.log('✅ Basit mesaj modalı kapatıldı');
+        }
+    }
+
+    // Basit modal dosya seçimi
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('simple-modal-file-input');
+        if (fileInput) {
+            fileInput.addEventListener('change', handleSimpleModalFileSelect);
+        }
+
+        const galleryFileInput = document.getElementById('simple-gallery-file-input');
+        if (galleryFileInput) {
+            galleryFileInput.addEventListener('change', handleSimpleGalleryFileSelect);
+        }
+    });
+
+    function handleSimpleModalFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        processFileForSimpleModal(file);
+    }
+
+    function handleSimpleGalleryFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        processFileForSimpleModal(file);
+        closeSimpleMediaGallery();
+    }
+
+    function processFileForSimpleModal(file) {
+        // Dosya boyutu kontrolü (2MB)
+        if (file.size > 2097152) {
+            showNotification('Dosya boyutu 2MB\'dan küçük olmalı.', 'error');
+            return;
+        }
+
+        const allowedTypes = [
+            'image/', 'video/', 'audio/',
+            'application/pdf', 'text/',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+
+        const isValidType = allowedTypes.some(type => file.type.startsWith(type));
+
+        if (!isValidType) {
+            showNotification('Desteklenmeyen dosya türü.', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            simpleModalFileData = e.target.result.split(',')[1];
+            simpleModalFileName = file.name;
+            simpleModalFileType = file.type;
+
+            // Dosya bilgisini göster
+            document.getElementById('simple-modal-file-info').style.display = 'block';
+            document.getElementById('simple-modal-file-name').textContent = `${file.name} (${formatFileSize(file.size)})`;
+
+            showNotification(`"${file.name}" dosyası eklendi.`, 'success');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearSimpleModalFile() {
+        simpleModalFileData = null;
+        simpleModalFileName = null;
+        simpleModalFileType = null;
+        document.getElementById('simple-modal-file-input').value = '';
+        document.getElementById('simple-modal-file-info').style.display = 'none';
+    }
+
+    // Basit modal mesaj gönder
+    async function sendSimpleMessage() {
+        if (!simpleModalReceiverId) {
+            showNotification('Alıcı bulunamadı.', 'error');
+            return;
+        }
+
+        const input = document.getElementById('simple-message-input');
+        const content = input.value.trim();
+
+        if (!content && !simpleModalFileData) {
+            showNotification('Lütfen mesaj yazın veya dosya ekleyin.', 'error');
+            return;
+        }
+
+        // Gönder butonunu devre dışı bırak
+        const sendButton = document.querySelector('#simple-message-modal .btn-primary');
+        const originalText = sendButton.textContent;
+        sendButton.disabled = true;
+        sendButton.textContent = '⏳ Gönderiliyor...';
+
+        try {
+            const formData = new FormData();
+            formData.append('receiver_id', simpleModalReceiverId);
+            formData.append('content', content);
+
+            if (simpleModalFileData) {
+                formData.append('file_data', simpleModalFileData);
+                formData.append('file_name', simpleModalFileName);
+                formData.append('mime_type', simpleModalFileType);
+                formData.append('message_type', getMessageType(simpleModalFileType));
+            } else {
+                formData.append('message_type', 'text');
+            }
+
+            console.log('📤 Mesaj gönderiliyor...');
+            const response = await fetch('send_message.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            console.log('📨 Mesaj gönderme sonucu:', result);
+
+            if (result.success) {
+                showNotification('✅ Mesajınız gönderildi!', 'success');
+                closeSimpleMessageModal();
+
+                // Mesaj kutusunu aç ve konuşmayı göster
+                setTimeout(() => {
+                    if (typeof openMessagesModal === 'function') {
+                        openMessagesModal();
+                        // Konuşmayı seçmek için kısa gecikme
+                        setTimeout(() => {
+                            if (typeof selectConversation === 'function') {
+                                selectConversation(simpleModalReceiverId, simpleModalReceiverUsername);
+                            }
+                        }, 1000);
+                    }
+                }, 1500);
+            } else {
+                showNotification('❌ ' + (result.message || 'Mesaj gönderilemedi'), 'error');
+            }
+        } catch (error) {
+            console.error('Mesaj gönderme hatası:', error);
+            showNotification('❌ Mesaj gönderilirken hata oluştu.', 'error');
+        } finally {
+            // Butonu tekrar etkinleştir
+            sendButton.disabled = false;
+            sendButton.textContent = originalText;
+        }
+    }
+
+    // Basit medya galerisi işlevleri
+    function openSimpleMediaGallery() {
+        const modal = document.getElementById('simple-media-gallery-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('show');
+            loadSimpleMediaGallery();
+        }
+    }
+
+    function closeSimpleMediaGallery() {
+        const modal = document.getElementById('simple-media-gallery-modal');
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+    }
+
+    async function loadSimpleMediaGallery() {
+        try {
+            const container = document.getElementById('simple-media-gallery-container');
+            container.innerHTML = '<p style="text-align: center; grid-column: 1 / -1; opacity: 0.7;">Medya yükleniyor...</p>';
+
+            const response = await fetch('fetch_user_media.php');
+            const result = await response.json();
+
+            if (result.success && result.media.length > 0) {
+                container.innerHTML = result.media.map(media => `
+                <div class="media-item"
+                style="border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; text-align: center; cursor: pointer; background: var(--card-bg); transition: all 0.2s;"
+                onclick="selectFromSimpleGallery('${media.file_data}', '${media.file_name}', '${media.mime_type}')"
+                onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateY(-2px)'"
+                onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateY(0)'">
+                ${media.message_type === 'image' ?
+                    `<img src="data:${media.mime_type};base64,${media.file_data}"
+                    style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;">` :
+                    media.message_type === 'video' ?
+                    `<div style="width: 100%; height: 80px; background: linear-gradient(135deg, var(--accent-color), var(--accent-hover)); display: flex; align-items: center; justify-content: center; border-radius: 4px; color: white;">
+                    <span style="font-size: 20px;">🎥</span>
+                    </div>` :
+                    `<div style="width: 100%; height: 80px; background: linear-gradient(135deg, #6c757d, #495057); display: flex; align-items: center; justify-content: center; border-radius: 4px; color: white;">
+                    <span style="font-size: 20px;">📄</span>
+                    </div>`
+                }
+                <div style="font-size: 10px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${media.file_name.length > 15 ? media.file_name.substring(0, 15) + '...' : media.file_name}
+                </div>
+                </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p style="text-align: center; grid-column: 1 / -1; opacity: 0.7; padding: 40px;">Henüz medya yok. Yeni medya yükleyin!</p>';
+            }
+        } catch (error) {
+            console.error('Basit medya galerisi yüklenirken hata:', error);
+            const container = document.getElementById('simple-media-gallery-container');
+            container.innerHTML = '<p style="text-align: center; grid-column: 1 / -1; color: #dc3545;">Medya yüklenirken hata oluştu.</p>';
+        }
+    }
+
+    function selectFromSimpleGallery(fileData, fileName, mimeType) {
+        simpleModalFileData = fileData;
+        simpleModalFileName = fileName;
+        simpleModalFileType = mimeType;
+
+        // Dosya bilgisini göster
+        document.getElementById('simple-modal-file-info').style.display = 'block';
+        document.getElementById('simple-modal-file-name').textContent = `${fileName}`;
+
+        closeSimpleMediaGallery();
+        showNotification(`"${fileName}" galeriden seçildi.`, 'success');
+
+        // Inputa odaklan
+        document.getElementById('simple-message-input').focus();
+    }
+
+    // ESC tuşu ile kapatma
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (document.getElementById('simple-message-modal').style.display === 'flex') {
+                closeSimpleMessageModal();
+            }
+            if (document.getElementById('simple-media-gallery-modal').style.display === 'flex') {
+                closeSimpleMediaGallery();
+            }
+        }
+    });
+
+    // Modal dışına tıklayarak kapatma
+    document.addEventListener('click', function(e) {
+        const simpleMessageModal = document.getElementById('simple-message-modal');
+        const simpleGalleryModal = document.getElementById('simple-media-gallery-modal');
+
+        if (simpleMessageModal && e.target === simpleMessageModal) {
+            closeSimpleMessageModal();
+        }
+        if (simpleGalleryModal && e.target === simpleGalleryModal) {
+            closeSimpleMediaGallery();
+        }
+    });
+    </script>
 
     <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.5 (Sezgisel Giriş Düzeltmesi)</h2>
 
@@ -915,6 +1322,21 @@ if (!empty($socialLinks)):
     </div>
     </div>
     <script>
+    // Hata ayıklama için global fonksiyonlar
+    window.debugMessages = {
+        checkFunctions: function() {
+            console.log('🔍 Fonksiyon Kontrolleri:');
+            console.log('- openMessagesModal:', typeof openMessagesModal);
+            console.log('- selectConversation:', typeof selectConversation);
+            console.log('- loadConversations:', typeof loadConversations);
+            console.log('- currentUser:', window.currentUser);
+        },
+
+        testMessage: function(userId, username) {
+            console.log('🧪 Test mesajı:', userId, username);
+            openMessagesModalForUser(userId, username);
+        }
+    };
     // Current User bilgisini global olarak ayarla
     window.currentUser = {
         id: <?php echo json_encode($_SESSION['user_id'] ?? null); ?>,
@@ -923,14 +1345,16 @@ if (!empty($socialLinks)):
     };
     </script>
     <script>
-    // Profil sayfası için global değişken
+    // Global değişkenleri güncelle
     window.PROFILE_DATA = {
         userId: <?php echo $profileUser['id']; ?>,
         currentUserId: <?php echo json_encode($currentUserId); ?>,
         isProfileOwner: <?php echo json_encode($isProfileOwner); ?>,
         profileUsername: "<?php echo htmlspecialchars($profileUser['username']); ?>",
         isBlockingMe: <?php echo json_encode($isBlockingMe); ?>,
-        isBlockedByMe: <?php echo json_encode($isBlockedByMe); ?>
+        isBlockedByMe: <?php echo json_encode($isBlockedByMe); ?>,
+        canViewContent: <?php echo json_encode($canViewContent); ?>,
+        isProfilePrivate: <?php echo json_encode($isProfilePrivate); ?>
     };
 
     // PROFİL FOTOĞRAFI İŞLEME - TÜM YERLERDE TUTARLILIK
@@ -949,6 +1373,8 @@ if (!empty($socialLinks)):
 
     // Profil sayfasına özgü işlevler
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Mesaj sistemi yüklendi');
+        window.debugMessages.checkFunctions();
         // Modal sistemini başlat
         if (typeof initModalSystem === 'function') {
             initModalSystem();
