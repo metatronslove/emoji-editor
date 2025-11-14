@@ -1,20 +1,16 @@
 <?php
 // index.php - DEBUG MODE
 require_once 'config.php';
+require_once 'User.php';
 require_once 'Auth.php';
-require_once 'Drawing.php';
 require_once 'functions.php';
 require_once 'counter_manager.php';
+require_once 'Drawing.php';
 require_once 'Router.php';
 
 // Hata ayıklama modu
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
-// GÜVENLİK KONTROLLERİ
-if (!isset($_SESSION)) {
-    session_start();
-}
 
 // AUTH KONTROLÜ
 $isLoggedIn = false;
@@ -37,8 +33,15 @@ try {
     exit;
 }
 
+// Counters'ı initialize et
+$counters = getCounters(); // veya counter_manager.php'deki uygun fonksiyon
 $totalViews = $counters['total_views'] ?? 0;
-$onlineUsers = $counters['online_users'] ?? 0;
+
+// Sayaçları başlat
+if (!defined('COUNTERS_INITIALIZED')) {
+    define('COUNTERS_INITIALIZED', true);
+    updateCounters();
+}
 ?>
 <!DOCTYPE html>
 <html lang="tr">
@@ -68,7 +71,7 @@ $onlineUsers = $counters['online_users'] ?? 0;
 <div class="info-group">
 <a href="/" class="btn btn-sm btn-primary">Ana Sayfa</a>
 <span>Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
-<span>Aktif Kullanıcı: <strong style="color:#4CAF50"><?php echo number_format($onlineUsers); ?></strong></span>
+<span style="color:#4CAF50"><strong><?php echo getOnlineUsersText(); ?></strong></span>
 </div>
 <div class="user-actions">
 <?php if (Auth::isLoggedIn()): ?>

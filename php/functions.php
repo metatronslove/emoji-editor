@@ -65,19 +65,16 @@ function calculateUserRank($userId) {
 function getUserSocialLinks($userId) {
     try {
         $db = getDbConnection();
-
         $stmt = $db->prepare("
-        SELECT smp.name, smp.emoji, usl.profile_url
-        FROM user_social_links usl
-        JOIN social_media_platforms smp ON usl.platform_id = smp.id
-        WHERE usl.user_id = ? AND smp.is_active = TRUE
+        SELECT smp.name, smp.emoji, usl.profile_url, usl.platform_id
+        FROM user_social_links AS usl
+        JOIN social_media_platforms AS smp ON usl.platform_id = smp.id
+        WHERE usl.user_id = ? AND smp.is_active = 1
         ");
         $stmt->execute([$userId]);
-
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
     } catch (Exception $e) {
-        error_log("Sosyal medya bağlantıları hatası: " . $e->getMessage());
+        error_log("getUserSocialLinks error: " . $e->getMessage());
         return [];
     }
 }

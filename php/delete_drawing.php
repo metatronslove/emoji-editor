@@ -3,67 +3,73 @@
 require_once 'config.php';
 header('Content-Type: application/json');
 
-// Sadece POST isteği kabul edilir
+// Check if request method is POST only
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed']);
     exit;
 }
 
-// JSON verisini al
+// Get JSON data from request body
 $input = json_decode(file_get_contents('php://input'), true);
 $drawingId = $input['drawing_id'] ?? null;
 
 if (!$drawingId) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Çizim ID eksik']);
+    echo json_encode(['success' => false, 'message' => 'Drawing ID is missing']);
     exit;
 }
 
-// Oturum kontrolü
+// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Bu işlem için giriş yapmalısınız']);
+    echo json_encode(['success' => false, 'message' => 'You need to log in to delete a drawing']);
     exit;
 }
 
 try {
     $db = getDbConnection();
 
-    // Önce çizimi ve sahibini kontrol et
+    // Get the user's role and check if they are an admin
+    $currentUserId = $_SESSION['user_id'];
+    $currentUserRole = $_SESSION['role'] ?? 'user';
+
+    if ($currentUserRole !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'You do not have the necessary permissions to delete this drawing']);
+        exit;
+    }
+
+    // Check if the drawing exists and get its user ID
     $stmt = $db->prepare("SELECT user_id FROM drawings WHERE id = ?");
     $stmt->execute([$drawingId]);
     $drawing = $stmt->fetch();
 
     if (!$drawing) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'Çizim bulunamadı']);
+        echo json_encode(['success' => false, 'message' => 'Drawing not found']);
         exit;
     }
 
-    $currentUserId = $_SESSION['user_id'];
-    $currentUserRole = $_SESSION['role'] ?? 'user';
-
-    // Yetki kontrolü: sadece çizimin sahibi veya admin silebilir
-    if ($drawing['user_id'] != $currentUserId && $currentUserRole !== 'admin') {
+    // Check if the drawing is owned by the current user or an admin
+    if ($drawing['user_id'] != $currentUserId) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Bu çizimi silme yetkiniz yok']);
+        echo json_encode(['success' => false, 'message' => 'You do not have the necessary permissions to delete this drawing']);
         exit;
     }
 
-    // Çizimi sil
+    // Delete the drawing from the database
     $deleteStmt = $db->prepare("DELETE FROM drawings WHERE id = ?");
     $success = $deleteStmt->execute([$drawingId]);
 
     if ($success) {
-        echo json_encode(['success' => true, 'message' => 'Çizim başarıyla silindi']);
+        echo json_encode(['success' => true, 'message' => 'Drawing deleted successfully']);
     } else {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Çizim silinirken hata oluştu']);
+        echo json_encode(['success' => false, 'message' => 'Error deleting drawing from database']);
     }
-
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Veritabanı hatası: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
 }
 ?>

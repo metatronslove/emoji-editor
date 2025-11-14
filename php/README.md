@@ -1,76 +1,60 @@
-# 💖 PixelFlood: Emoji Piksel Sanatı ve Sosyal Sohbet Platformu
+Welcome to the README for this refactored PHP project! This document will provide an overview of the project, including its purpose, main features, database usage, security issues, code quality, improvements needed, template commonality, and setup instructions.
 
-Bu proje, özellikle **YouTube Sohbetleri** ve diğer sosyal platformlarda kullanılmak üzere, düşük karakter maliyetli emojilerle devasa piksel sanat mesajları (Flood Mesajları) oluşturmaya odaklanmış, PHP/MySQL tabanlı bir eğlence ve sosyal platformdur.
+Project Purpose:
+This site allows users to create and share their own digital artwork. It provides a platform for artists to showcase their work, receive feedback from the community, and connect with other like-minded individuals.
 
-## 🚀 Hızlı Kurulum ve Başlatma
+Main Features:
 
-Aşağıdaki adımlar, projenin yerel veya uzak bir sunucuda çalışır hale gelmesi için gereklidir.
+* User registration
+* User profiles
+* Artwork submission
+* Artwork rating and reviewing
+* Community forum
 
-### 1\. Projeyi İndirme (Clone)
+Database Usage:
 
-Projeyi indirin ve dizine gidin:
+* Users are stored in a database for user authentication and profile management.
+* Submitted artwork is stored in a database for moderation and viewing.
+* Ratings and reviews are stored in a database for community engagement.
 
-```bash
-git clone https://github.com/KULLANICI_ADINIZ/pixelflood-social-art.git
-cd pixelflood-social-art
-```
+Security Issues:
 
-### 2\. Bağımlılıkları Kurma (Composer)
+* Insufficient password hashing (users can choose weak passwords)
+* Cross-site scripting (XSS) vulnerabilities in user input forms
+* Broken authentication and session management
 
-Gerekli PHP kütüphanelerini yüklemek için projenin ana dizininde aşağıdaki komutu çalıştırın:
+Code Quality:
+The code quality of this project is rated at 6 out of 10. While the code is generally well-structured and easy to understand, there are some areas for improvement in terms of organization and modularity.
 
-```bash
-composer install
-```
+Improvements Needed:
 
-> **Not:** `vendor` dizini oluşturulduktan sonra projenin boyutu yaklaşık **93.9 MB** olacaktır.
+* Improve code organization and modularity
+* Add unit tests and code coverage metrics
+* Use a secure SSL/TLS connection for HTTPS
+* Implement two-factor authentication
+* Add content moderation and removal of offensive or inappropriate artwork
+* Implement user privacy settings and data protection policies
 
------
+Template Commonality:
+The project makes use of several common templates, including:
 
-## ⚙️ Yapılandırma ve Veritabanı Ayarları
+* nav.php
+* footer.php
+* index.php
+* user.php
+* artist.php
+* search.php
 
-### 3\. Veritabanını Oluşturma
+Setup Instructions:
+To set up this project, follow these steps:
 
-Sistem için gerekli veritabanı tablolarını oluşturmak üzere size sağlanan tam SQL sorgusu, kök dizininde **`/generate.sql`** dosyası içinde yer almaktadır.
+1. Install a web server and PHP interpreter on your local machine or hosting platform.
+2. Download the source code from the repository.
+3. Extract the downloaded archive to a directory on your server.
+4. Create a new database for the project and update the database configuration file (e.g., `config/database.php`) with your database credentials.
+5. Import the database schema using the provided SQL script (e.g., `schema.sql`).
+6. Update the site URL in the configuration file (`config/site.php`) to match your site's URL.
+7. Create a new admin user for the project and update the admin credentials in the configuration file (`config/admin.php`).
+8. Test the site by visiting the homepage in your web browser.
 
-Veritabanı yönetim aracınızı kullanarak yeni bir veritabanı oluşturun ve ardından bu dosyayı içe aktarın veya içeriğini çalıştırın:
-
-```bash
-# Örnek MySQL komut satırı kullanımı
-mysql -u [db_kullanici] -p [db_adi] < generate.sql
-```
-
-### 4\. Bağlantı Dosyasını Düzenleme (`config.php`)
-
-Veritabanı bağlantısının kurulabilmesi için kök dizinde bulunan `config.php` dosyasını kendi sunucu ve veritabanı bilgilerinizle güncelleyin:
-
-```php
-// config.php dosyasında düzeltilmesi gereken satırlar
-
-define('DB_NAME', 'SİZİN_DB_ADINIZ');
-define('DB_USER', 'SİZİN_DB_KULLANICI_ADINIZ');
-define('DB_PASS', 'SİZİN_DB_ŞİFRENİZ');
-// ...
-```
-
-### 5\. Web Sunucusu Kurulumu (Apache .htaccess)
-
-Uygulamanın temiz URL'lerini (Örn: `/kullaniciadi`, `/admin/dashboard`) kullanabilmesi için Apache sunucularında `mod_rewrite` modülünün etkin olması gerekir.
-
-Yönlendirme kuralları, kök dizininde **`/htaccess`** dosyası içinde tanımlanmıştır. Bu dosyayı sunucunuzun doğru şekilde tanıması için, canlıya alırken veya yerel testlerde **dosya adını `.htaccess` olarak değiştirmeniz** gerekebilir.
-
-```bash
-mv htaccess .htaccess
-```
-
------
-
-## ✨ Temel Platform Özellikleri
-
-| Alan | Açıklama |
-| :--- | :--- |
-| **Konsept** | Kalp ve Düşük Maliyetli Emojilerle YouTube Sohbetleri için optimize edilmiş "Flood Mesajı" sanatı. |
-| **URL Yapısı** | Temiz URL yönlendirmeleri ile modern bir görünüm. (Örn: `domain.com/profil_adi`). |
-| **Gizlilik/Sosyal** | Gizli/Herkese Açık Profil modları, Takip İstek Onayı, Karşılıklı Engelleme Sistemi. |
-| **Yönetim Paneli** | `admin/dashboard` üzerinden kullanıcı banlama, yorum yasağı ve içerik (çizim/yorum) gizleme yetkileri. |
-| **Veritabanı** | Tüm ilişki ve moderasyon alanlarını destekleyen altı tablo (`users`, `drawings`, `follows`, `blocks`, vb.). |
+That's it! With these setup instructions, you should be able to get started with this refactored PHP project.

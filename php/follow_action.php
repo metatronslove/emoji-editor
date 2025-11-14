@@ -9,8 +9,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $followerId = $_SESSION['user_id'];
-$followingId = $_POST['target_id'] ?? null;
-$action = $_POST['action'] ?? null; // 'follow' veya 'unfollow'
+$followingId = (int) ($_POST['target_id'] ?? null);
+$action = trim(strip_tags($_POST['action'] ?? null)); // 'follow' veya 'unfollow'
 
 // YENİ KONTROL: Engelleme Kontrolü
 // Takip eden ve edilen arasında herhangi bir engelleme var mı?
@@ -37,7 +37,7 @@ if (!$followingId || !in_array($action, ['follow', 'unfollow'])) {
 try {
     $db = getDbConnection();
     // 1. Hedef kullanıcının gizlilik modunu çek
-    $privacyMode = $db->query("SELECT privacy_mode FROM users WHERE id = {$followingId}")->fetchColumn();
+    $privacyMode = (int) $db->query("SELECT privacy_mode FROM users WHERE id = {$followingId}")->fetchColumn();
 
     if ($action === 'follow') {
         if ($privacyMode === 'private') {

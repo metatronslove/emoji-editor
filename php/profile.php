@@ -1,17 +1,18 @@
 <?php
-// profile.php - HATA DÜZELTMELİ
+// profile.php - COUNTER DÜZELTMESİ
 require_once 'config.php';
+require_once 'User.php';
 require_once 'Auth.php';
-require_once 'Drawing.php';
 require_once 'functions.php';
 require_once 'counter_manager.php';
+require_once 'Drawing.php';
 require_once 'Router.php';
 
 $profileUsername = $_GET['username'] ?? null;
 $currentUserId = $_SESSION['user_id'] ?? null;
 
 if (!$profileUsername) {
-    header('Location: ../index.php');
+    header('Location: /index.php');
     exit;
 }
 
@@ -19,46 +20,57 @@ try {
     $db = getDbConnection();
     $userModel = new User();
 
-    // 1. Profil sahibini çek - profile_picture dahil
+    // 1. Profil sahibini çek
     $profileUser = $userModel->findByUsername($profileUsername);
 
     if (!$profileUser) {
         http_response_code(404);
-        die("Çizer Kullanıcı bulunamadı.");
+        die("Kullanıcı bulunamadı.");
     }
 
     $isProfilePrivate = ($profileUser['privacy_mode'] === 'private');
-    $isProfileOwner = ($currentUserId === $profileUser['id']);
+    $isProfileOwner = ($currentUserId == $profileUser['id']);
 
-    // Görüntüleme Sayacını Artır (Kendisi değilse)
+    // Görüntüleme Sayacını Artır - GÜVENLİ SORGULAR
     if (!$isProfileOwner) {
-        $db->exec("UPDATE users SET profile_views = profile_views + 1 WHERE id = {$profileUser['id']}");
-        $profileUser['profile_views']++; // Anlık görüntü için artır
+        $stmt = $db->prepare("UPDATE users SET profile_views = profile_views + 1 WHERE id = ?");
+        $stmt->execute([$profileUser['id']]);
+        $profileUser['profile_views']++;
     }
 
-    /* ENGELLEME (BLOCK) KONTROLÜ */
+    /* ENGELLEME (BLOCK) KONTROLÜ - GÜVENLİ SORGULAR */
     $isBlockedByMe = false;
     $isBlockingMe = false;
 
     if ($currentUserId && !$isProfileOwner) {
-        $isBlockedByMe = $db->query("SELECT 1 FROM blocks WHERE blocker_id = {$currentUserId} AND blocked_id = {$profileUser['id']}")->fetchColumn();
-        $isBlockingMe = $db->query("SELECT 1 FROM blocks WHERE blocker_id = {$profileUser['id']} AND blocked_id = {$currentUserId}")->fetchColumn();
+        $stmt = $db->prepare("SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?");
+        $stmt->execute([$currentUserId, $profileUser['id']]);
+        $isBlockedByMe = $stmt->fetchColumn();
+
+        $stmt = $db->prepare("SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?");
+        $stmt->execute([$profileUser['id'], $currentUserId]);
+        $isBlockingMe = $stmt->fetchColumn();
     }
 
-    // Kritik Kontrol: Herhangi bir engelleme varsa, sayfayı göstereme
+    // Kritik Kontrol: Herhangi bir engelleme varsa
     if ($isBlockedByMe || $isBlockingMe) {
         http_response_code(403);
         die("Bu kullanıcı ile etkileşime geçemezsiniz veya profilini görüntüleyemezsiniz.");
     }
 
-    /* TAKİP ve İÇERİK GÖRÜNÜRLÜĞÜ KONTROLÜ */
+    /* TAKİP ve İÇERİK GÖRÜNÜRLÜĞÜ KONTROLÜ - GÜVENLİ SORGULAR */
     $isFollowing = false;
     $followRequestPending = false;
     $canViewContent = true;
 
     if ($currentUserId) {
-        $isFollowing = $db->query("SELECT 1 FROM follows WHERE follower_id = {$currentUserId} AND following_id = {$profileUser['id']}")->fetchColumn();
-        $followRequestPending = $db->query("SELECT 1 FROM follow_requests WHERE follower_id = {$currentUserId} AND following_id = {$profileUser['id']}")->fetchColumn();
+        $stmt = $db->prepare("SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?");
+        $stmt->execute([$currentUserId, $profileUser['id']]);
+        $isFollowing = $stmt->fetchColumn();
+
+        $stmt = $db->prepare("SELECT 1 FROM follow_requests WHERE follower_id = ? AND following_id = ?");
+        $stmt->execute([$currentUserId, $profileUser['id']]);
+        $followRequestPending = $stmt->fetchColumn();
     }
 
     if ($isProfilePrivate && !$isProfileOwner && !$isFollowing) {
@@ -76,20 +88,36 @@ try {
         $followButtonAction = 'pending';
     }
 
-    // Takipçi ve takip edilen sayılarını al
-    $followerCount = $db->query("SELECT COUNT(*) FROM follows WHERE following_id = {$profileUser['id']}")->fetchColumn();
-    $followingCount = $db->query("SELECT COUNT(*) FROM follows WHERE follower_id = {$profileUser['id']}")->fetchColumn();
+    // Takipçi ve takip edilen sayılarını al - GÜVENLİ SORGULAR
+    $stmt = $db->prepare("SELECT COUNT(*) FROM follows WHERE following_id = ?");
+    $stmt->execute([$profileUser['id']]);
+    $followerCount = $stmt->fetchColumn();
 
-    // Profil fotoğrafını kontrol et ve formatla - HATA DÜZELTİLDİ
+    $stmt = $db->prepare("SELECT COUNT(*) FROM follows WHERE follower_id = ?");
+    $stmt->execute([$profileUser['id']]);
+    $followingCount = $stmt->fetchColumn();
+
+    // Profil fotoğrafını kontrol et ve formatla
     $profilePicSrc = formatProfilePicture($profileUser['profile_picture'] ?? null);
 
 } catch (PDOException $e) {
+    error_log("Profile page database error: " . $e->getMessage());
     http_response_code(500);
-    die("Veritabanı hatası: " . $e->getMessage());
+    die("Veritabanı hatası oluştu.");
+} catch (Exception $e) {
+    error_log("Profile page general error: " . $e->getMessage());
+    http_response_code(500);
+    die("Bir hata oluştu.");
 }
 
+$counters = getCounters();
 $totalViews = $counters['total_views'] ?? 0;
-$onlineUsers = $counters['online_users'] ?? 0;
+
+// Sayaçları başlat
+if (!defined('COUNTERS_INITIALIZED')) {
+    define('COUNTERS_INITIALIZED', true);
+    updateCounters();
+}
 ?>
 
 <!DOCTYPE html>
@@ -120,7 +148,7 @@ $onlineUsers = $counters['online_users'] ?? 0;
 <div class="info-group">
 <a href="/" class="btn btn-sm btn-primary">Ana Sayfa</a>
 <span>Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
-<span>Aktif Kullanıcı: <strong style="color:#4CAF50"><?php echo number_format($onlineUsers); ?></strong></span>
+<span style="color:#4CAF50"><strong><?php echo getOnlineUsersText(); ?></strong></span>
 </div>
 <div class="user-actions">
 <?php if (Auth::isLoggedIn()): ?>
@@ -172,7 +200,7 @@ echo str_repeat('⭐', $userRank);
 $socialLinks = getUserSocialLinks($profileUser['id'] ?? 0);
 if (!empty($socialLinks)):
     ?>
-    <div style="margin-top: 10px;">
+    <div style="margin: 10px;">
     <?php foreach($socialLinks as $link): ?>
     <a href="<?php echo htmlspecialchars($link['profile_url'] ?? ''); ?>"
     target="_blank"
@@ -297,51 +325,45 @@ if (!empty($socialLinks)):
         try {
             const response = await fetch('../get_user_social_links.php');
             const result = await response.json();
+            console.log('Social links:', result);
 
             const container = document.getElementById('social-links-list');
-            if (result.success && result.links.length > 0) {
+            if (result.success && result.links && result.links.length > 0) {
                 container.innerHTML = result.links.map(link => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 8px; background: var(--fixed-bg);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">${link.emoji || '🔗'}</span>
                 <div>
-                <span style="font-size: 20px;">${link.emoji}</span>
-                <strong>${link.name}</strong>
-                <a href="${link.profile_url}" target="_blank" style="margin-left: 10px; color: var(--accent-color);">${link.profile_url}</a>
+                <strong style="color: var(--accent-color);">${link.name || 'Bilinmeyen Platform'}</strong>
+                <div style="font-size: 0.9em; opacity: 0.8;">
+                <a href="${link.profile_url}" target="_blank" style="color: var(--main-text);">
+                ${link.profile_url}
+                </a>
                 </div>
-                <button onclick="removeSocialLink(${link.platform_id})" class="btn-danger btn-sm">Kaldır</button>
+                </div>
+                </div>
+                <button onclick="removeSocialLink(${link.platform_id})"
+                class="btn-danger btn-sm">
+                Kaldır
+                </button>
                 </div>
                 `).join('');
             } else {
-                container.innerHTML = '<p style="opacity: 0.7;">Henüz sosyal medya bağlantınız yok.</p>';
+                container.innerHTML = '<p style="opacity: 0.7; text-align: center; padding: 20px;">Henüz sosyal medya bağlantınız yok.</p>';
             }
         } catch (error) {
             console.error('Sosyal medya bağlantıları yüklenirken hata:', error);
+            const container = document.getElementById('social-links-list');
+            container.innerHTML = '<p style="color: #dc3545; text-align: center;">Bağlantılar yüklenirken hata oluştu.</p>';
         }
     }
 
-    // Platform seçeneklerini yükle
-    async function loadPlatformOptions() {
-        try {
-            const response = await fetch('../get_social_platforms.php');
-            const result = await response.json();
-
-            const select = document.getElementById('social-platform-select');
-            if (result.success && result.platforms.length > 0) {
-                select.innerHTML = '<option value="">Platform Seçin</option>' +
-                result.platforms.map(platform =>
-                `<option value="${platform.id}" data-regex="${platform.url_regex || ''}">${platform.emoji} ${platform.name}</option>`
-                ).join('');
-            }
-        } catch (error) {
-            console.error('Platform seçenekleri yüklenirken hata:', error);
-        }
-    }
-
-    // Sosyal medya bağlantısı ekle
+    // Sosyal medya bağlantısı ekle - FormData kullan
     document.getElementById('social-link-form').addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const platformId = document.getElementById('social-platform-select').value;
-        const profileUrl = document.getElementById('social-profile-url').value;
+        const profileUrl = document.getElementById('social-profile-url').value.trim();
 
         if (!platformId || !profileUrl) {
             showNotification('Lütfen platform ve URL girin.', 'error');
@@ -349,18 +371,24 @@ if (!empty($socialLinks)):
         }
 
         try {
+            const formData = new FormData();
+            formData.append('action', 'add');
+            formData.append('platform_id', platformId);
+            formData.append('profile_url', profileUrl);
+
             const response = await fetch('../profile_social_links.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `action=add&platform_id=${platformId}&profile_url=${encodeURIComponent(profileUrl)}`
+                body: formData
             });
 
             const result = await response.json();
+            console.log('Add result:', result);
+
             showNotification(result.message, result.success ? 'success' : 'error');
 
             if (result.success) {
                 document.getElementById('social-link-form').reset();
-                loadSocialLinks();
+                await loadSocialLinks(); // Listeyi yeniden yükle
             }
         } catch (error) {
             console.error('Bağlantı ekleme hatası:', error);
@@ -393,6 +421,121 @@ if (!empty($socialLinks)):
                 console.error('Bağlantı kaldırma hatası:', error);
                 showNotification('Bağlantı kaldırılırken hata oluştu.', 'error');
             }
+        }
+    }
+
+    // Sosyal medya platform seçeneklerini yükle - GÜNCELLENMİŞ UTF-8 SÜRÜMÜ
+    async function loadPlatformOptions() {
+        try {
+            const response = await fetch('../get_social_platforms.php');
+
+            // Response'u text olarak alıp manuel parse edelim
+            const responseText = await response.text();
+            console.log('Raw API response:', responseText);
+
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                // Fallback: Manuel karakter düzeltme
+                const fixedText = responseText
+                .replace(/âº/g, '☺')
+                .replace(/ð/g, '😀')
+                .replace(//g, '')
+                .replace(/â/g, '')
+                .replace(//g, '');
+                result = JSON.parse(fixedText);
+            }
+
+            console.log('Parsed result:', result);
+
+            if (result.success && result.platforms) {
+                const platformSelect = document.getElementById('social-platform-select');
+                if (platformSelect) {
+                    // Mevcut seçenekleri temizle (ilk seçeneği koru)
+                    while (platformSelect.options.length > 1) {
+                        platformSelect.remove(1);
+                    }
+
+                    // Yeni platformları ekle - Emoji kontrolü ile
+                    result.platforms.forEach(platform => {
+                        let emoji = platform['emoji'] || '🔗';
+
+                    // Emoji bozuksa fallback emoji kullan
+                    if (emoji.includes('?') || emoji.length > 2) {
+                        emoji = getFallbackEmoji(platform['name']);
+                    }
+
+                    const option = new Option(
+                        `${emoji} ${platform["name"]}`,
+                        platform['id']
+                    );
+                    platformSelect.add(option);
+                    });
+                }
+            } else {
+                console.error('Platformlar yüklenemedi:', result.message);
+                loadFallbackPlatformOptions();
+            }
+        } catch (error) {
+            console.error('Platform yükleme hatası:', error);
+            loadFallbackPlatformOptions();
+        }
+    }
+
+    // Platform ismine göre fallback emoji
+    function getFallbackEmoji(platformName) {
+        const emojiMap = {
+            'YouTube': '📺',
+            'Linktree': '🔴',
+            'Twitter': '🐦',
+            'Instagram': '📷',
+            'TikTok': '🎵',
+            'Discord': '💬',
+            'Facebook': '👥',
+            'Linkedin': '💼',
+            'GitHub': '💻',
+            'Telegram': '🤖',
+            'Spotify': '🎵',
+            'Telegram': '📱',
+            'Whatsapp': '💚'
+        };
+
+        const lowerName = platformName.toLowerCase();
+        for (const [key, emoji] of Object.entries(emojiMap)) {
+            if (lowerName.includes(key)) {
+                return emoji;
+            }
+        }
+
+        return '🔗';
+    }
+
+    // Fallback platform listesi (Unicode escape ile)
+    function loadFallbackPlatformOptions() {
+        const platforms = [
+            { id: 1, name: 'YouTube', emoji: '\u{1F4FA}' },
+            { id: 2, name: 'Linktree', emoji: '\u{1F534}' },
+            { id: 3, name: 'Twitter', emoji: '\u{1F426}' },
+            { id: 4, name: 'Instagram', emoji: '\u{1F4F7}' },
+            { id: 5, name: 'TikTok', emoji: '\u{1F3B5}' },
+            { id: 6, name: 'Discord', emoji: '\u{1F4AC}' },
+            { id: 7, name: 'Facebook', emoji: '\u{1F465}' },
+            { id: 8, name: 'LinkedIn', emoji: '\u{1F4BC}' },
+            { id: 9, name: 'GitHub', emoji: '\u{1F4BB}' },
+            { id: 10, name: 'Telegram', emoji: '\u{1F916}' }
+        ];
+
+        const platformSelect = document.getElementById('social-platform-select');
+        if (platformSelect) {
+            platforms.forEach(platform => {
+                const option = new Option(
+                    `${platform.emoji} ${platform.name}`,
+                    platform.id
+                );
+                platformSelect.add(option);
+            });
         }
     }
 
@@ -533,6 +676,87 @@ if (!empty($socialLinks)):
     </a>
     <div class="auth-links">
     <p>Zaten hesabın var mı? <a href="#" data-modal-switch="login_modal">Giriş Yap.</a></p>
+    </div>
+    </div>
+    </div>
+
+    <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.5 (Sezgisel Giriş Düzeltmesi)</h2>
+
+    <div id="main-layout">
+    <div id="left-panel">
+    <div class="card" id="palette">
+    <strong>Fırça Rengi Seçin:</strong>
+
+    <div id="selected-emoji-display">
+    <span style="font-weight: normal;">Seçili Emoji:</span>
+    <span id="current-brush-emoji">🖤</span>
+    <span id="current-brush-name"> (black heart)</span>
+    </div>
+
+    <div id="category-tabs">
+    </div>
+
+    <div id="emoji-container">
+    <div id="color-options-container">
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="right-panel">
+    <div class="card" id="controls-panel">
+    <div id="main-controls" style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
+    <label for="firstRowLength" style="color: var(--accent-color);">İlk Satır Çizim Piksel Sayısı (0-11):</label>
+    <input type="number" id="firstRowLength" value="6" min="0" max="11" style="width: 70px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--fixed-bg); color: var(--main-text);">
+    <button id="updateMatrixButton" class="btn-success">Matrisi Güncelle</button>
+    <button id="showGuideButton" class="btn-primary">Kılavuz</button>
+    </div>
+
+    <div style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
+    <label for="separator-select" style="color: var(--accent-color); white-space: nowrap;">Filtre Atlatma Yöntemi:</label>
+    <select id="separator-select">
+    <option value="none" selected>Hiçbiri</option>
+    <option value="ZWNJ">ZWNJ (Zero Width Non-Joiner)</option>
+    <option value="ZWSP">ZWSP (Zero Width Space)</option>
+    <option value="ZWJ">ZWJ (Zero Width Joiner)</option>
+    <option value="WJ">WJ (Word Joiner)</option>
+    <option value="SHY">SHY (Soft Hyphen)</option>
+    <option value="HAIR">Hair Space</option>
+    <option value="LRM">LRM (Yön Kontrol)</option>
+    <option value="RLM">RLM (Yön Kontrol)</option>
+    <option value="ZWNBSP">ZWNBSP (Zero Width No-Break Space)</option>
+    <option value="LRE">LRE (Bidi L-R-Embedding)</option>
+    <option value="RLE">RLE (Bidi R-L-Embedding)</option>
+    <option value="PDF">PDF (Bidi Pop Directional)</option>
+    <option value="LRI">LRI (Bidi L-R-Isolate)</option>
+    <option value="RLI">RLI (Bidi R-L-Isolate)</option>
+    <option value="PDI">PDI (Bidi Pop Isolate)</option>
+    <option value="CGJ">CGJ (Combining Grapheme Joiner)</option>
+    <option value="SP_BS">DENEYSEL (Space + Backspace)</option>
+    </select>
+    </div>
+
+    <div id="auxiliary-controls" style="flex-direction: column; gap: 8px; width: 100%;">
+    <button id="copyButton" class="btn-primary" style="width: 100%;">Panoya Kopyala</button>
+    <button id="importButton" class="btn-primary" style="width: 100%;">Panodan İçe Aktar</button>
+
+    <div style="display: flex; gap: 8px; width: 100%;">
+    <button id="saveButton" class="btn-warning" style="flex-grow: 1;">💾 Kaydet (Dosya/Site Kaydı)</button>
+    <input type="file" id="fileInput" accept=".txt" style="display: none;">
+    <button id="loadButton" class="btn-warning" style="flex-grow: 1;">Dosya Aç</button>
+    </div>
+    <button id="clearButton" class="btn-danger" style="width: 100%;">Temizle</button>
+    </div>
+    </div>
+
+    <div id="info-panel">
+    <span class="char-count">Toplam Çıktı Karakteri (Emoji + Ayırıcı): <span id="currentChars">0</span>/200</span>
+    <span id="charWarning" class="warning" style="display: none;"> - ⚠️ Ekstra karakter maliyeti!</span>
+    </div>
+
+    <div id="matrix-container" style="max-width: 100%;">
+    <table id="matrix">
+    </table>
     </div>
     </div>
     </div>

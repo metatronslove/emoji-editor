@@ -121,7 +121,7 @@ class User {
     /**
      * Yeni Google kullanıcısı oluştur - PROFİL FOTOĞRAFI DESTEKLİ
      */
-    private function createNewGoogleUser(string $googleId, string $email, string $name, string $picture): ?array {
+    public function createNewGoogleUser(string $googleId, string $email, string $name, string $picture): ?array {
         try {
             // Benzersiz kullanıcı adı oluştur
             $username = $this->generateSimpleUsername($name, $email);
@@ -168,7 +168,7 @@ class User {
     /**
      * Basit kullanıcı adı oluştur
      */
-    private function generateSimpleUsername(string $name, string $email): string {
+    public function generateSimpleUsername(string $name, string $email): string {
         $baseUsername = preg_replace('/[^a-zA-Z0-9]/', '', $name);
         $baseUsername = strtolower($baseUsername);
 
@@ -219,7 +219,7 @@ class User {
     /**
      * Gravatar'dan profil fotoğrafını al ve boyutlandır
      */
-    private function getGravatar(string $email, int $size = 240): string {
+    public function getGravatar(string $email, int $size = 240): string {
         $hash = md5(strtolower(trim($email)));
         $gravatar_url = GRAVATAR_URL . $hash . '?s=' . $size . '&d=identicon';
 
@@ -238,7 +238,7 @@ class User {
     /**
      * Resmi 240x240 boyutuna küçült ve optimize et
      */
-    private function resizeAndOptimizeImage(string $image_data): ?string {
+    public function resizeAndOptimizeImage(string $image_data): ?string {
         try {
             // Resmi bellekte oluştur
             $image = imagecreatefromstring($image_data);

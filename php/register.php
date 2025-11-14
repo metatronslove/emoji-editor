@@ -10,12 +10,6 @@ if (session_status() === PHP_SESSION_NONE) {
 
 header('Content-Type: application/json');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-    exit;
-}
-
 try {
     $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -31,18 +25,25 @@ try {
         throw new Exception('Şifreler uyuşmuyor.');
     }
 
-    $auth = new Auth();
-
-    if ($auth->register($username, $email, $password)) {
-        echo json_encode([
-            'success' => true,
-            'message' => 'Kayıt başarılı! Hoş geldiniz.'
-        ]);
-        exit;
+    // Veritabanı bağlantısı kurun
+    $db = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
+    if ($db->connect_errno) {
+        throw new Exception('Veritabanı bağlantısı kurulamadı.');
     }
 
-    throw new Exception('Kayıt işlemi başarısız.');
+    // Kayıt işlemini gerçekleştirin
+    $stmt = $db->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
+    $stmt->bind_param("sss", $username, $email, $password);
+    $stmt->execute();
 
+    // Kayıt işlemini gerçekleştirdikten sonra veritabanı bağlantısını kapatın
+    $db->close();
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Kayıt başarılı! Hoş geldiniz.'
+    ]);
+    exit;
 } catch (Exception $e) {
     http_response_code(400);
     echo json_encode([
