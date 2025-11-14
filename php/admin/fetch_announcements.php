@@ -1,6 +1,6 @@
 <?php
 require_once '../config.php';
-session_start(); // Start session before checking user role
+require_once '../functions.php';
 $userRole = $_SESSION['user_role'] ?? 'user';
 if ($userRole !== 'admin') {
     http_response_code(403);

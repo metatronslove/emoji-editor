@@ -295,7 +295,7 @@ class User {
     /**
      * Google profil fotoğrafını işle ve boyutlandır
      */
-    private function processGooglePicture(string $google_picture_url): string {
+    public function processGooglePicture(string $google_picture_url): string {
         $image_data = @file_get_contents($google_picture_url);
         if ($image_data !== false) {
             // Resmi boyutlandır ve optimize et
@@ -312,7 +312,7 @@ class User {
     /**
      * Google profil fotoğrafını güncelle
      */
-    private function updateProfilePictureFromGoogle(int $user_id, string $picture_url): bool {
+    public function updateProfilePictureFromGoogle(int $user_id, string $picture_url): bool {
         $profile_picture = $this->processGooglePicture($picture_url);
         return $this->updateProfilePicture($user_id, $profile_picture);
     }
@@ -333,7 +333,7 @@ class User {
     /**
      * Resim verisinden MIME typeını al
      */
-    private function getMimeTypeFromString(string $image_data): string {
+    public function getMimeTypeFromString(string $image_data): string {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime_type = finfo_buffer($finfo, $image_data);
         finfo_close($finfo);

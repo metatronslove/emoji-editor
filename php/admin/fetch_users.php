@@ -2,7 +2,6 @@
 // admin/fetch_users.php
 require_once '../config.php';
 header('Content-Type: application/json');
-session_start();
 
 $userRole = $_SESSION['user_role'] ?? null;
 if (!$userRole || !in_array($userRole, ['admin', 'moderator'])) {

@@ -1,4 +1,5 @@
 <?php
+require_once 'config.php';
 class DB {
     private static $instance; // Singleton pattern, only one instance of the class will be created
     private $pdo;

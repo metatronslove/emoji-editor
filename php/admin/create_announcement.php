@@ -1,7 +1,7 @@
 <?php
 require_once '../config.php';
+require_once '../functions.php';
 header('Content-Type: application/json');
-session_start();
 
 $userRole = $_SESSION['user_role'] ?? 'user';
 if (!in_array($userRole, ['admin', 'moderator'])) {

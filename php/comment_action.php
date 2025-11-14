@@ -75,29 +75,28 @@ try {
     // 3. Hedef Kullanıcı Kontrolü ve Engelleme Kontrolleri
     $targetOwnerId = null;
 
-    if ($targetType === 'profile') {
-        // Hedef bir profil (Pano)
-        $targetOwnerId = $targetId; // Hedef ID, direkt kullanıcı ID'sidir.
+    if ($_POST['target_type'] === 'profile' && isset($_POST['content'])) {
+        $content = $_POST['content'];
 
-    } elseif ($targetType === 'drawing') {
-        // Hedef bir çizim
-        $drawingStmt = $db->prepare("SELECT user_id, comments_allowed FROM drawings WHERE id = ?");
-        $drawingStmt->execute([$targetId]);
-        $drawing = $drawingStmt->fetch();
+        // URL'leri tespit et ve Open Graph verilerini topla
+        $urls = extractUrls($content);
+        $metadata = [];
 
-        if (!$drawing) {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Hedef çizim bulunamadı.']);
-            exit;
+        foreach ($urls as $url) {
+            $ogData = fetchOpenGraphData($url);
+            if ($ogData) {
+                $metadata[] = $ogData;
+            }
         }
 
-        // C. Çizim Yorum İzni Kontrolü
-        if (!$drawing['comments_allowed']) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Bu çizimde yorumlar kapalıdır.']);
-            exit;
-        }
-        $targetOwnerId = $drawing['user_id'];
+        // Metadata'yı JSON olarak kaydet
+        $metadataJson = !empty($metadata) ? json_encode($metadata) : null;
+
+        $stmt = $db->prepare("
+        INSERT INTO comments (commenter_id, content, target_type, target_id, metadata)
+        VALUES (?, ?, 'profile', ?, ?)
+        ");
+        $stmt->execute([$user_id, $content, $target_id, $metadataJson]);
     }
 
     // D. Engelleme Kontrolleri (Sadece yorum yapan ve yorumun sahibi farklıysa geçerli)

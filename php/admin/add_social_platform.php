@@ -1,7 +1,7 @@
 <?php
 require_once '../config.php';
+require_once '../functions.php';
 header('Content-Type: application/json');
-session_start(); // Start session to access $_SESSION variables
 
 // Validate user role
 $userRole = sanitizeInput($_SESSION['user_role'] ?? '');

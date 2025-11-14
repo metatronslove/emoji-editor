@@ -1,5 +1,6 @@
 <?php
-
+// Start session
+session_start();
 // admin/dashboard.php - GÜNCELLENMİŞ
 require_once '../config.php';
 require_once '../User.php';
@@ -44,21 +45,14 @@ try {
 
 $counters = getCounters();
 $totalViews = $counters['total_views'] ?? 0;
-
-// Sayaçları başlat
-if (!defined('COUNTERS_INITIALIZED')) {
-    define('COUNTERS_INITIALIZED', true);
-    updateCounters();
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Yönetim Paneli | <?php echo ucfirst($userRole); ?></title>
-<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="https://flood.page.gd/styles.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -69,14 +63,20 @@ if (!defined('COUNTERS_INITIALIZED')) {
 <div id="stats-bar" class="card">
 <div class="info-group">
 <a href="../" class="btn btn-sm btn-primary">Ana Sayfa</a>
-<span>Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
+<span style="display: none;">Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
 <span style="color:#4CAF50"><strong><?php echo getOnlineUsersText(); ?></strong></span>
-<span>Bugünkü Kayıt: <strong style="color:#4CAF50"><?php echo number_format($stats['new_users_today'] ?? 0); ?></strong></span>
+<span style="display: none;">Bugünkü Kayıt: <strong style="color:#4CAF50"><?php echo number_format($stats['new_users_today'] ?? 0); ?></strong></span>
 </div>
 <div class="user-actions">
 <span class="greeting">Hoş geldin,
-<strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>!
+<strong>
+<a href="/<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>/"
+style="color: inherit; text-decoration: none;">
+<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>
+</a>
+</strong>!
 </span>
+<button onclick="openMessagesModal()" class="btn btn-sm btn-primary">📬 Mesaj Kutusu</button>
 <a href="../" class="btn btn-sm btn-primary">Siteye Dön</a>
 <a href="../logout.php" class="btn btn-sm btn-danger">Çıkış</a>
 </div>
@@ -88,7 +88,7 @@ if (!defined('COUNTERS_INITIALIZED')) {
 <hr>
 
 <!-- DASHBOARD İSTATİSTİKLERİ -->
-<div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+<div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; max-width: 1400px; width:100%;">
 <div class="card" style="text-align: center; padding: 20px;">
 <h3>👥 Toplam Kullanıcı</h3>
 <p style="font-size: 24px; font-weight: bold; color: var(--accent-color);"><?php echo number_format($stats['total_users'] ?? 0); ?></p>

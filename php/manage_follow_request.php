@@ -1,5 +1,9 @@
 <?php
 require_once 'config.php';
+// Oturumu başlat
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 header('Content-Type: application/json');
 
 // Sadece POST isteği

@@ -1,5 +1,9 @@
 <?php
 require_once 'config.php';
+// Oturumu başlat
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
@@ -8,9 +12,10 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+$db = getDbConnection();
 $followerId = $_SESSION['user_id'];
 $followingId = (int) ($_POST['target_id'] ?? null);
-$action = trim(strip_tags($_POST['action'] ?? null)); // 'follow' veya 'unfollow'
+$action = $_POST['action'] ?? null; // 'follow' veya 'unfollow'
 
 // YENİ KONTROL: Engelleme Kontrolü
 // Takip eden ve edilen arasında herhangi bir engelleme var mı?
@@ -35,7 +40,6 @@ if (!$followingId || !in_array($action, ['follow', 'unfollow'])) {
 }
 
 try {
-    $db = getDbConnection();
     // 1. Hedef kullanıcının gizlilik modunu çek
     $privacyMode = (int) $db->query("SELECT privacy_mode FROM users WHERE id = {$followingId}")->fetchColumn();
 

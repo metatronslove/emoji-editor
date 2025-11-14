@@ -24,21 +24,21 @@ try {
 
     if ($action === 'block') {
         // Engelleme: blocks tablosuna ekle
-        $stmt = $db->prepare("INSERT INTO blocks (blocker_id, blocked_id) VALUES (:blockerId, :blockedId) ON DUPLICATE KEY UPDATE blocker_id = :blockerId");
-        $stmt->execute([':blockerId' => $blockerId, ':blockedId' => $blockedId]);
+        $stmt = $db->prepare("INSERT INTO blocks (blocker_id, blocked_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE blocker_id = blocker_id");
+        $stmt->execute([$blockerId, $blockedId]);
         $message = 'Kullanıcı başarıyla engellendi. Tüm etkileşimleriniz kesildi.';
 
         // Engelleme durumunda varsa karşılıklı takip ve takip isteği ilişkilerini de kes
-        $db->prepare("DELETE FROM follows WHERE (follower_id = :blockerId AND following_id = :blockedId) OR (follower_id = :blockedId AND following_id = :blockerId)")
-           ->execute([':blockerId' => $blockerId, ':blockedId' => $blockedId]);
+        $db->prepare("DELETE FROM follows WHERE (follower_id = ? AND following_id = ?) OR (follower_id = ? AND following_id = ?)")
+        ->execute([$blockerId, $blockedId, $blockedId, $blockerId]);
 
-        $db->prepare("DELETE FROM follow_requests WHERE (follower_id = :blockerId AND following_id = :blockedId) OR (follower_id = :blockedId AND following_id = :blockerId)")
-           ->execute([':blockerId' => $blockerId, ':blockedId' => $blockedId]);
+        $db->prepare("DELETE FROM follow_requests WHERE (follower_id = ? AND following_id = ?) OR (follower_id = ? AND following_id = ?)")
+        ->execute([$blockerId, $blockedId, $blockedId, $blockerId]);
 
 
     } elseif ($action === 'unblock') {
         // Engellemeyi Kaldırma
-        $db->prepare("DELETE FROM blocks WHERE blocker_id = :blockerId AND blocked_id = :blockedId")->execute([':blockerId' => $blockerId, ':blockedId' => $blockedId]);
+        $db->prepare("DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?")->execute([$blockerId, $blockedId]);
         $message = 'Kullanıcının engeli başarıyla kaldırıldı.';
     }
 

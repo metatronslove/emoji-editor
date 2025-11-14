@@ -1,4 +1,6 @@
 <?php
+// Start session
+session_start();
 // profile.php - COUNTER DÜZELTMESİ
 require_once 'config.php';
 require_once 'User.php';
@@ -52,10 +54,12 @@ try {
         $isBlockingMe = $stmt->fetchColumn();
     }
 
-    // Kritik Kontrol: Herhangi bir engelleme varsa
-    if ($isBlockedByMe || $isBlockingMe) {
+    // KRİTİK DÜZELTME: Engelleme kontrolünü güncelle
+    // Sadece engellenen kişi engelleyeni göremez, engelleyen engellediğini görebilir
+    if ($isBlockingMe) {
+        // Eğer profil sahibi current user'ı engellemişse
         http_response_code(403);
-        die("Bu kullanıcı ile etkileşime geçemezsiniz veya profilini görüntüleyemezsiniz.");
+        die("Bu kullanıcı sizi engellediği için profilini görüntüleyemezsiniz.");
     }
 
     /* TAKİP ve İÇERİK GÖRÜNÜRLÜĞÜ KONTROLÜ - GÜVENLİ SORGULAR */
@@ -112,14 +116,7 @@ try {
 
 $counters = getCounters();
 $totalViews = $counters['total_views'] ?? 0;
-
-// Sayaçları başlat
-if (!defined('COUNTERS_INITIALIZED')) {
-    define('COUNTERS_INITIALIZED', true);
-    updateCounters();
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -134,7 +131,7 @@ if (!defined('COUNTERS_INITIALIZED')) {
 <meta property="og:locale" content="tr_TR">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?php echo htmlspecialchars($profileUser['username'] ?? ''); ?> - Profil</title>
-<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="https://flood.page.gd/styles.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -147,14 +144,20 @@ if (!defined('COUNTERS_INITIALIZED')) {
 <div id="stats-bar" class="card">
 <div class="info-group">
 <a href="/" class="btn btn-sm btn-primary">Ana Sayfa</a>
-<span>Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
+<span style="display: none;">Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
 <span style="color:#4CAF50"><strong><?php echo getOnlineUsersText(); ?></strong></span>
 </div>
 <div class="user-actions">
 <?php if (Auth::isLoggedIn()): ?>
 <span class="greeting">Hoş geldin,
-<strong><?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?></strong>!
+<strong>
+<a href="/<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>/"
+style="color: inherit; text-decoration: none;">
+<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>
+</a>
+</strong>!
 </span>
+<button onclick="openMessagesModal()" class="btn btn-sm btn-primary">📬 Mesaj Kutusu</button>
 <?php if (in_array($_SESSION['user_role'] ?? 'user', ['admin', 'moderator'])): ?>
 <a href="../admin/dashboard.php" class="btn btn-sm btn-primary">Yönetim Paneli</a>
 <?php endif; ?>
@@ -166,7 +169,7 @@ if (!defined('COUNTERS_INITIALIZED')) {
 </div>
 </div>
 
-<div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+<div style="max-width: 1400px; margin: 0 auto; width: 100%;">
 
 <!-- PROFİL BAŞLIK BÖLÜMÜ -->
 <header class="card" style="margin-bottom: 20px; padding: 25px;">
@@ -222,17 +225,27 @@ if (!empty($socialLinks)):
     </div>
     </div>
 
-    <!-- Aksiyon Butonları -->
-    <?php if ($currentUserId && !$isProfileOwner): ?>
-    <div style="flex-shrink: 0;">
+    <!-- Aksiyon Butonları kısmını şu şekilde güncelleyin -->
+    <!-- PROFİL SAYFASINDAKİ MESAJ BUTONU - ACİL DÜZELTME -->
+    <?php if ($currentUserId && !$isProfileOwner && !$isBlockingMe): ?>
+    <button onclick="openSimpleMessageModalFromButton(this)"
+    data-target-id="<?php echo $profileUser['id']; ?>"
+    data-target-username="<?php echo htmlspecialchars($profileUser['username']); ?>"
+    class="btn btn-sm btn-primary"
+    style="margin-left: 10px;">
+    💬 Mesaj Gönder
+    </button>
+
+    <!-- Mevcut takip ve engelle butonları -->
     <button id="followButton" data-action="<?php echo $followButtonAction; ?>"
     data-target-id="<?php echo $profileUser['id']; ?>"
-    class="btn-primary"
+    class="btn btn-sm btn-primary"
     <?php echo $followRequestPending ? 'disabled' : ''; ?>>
     <?php echo $followButtonText; ?>
     </button>
+
     <button id="blockButton" data-target-id="<?php echo $profileUser['id']; ?>"
-    class="btn-danger" style="margin-left: 10px;">
+    class="btn btn-sm btn-danger" style="margin-left: 10px;">
     <?php echo $isBlockedByMe ? 'Engellemeyi Kaldır' : 'Engelle'; ?>
     </button>
     </div>
@@ -254,6 +267,145 @@ if (!empty($socialLinks)):
     </form>
     </div>
 
+    <!-- Kullanıcı Adı Değiştirme Formu -->
+    <div class="card" style="margin-bottom: 20px;">
+    <h3>👤 Kullanıcı Adını Değiştir</h3>
+    <form id="username-update-form">
+    <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end;">
+    <div>
+    <label for="new_username" style="display: block; margin-bottom: 5px; font-size: 14px; color: var(--accent-color);">Yeni Kullanıcı Adı</label>
+    <input type="text" id="new_username" name="new_username" value="<?php echo htmlspecialchars($profileUser['username']); ?>" required minlength="3" maxlength="20" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--fixed-bg); color: var(--main-text);">
+    </div>
+    <button type="submit" class="btn-primary">Kullanıcı Adını Güncelle</button>
+    </div>
+    <div style="font-size: 12px; color: var(--main-text); opacity: 0.7; margin-top: 5px;">
+    • 3-20 karakter arası<br>
+    • Sadece harf, sayı, alt çizgi (_) ve tire (-)<br>
+    • Boşluklar otomatik olarak tire (-) ile değiştirilir<br>
+    • Türkçe karakterler İngilizce karşılıklarına dönüştürülür
+    </div>
+    <div id="username-preview" style="margin-top: 10px; padding: 8px; background: var(--fixed-bg); border-radius: 4px; font-size: 14px; display: none;">
+    <strong>Önizleme:</strong> <span id="preview-text"></span>
+    </div>
+    </form>
+    </div>
+
+    <script>
+    // Kullanıcı adı önizleme ve otomatik formatlama
+    document.getElementById('new_username').addEventListener('input', function(e) {
+        const originalValue = e.target.value;
+        const formattedValue = formatUsername(originalValue);
+
+        // Eğer formatlanmış değer orijinalinden farklıysa göster
+        if (formattedValue !== originalValue && originalValue.length > 0) {
+            document.getElementById('username-preview').style.display = 'block';
+    document.getElementById('preview-text').textContent = formattedValue;
+
+    // Kullanıcı yazmaya devam ederken otomatik olarak değiştirme, sadece önizleme göster
+    // Eğer kullanıcı boşluk bıraktıysa veya geçersiz karakter girdiyse, input'u değiştirmeyelim
+    // Sadece önizleme gösterelim ki kullanıcı ne olacağını görsün
+        } else {
+            document.getElementById('username-preview').style.display = 'none';
+        }
+    });
+
+    // Kullanıcı adı formatlama fonksiyonu
+    function formatUsername(username) {
+        // Türkçe karakterleri İngilizce karşılıklarına çevir
+        const turkishToEnglish = {
+            'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+            'Ç': 'C', 'Ğ': 'G', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U'
+        };
+
+        let formatted = username;
+
+        // Türkçe karakterleri değiştir
+        formatted = formatted.replace(/[çğışöüÇĞİŞÖÜ]/g, char => turkishToEnglish[char] || char);
+
+        // Boşlukları tire ile değiştir
+        formatted = formatted.replace(/\s+/g, '-');
+
+        // Sadece izin verilen karakterleri tut: harf, sayı, alt çizgi, tire
+        formatted = formatted.replace(/[^a-zA-Z0-9_-]/g, '');
+
+        // Birden fazla tireyi tek tireye indirge
+        formatted = formatted.replace(/-+/g, '-');
+
+        // Başta ve sonda tire varsa kaldır
+        formatted = formatted.replace(/^-+|-+$/g, '');
+
+        // Küçük harfe çevir (isteğe bağlı - kaldırabilirsiniz)
+        // formatted = formatted.toLowerCase();
+
+        return formatted;
+    }
+
+    // Kullanıcı adı güncelleme formu
+    document.getElementById('username-update-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        let newUsername = document.getElementById('new_username').value.trim();
+
+        if (!newUsername) {
+            showNotification('Lütfen yeni kullanıcı adını girin.', 'error');
+            return;
+        }
+
+        // Kullanıcı adını formatla
+        newUsername = formatUsername(newUsername);
+
+        // Formatlanmış değeri input'a geri yaz (kullanıcı ne göreceğini görsün)
+        document.getElementById('new_username').value = newUsername;
+
+        if (newUsername.length < 3) {
+            showNotification('Kullanıcı adı en az 3 karakter olmalıdır.', 'error');
+            return;
+        }
+
+        if (newUsername.length > 20) {
+            showNotification('Kullanıcı adı en fazla 20 karakter olabilir.', 'error');
+            return;
+        }
+
+        // Son kontrol: sadece izin verilen karakterler
+        const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+        if (!usernameRegex.test(newUsername)) {
+            showNotification('Kullanıcı adı sadece harf, sayı, alt çizgi (_) ve tire (-) içerebilir.', 'error');
+            return;
+        }
+
+        const confirmed = await showConfirm(
+            'Kullanıcı Adını Değiştir',
+            `Kullanıcı adınızı "${newUsername}" olarak değiştirmek istediğinizden emin misiniz?<br><br>
+            • Profil URL'niz değişecek: <strong>/${newUsername}/</strong><br>
+            • Eski bağlantılar çalışmayacak<br>
+            • Bu işlem geri alınamaz`
+        );
+
+        if (confirmed) {
+            try {
+                const response = await fetch('../update_username.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `new_username=${encodeURIComponent(newUsername)}`
+                });
+
+                const result = await response.json();
+                showNotification(result.message, result.success ? 'success' : 'error');
+
+                if (result.success) {
+                    // Başarılı ise, sayfayı yeni kullanıcı adı ile yeniden yükle
+                    setTimeout(() => {
+                        window.location.href = `/${newUsername}/`;
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Kullanıcı adı güncelleme hatası:', error);
+                showNotification('Güncelleme sırasında hata oluştu.', 'error');
+            }
+        }
+    });
+    </script>
     <script>
     // Profil resmi yükleme
     document.getElementById('profile-picture-form').addEventListener('submit', async function(e) {
@@ -307,7 +459,7 @@ if (!empty($socialLinks)):
     <div id="add-social-link-form">
     <h4>Yeni Bağlantı Ekle</h4>
     <form id="social-link-form">
-    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px;">
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px; max-width: 1400px; width:100%;">
     <select id="social-platform-select" required style="padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);">
     <option value="">Platform Seçin</option>
     <!-- Platformlar JavaScript ile yüklenecek -->
@@ -558,9 +710,11 @@ if (!empty($socialLinks)):
     </section>
     <?php endif; ?>
 
+    <?php include 'messages_modal.php'; ?>
+
     <?php if ($canViewContent): ?>
     <!-- ANA İÇERİK LAYOUT'U -->
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; max-width: 1400px; width: 100%;">
 
     <!-- SOL SÜTUN: Çizimler -->
     <div>
@@ -768,14 +922,15 @@ if (!empty($socialLinks)):
         role: <?php echo json_encode($_SESSION['role'] ?? 'user'); ?>
     };
     </script>
-    <script src="../main.js"></script>
     <script>
-    // Global değişkenler
+    // Profil sayfası için global değişken
     window.PROFILE_DATA = {
         userId: <?php echo $profileUser['id']; ?>,
         currentUserId: <?php echo json_encode($currentUserId); ?>,
         isProfileOwner: <?php echo json_encode($isProfileOwner); ?>,
-        profileUsername: "<?php echo htmlspecialchars($profileUser['username']); ?>"
+        profileUsername: "<?php echo htmlspecialchars($profileUser['username']); ?>",
+        isBlockingMe: <?php echo json_encode($isBlockingMe); ?>,
+        isBlockedByMe: <?php echo json_encode($isBlockedByMe); ?>
     };
 
     // PROFİL FOTOĞRAFI İŞLEME - TÜM YERLERDE TUTARLILIK
@@ -886,7 +1041,7 @@ if (!empty($socialLinks)):
                 });
                 const result = await response.json();
                 showNotification(result.message, result.success ? 'success' : 'error');
-                if (result.success) setTimeout(() => window.location.reload(), 1500);
+                if (result.success) setTimeout(() => window.location.reload(), 4000);
             } catch (error) {
                 console.error('Engelleme işlemi hatası:', error);
                 showNotification('İşlem sırasında hata oluştu.', 'error');
@@ -1131,5 +1286,6 @@ if (!empty($socialLinks)):
         }
     }
     </script>
+    <script src="../main.js"></script>
     </body>
     </html>

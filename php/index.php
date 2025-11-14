@@ -1,4 +1,6 @@
 <?php
+// Start session
+session_start();
 // index.php - DEBUG MODE
 require_once 'config.php';
 require_once 'User.php';
@@ -33,15 +35,11 @@ try {
     exit;
 }
 
+$currentUserId = $_SESSION['user_id'] ?? null;
+
 // Counters'ı initialize et
 $counters = getCounters(); // veya counter_manager.php'deki uygun fonksiyon
 $totalViews = $counters['total_views'] ?? 0;
-
-// Sayaçları başlat
-if (!defined('COUNTERS_INITIALIZED')) {
-    define('COUNTERS_INITIALIZED', true);
-    updateCounters();
-}
 ?>
 <!DOCTYPE html>
 <html lang="tr">
@@ -57,7 +55,7 @@ if (!defined('COUNTERS_INITIALIZED')) {
 <meta property="og:locale" content="tr_TR">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kalp Emoji Piksel Sanatı Editörü</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://flood.page.gd/styles.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -70,14 +68,20 @@ if (!defined('COUNTERS_INITIALIZED')) {
 <div id="stats-bar" class="card">
 <div class="info-group">
 <a href="/" class="btn btn-sm btn-primary">Ana Sayfa</a>
-<span>Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
+<span style="display: none;">Toplam Ziyaret: <strong><?php echo number_format($totalViews); ?></strong></span>
 <span style="color:#4CAF50"><strong><?php echo getOnlineUsersText(); ?></strong></span>
 </div>
 <div class="user-actions">
 <?php if (Auth::isLoggedIn()): ?>
 <span class="greeting">Hoş geldin,
-<strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>!
+<strong>
+<a href="/<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>/"
+style="color: inherit; text-decoration: none;">
+<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>
+</a>
+</strong>!
 </span>
+<button onclick="openMessagesModal()" class="btn btn-sm btn-primary">📬 Mesaj Kutusu</button>
 <?php if (in_array($_SESSION['user_role'] ?? 'user', ['admin', 'moderator'])): ?>
 <a href="/admin/dashboard.php" class="btn btn-sm btn-primary">Yönetim Paneli</a>
 <?php endif; ?>
@@ -205,6 +209,8 @@ Google ile Kayıt Ol
 </div>
 </div>
 
+<?php include 'messages_modal.php'; ?>
+
 <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.5 (Sezgisel Giriş Düzeltmesi)</h2>
 
 <div id="main-layout">
@@ -291,6 +297,12 @@ window.currentUser = {
     id: <?php echo json_encode($_SESSION['user_id'] ?? null); ?>,
     username: <?php echo json_encode($_SESSION['username'] ?? null); ?>,
     role: <?php echo json_encode($_SESSION['role'] ?? 'user'); ?>
+};
+// Profil sayfası için global değişken
+window.PROFILE_DATA = {
+    userId: <?php echo json_encode($currentUserId); ?>,
+    currentUserId: <?php echo json_encode($currentUserId); ?>,
+    profileUsername: "<?php echo htmlspecialchars($username); ?>"
 };
 </script>
 <script src="main.js"></script>

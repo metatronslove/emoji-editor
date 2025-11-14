@@ -1,6 +1,82 @@
 <?php
 // functions.php - DÜZELTİLMİŞ
 
+function fetchOpenGraphData($url) {
+    try {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 5,
+                'header' => "User-Agent: Mozilla/5.0 (compatible; SiteBot/1.0)\r\n"
+            ]
+        ]);
+
+        $html = file_get_contents($url, false, $context);
+        if (!$html) return null;
+
+        $ogData = [
+            'url' => $url,
+            'title' => '',
+            'description' => '',
+            'image' => '',
+            'site_name' => ''
+        ];
+
+        // Title
+        if (preg_match('/<title>(.*?)<\/title>/i', $html, $matches)) {
+            $ogData['title'] = trim($matches[1]);
+        }
+
+        // Open Graph tags
+        if (preg_match('/<meta property="og:title" content="(.*?)"/i', $html, $matches)) {
+            $ogData['title'] = trim($matches[1]);
+        }
+        if (preg_match('/<meta property="og:description" content="(.*?)"/i', $html, $matches)) {
+            $ogData['description'] = trim($matches[1]);
+        }
+        if (preg_match('/<meta property="og:image" content="(.*?)"/i', $html, $matches)) {
+            $ogData['image'] = trim($matches[1]);
+        }
+        if (preg_match('/<meta property="og:site_name" content="(.*?)"/i', $html, $matches)) {
+            $ogData['site_name'] = trim($matches[1]);
+        }
+
+        return array_filter($ogData); // Boş değerleri temizle
+    } catch (Exception $e) {
+        error_log("Open Graph hatası: " . $e->getMessage());
+        return null;
+    }
+}
+
+function extractUrls($text) {
+    preg_match_all('/https?:\/\/[^\s]+/', $text, $matches);
+    return $matches[0] ?? [];
+}
+
+function formatBoardMessage($content) {
+    // URL'leri tespit et ve linklere çevir
+    $urlPattern = '/(https?:\/\/[^\s]+)/';
+    $content = preg_replace_callback($urlPattern, function($matches) {
+        $url = $matches[1];
+
+        // YouTube embed
+        if (preg_match('/youtube\.com\/watch\?v=([^&]+)/', $url, $ytMatches) ||
+            preg_match('/youtu\.be\/([^&]+)/', $url, $ytMatches)) {
+            $videoId = $ytMatches[1];
+        return '<div class="video-embed"><iframe width="100%" height="315" src="https://www.youtube.com/embed/'.$videoId.'" frameborder="0" allowfullscreen></iframe></div>';
+            }
+
+            // Resim embed
+            if (preg_match('/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i', $url)) {
+                return '<div class="image-embed"><img src="'.htmlspecialchars($url).'" alt="Embedded image" style="max-width: 100%; height: auto; border-radius: 8px;"></div>';
+            }
+
+            // Normal link
+            return '<a href="'.htmlspecialchars($url).'" target="_blank" rel="noopener">'.htmlspecialchars($url).'</a>';
+    }, $content);
+
+    return nl2br(htmlspecialchars($content));
+}
+
 /**
  * Kullanıcı rütbesini hesaplar
  */

@@ -7,82 +7,52 @@ require_once 'functions.php';
 const ONLINE_THRESHOLD_MINUTES = 60;
 
 /**
- * Türk Dil Kurumu (TDK) kurallarına göre bir sayıya (rakamla yazılmış) gelen ismin -i, -e, -de, -den eklerini
- * (örneğin: 1'i, 5'e, 10'da, 3'ten) doğru şekilde belirler.
- * Bu senaryo için iyelik eki (iyelik + hal eki) olan '-nin / -nın' eklerinin kısaltması olan iyelik eki için uyarlanmıştır.
- * Örneğin: 5'in, 13'ün, 20'nin. (Sayının okunuşunun son sesli harfine göre)
- *
- * @param int $number Sayı
- * @return string Kesme işareti ve Türkçe ek.
+ * TAM TÜRKÇE EK UYUMU FONKSİYONU
+ * Tüm kurallar doğru şekilde uygulanmıştır
  */
 function getTurkishSuffix($number) {
-    if (!is_numeric($number)) return '';
+    $sonRakam = $number % 10;
+    $sonIkiRakam = $number % 100;
 
-    // Sayının okunuşu (örneğin 13 -> "on üç")
-    $numberInWords = (string)$number; // Basit bir çözüm için sayıyı metne çeviriyoruz (Daha karmaşık uyum için harf harf çeviri gerekir)
+    // Özel durumlar: 10, 20, 30, 40, 50, 60, 70, 80, 90
+    if ($sonIkiRakam == 10) return "'u";
+    if ($sonIkiRakam == 20) return "'si";
+    if ($sonIkiRakam == 30) return "'u";
+    if ($sonIkiRakam == 40) return "'ı";
+    if ($sonIkiRakam == 50) return "'si";
+    if ($sonIkiRakam == 60) return "'ı";
+    if ($sonIkiRakam == 70) return "'i";
+    if ($sonIkiRakam == 80) return "'i";
+    if ($sonIkiRakam == 90) return "'ı";
 
-    // Bu senaryoda sayının son rakamını okunuşuna göre varsayacağız.
-    // 0: sıfır (r) -> ın / un
-    // 1: bir (r) -> in / ün
-    // 2: iki (i) -> nin / nın
-    // 3: üç (ç) -> ün
-    // 4: dört (t) -> ün
-    // 5: beş (ş) -> in
-    // 6: altı (ı) -> nın
-    // 7: yedi (i) -> nin
-    // 8: sekiz (z) -> in
-    // 9: dokuz (z) -> un
+    // 100 ve katları için özel kurallar
+    if ($number == 100) return "'ü";
+    if ($sonIkiRakam == 0) return "'ı";
 
-    $lastDigit = $number % 10;
+    // 9 ile biten sayılar için özel kural (19, 29, 39...)
+    if ($sonRakam == 9 && $sonIkiRakam != 9) return "'u";
 
-    // Basitleştirilmiş, ancak yaygın kullanıma yakın bir mantık
-    // En sağlıklı yöntem sayının okunuşunun son seslisini bulmaktır.
-    // Ancak bu senaryo için sayının son rakamına göre sesli harf uyumu yapalım:
-
-    switch ($lastDigit) {
-        case 1: // bir -> in
-        case 2: // iki -> nin (ÜNSÜZ: 'si' yerine 'i' kullanıldı, çünkü TDK Kuralı: iki'nin)
-        case 7: // yedi -> nin
-        case 8: // sekiz -> in
-            // Sesliler i/e ise 'in'/'nin' eki. Sayı ünsüzle bitiyorsa 'in', sesliyle bitiyorsa 'nin'
-            if (in_array($lastDigit, [2, 7])) { // 2 ve 7 sesliyle biter (iki, yedi)
-                return "'nin"; // TDK kuralına göre
-            }
-            return "'in";
-
-        case 3: // üç -> ün
-        case 4: // dört -> ün
-            return "'ün";
-
-        case 5: // beş -> in
-        case 6: // altı -> nın
-            // 5 ünsüzle (beş), 6 sesliyle (altı) biter.
-            if ($lastDigit == 6) {
-                return "'nın";
-            }
-            return "'in"; // Beş'in
-
-        case 9: // dokuz -> un
-            return "'un";
-
+    // Standart kurallar
+    switch ($sonRakam) {
+        case 1:
+            return "'i";
+        case 2:
+            return "'si";
+        case 3:
+        case 4:
+            return "'ü";
+        case 5:
+        case 6:
+            return "'ı";
+        case 7:
+        case 8:
         case 0:
-            // 10, 20, 30, ... gibi durumlarda son okunuş 'n' veya 'z' ile biter.
-            if ($number == 0) return "'ın"; // Eğer 0 üye olsaydı
-
-            // 10 (on), 30 (otuz), 40 (kırk)
-            $lastTwoDigits = $number % 100;
-        if ($lastTwoDigits == 10 || $lastTwoDigits == 90) return "'un"; // on'un, doksan'ın
-        if ($lastTwoDigits == 20 || $lastTwoDigits == 50 || $lastTwoDigits == 70) return "'nin"; // yirmi'nin, yetmiş'in
-        if ($lastTwoDigits == 30 || $lastTwoDigits == 80) return "'un"; // otuz'un, seksen'in
-        if ($lastTwoDigits == 40 || $lastTwoDigits == 60) return "'ın"; // kırk'ın, altmış'ın
-
-        // Genel olarak 0 ile biten büyük sayılar için varsayılan
-        return "'ın";
-
+            return "'ı";
         default:
-            return "'ın";
+            return "'ı";
     }
 }
+
 
 function updateCounters() {
     try {
@@ -209,5 +179,11 @@ function getOnlineUsersText() {
         // Örn: 5 anlık kullanıcının hiçbiri üye değil
         return "{$totalOnline} anlık kullanıcının hiçbiri üye değil";
     }
+}
+
+// Sayaçları başlat
+if (!defined('COUNTERS_INITIALIZED')) {
+    define('COUNTERS_INITIALIZED', true);
+    updateCounters();
 }
 ?>

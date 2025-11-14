@@ -13,6 +13,9 @@ let matrix = [];
 let selectedEmoji = null;
 let emojiCategories = {};
 let currentCategory = null;
+// Mesaj kutusu değişkenleri
+// let currentConversation = null;
+let allConversations = [];
 
 // Ayırıcı karakterlerin char ve name bilgileri
 let SEPARATOR_MAP = {
@@ -374,6 +377,59 @@ function createMatrix() {
     updateCharacterCount();
 }
 
+// ACİL ÇÖZÜM: Mesaj gönder butonu için basit modal açma
+function openMessagesModalForUser(userId, username) {
+    if (!window.currentUser || !window.currentUser.id) {
+        showNotification('Mesaj göndermek için giriş yapmalısınız.', 'error');
+        return;
+    }
+
+    // Basit bir prompt ile mesaj gönder
+    const message = prompt(`${username} kullanıcısına göndermek istediğiniz mesajı yazın:`);
+
+    if (message && message.trim() !== '') {
+        sendDirectMessage(userId, message.trim());
+    }
+}
+
+// Doğrudan mesaj gönderme fonksiyonu
+async function sendDirectMessage(receiverId, content) {
+    try {
+        const formData = new FormData();
+        formData.append('receiver_id', receiverId);
+        formData.append('content', content);
+        formData.append('message_type', 'text');
+
+        const response = await fetch('send_message.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('Mesajınız gönderildi!', 'success');
+            // Mesaj kutusunu aç ve konuşmayı göster
+            setTimeout(() => {
+                if (typeof openMessagesModal === 'function') {
+                    openMessagesModal();
+                    // Konuşmayı seçmek için kısa gecikme
+                    setTimeout(() => {
+                        if (typeof selectConversation === 'function') {
+                            selectConversation(receiverId, 'Kullanıcı');
+                        }
+                    }, 1000);
+                }
+            }, 1500);
+        } else {
+            showNotification('Mesaj gönderilemedi: ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Mesaj gönderme hatası:', error);
+        showNotification('Mesaj gönderilirken hata oluştu.', 'error');
+    }
+}
+
 function handleCellClick(cell) {
     // Sadece sabit veya kırpılmış değilse çalıştır
     if (cell.classList.contains('fixed') || cell.classList.contains('clipped')) return;
@@ -653,6 +709,572 @@ function applyDrawingText(text) {
     }
 
     return true;
+}
+
+// Özel mesaj sistemi
+let currentMessageReceiver = null;
+
+// Mesaj bildirim sistemini başlat
+function initMessagingSystem() {
+    updateMessageNotification();
+    setInterval(updateMessageNotification, 30000); // 30 saniyede bir kontrol
+
+    // Mesaj modal event'lerini başlat
+    initMessageModalEvents();
+}
+
+// ACİL ÇÖZÜM: Eksik fonksiyonları tanımla
+function openSimpleMessageModalFromButton(button) {
+    console.log('🔧 Mesaj butonu tıklandı:', button);
+
+    // Butondan verileri al
+    const targetId = button.getAttribute('data-target-id') ||
+    button.dataset.targetId ||
+    button.getAttribute('data-user-id');
+
+    const targetUsername = button.getAttribute('data-target-username') ||
+    button.dataset.targetUsername ||
+    button.textContent.replace('💬 Mesaj Gönder', '').trim() ||
+    'Kullanıcı';
+
+    console.log(`📨 Mesaj gönderilecek: ${targetId} - ${targetUsername}`);
+
+    if (!targetId) {
+        showNotification('Kullanıcı ID bulunamadı.', 'error');
+        return;
+    }
+
+    // Basit modal aç
+    createSimpleMessageModal(targetId, targetUsername);
+}
+
+// Basit mesaj modalı oluştur (zaten varsa yeniden tanımla)
+function createSimpleMessageModal(userId, username) {
+    console.log(`🎯 Basit mesaj modalı açılıyor: ${userId} - ${username}`);
+
+    // Önceki modalı temizle
+    const existingModal = document.getElementById('simple-message-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modalHTML = `
+    <div id="simple-message-modal" class="modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+    <div style="background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; border: 2px solid var(--accent-color); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h3 style="margin: 0; color: var(--accent-color);">💬 ${username} - Mesaj Gönder</h3>
+    <button onclick="closeSimpleMessageModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--main-text); padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+    </div>
+
+    <textarea id="simple-message-input"
+    placeholder="Mesajınızı yazın..."
+    style="width: 100%; height: 120px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--fixed-bg); color: var(--main-text); font-family: inherit; resize: vertical; margin-bottom: 15px; box-sizing: border-box;"></textarea>
+
+    <div style="display: flex; gap: 10px;">
+    <button onclick="sendSimpleMessage(${userId})"
+    style="flex: 1; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">
+    📤 Gönder
+    </button>
+    <button onclick="closeSimpleMessageModal()"
+    style="padding: 12px 20px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+    İptal
+    </button>
+    </div>
+    </div>
+    </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    console.log('✅ Basit mesaj modalı oluşturuldu');
+}
+
+// Basit modalı kapat
+function closeSimpleMessageModal() {
+    const modal = document.getElementById('simple-message-modal');
+    if (modal) {
+        modal.remove();
+        console.log('✅ Basit mesaj modalı kapatıldı');
+    }
+}
+
+// Basit mesaj gönder
+async function sendSimpleMessage(receiverId) {
+    console.log(`📨 Mesaj gönderiliyor: ${receiverId}`);
+
+    const input = document.getElementById('simple-message-input');
+    if (!input) {
+        showNotification('Mesaj alanı bulunamadı.', 'error');
+        return;
+    }
+
+    const content = input.value.trim();
+
+    if (!content) {
+        showNotification('Lütfen mesaj yazın.', 'error');
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('receiver_id', receiverId);
+        formData.append('content', content);
+        formData.append('message_type', 'text');
+
+        console.log('📤 Mesaj gönderiliyor...');
+        const response = await fetch('send_message.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        console.log('📨 Mesaj gönderme sonucu:', result);
+
+        if (result.success) {
+            showNotification('✅ Mesajınız gönderildi!', 'success');
+            closeSimpleMessageModal();
+        } else {
+            showNotification('❌ ' + (result.message || 'Mesaj gönderilemedi'), 'error');
+        }
+    } catch (error) {
+        console.error('Mesaj gönderme hatası:', error);
+        showNotification('❌ Mesaj gönderilirken hata oluştu.', 'error');
+    }
+}
+
+// Basit mesaj modalı aç (belirli kullanıcı için)
+function openSimpleMessageModal(receiverId, receiverUsername) {
+    currentConversation = { id: receiverId, username: receiverUsername };
+    openMessagesModal();
+
+    // Kısa bir gecikmeyle konuşmayı seç
+    setTimeout(() => {
+        if (typeof selectConversation === 'function') {
+            selectConversation(receiverId, receiverUsername);
+        }
+    }, 500);
+}
+
+// Mesaj bildirimini güncelle
+async function updateMessageNotification() {
+    if (!window.currentUser || !window.currentUser.id) return;
+
+    try {
+        const response = await fetch('get_unread_message_count.php');
+        const result = await response.json();
+
+        const messageBadge = document.getElementById('message-notification-badge');
+        if (messageBadge) {
+            if (result.unread_count > 0) {
+                messageBadge.textContent = result.unread_count;
+                messageBadge.style.display = 'inline';
+            } else {
+                messageBadge.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Mesaj bildirimi güncelleme hatası:', error);
+    }
+}
+
+function openMessageModal(receiverId, receiverUsername) {
+    currentMessageReceiver = { id: receiverId, username: receiverUsername };
+
+    // Modal oluştur veya aç
+    const modalHtml = `
+    <div id="message-modal" class="modal show">
+    <div class="modal-content" style="max-width: 600px;">
+    <button class="modal-close">❎</button>
+    <h2>${receiverUsername} ile Mesajlaşma</h2>
+    <div id="message-container" style="height: 400px; overflow-y: auto; border: 1px solid var(--border-color); padding: 15px; margin-bottom: 15px; background: var(--fixed-bg);">
+    <div id="messages-list"></div>
+    </div>
+    <div id="message-input-area">
+    <textarea id="message-text-input" placeholder="Mesajınızı yazın..." style="width: 100%; height: 80px; margin-bottom: 10px;"></textarea>
+    <input type="file" id="message-file-input" style="display: none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
+    <div style="display: flex; gap: 10px;">
+    <button onclick="sendMessage()" class="btn-primary">Gönder</button>
+    <button onclick="document.getElementById('message-file-input').click()" class="btn-secondary">Dosya Ekle</button>
+    <button onclick="closeMessageModal()" class="btn-danger">Kapat</button>
+    </div>
+    </div>
+    </div>
+    </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    loadMessages();
+    initMessageModalEvents();
+}
+
+function initMessageModalEvents() {
+    const fileInput = document.getElementById('message-file-input');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileSelect);
+    }
+}
+
+async function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Dosya boyutu kontrolü (2MB)
+    if (file.size > 2097152) {
+        showNotification('Dosya boyutu 2MB\'dan küçük olmalı.', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64Data = e.target.result.split(',')[1];
+        sendMessage(file.name, base64Data, file.type);
+    };
+    reader.readAsDataURL(file);
+}
+
+async function sendMessage(fileName = null, fileData = null, mimeType = null) {
+    const textInput = document.getElementById('message-text-input');
+    const content = textInput.value.trim();
+
+    if (!content && !fileData) {
+        showNotification('Mesaj veya dosya girin.', 'error');
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('receiver_id', currentMessageReceiver.id);
+        formData.append('content', content);
+
+        if (fileData) {
+            formData.append('file_data', fileData);
+            formData.append('file_name', fileName);
+            formData.append('mime_type', mimeType);
+            formData.append('message_type', getMessageType(mimeType));
+        }
+
+        const response = await fetch('send_message.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            textInput.value = '';
+            document.getElementById('message-file-input').value = '';
+            loadMessages();
+            showNotification('Mesaj gönderildi.', 'success');
+        } else {
+            showNotification(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Mesaj gönderme hatası:', error);
+        showNotification('Mesaj gönderilemedi.', 'error');
+    }
+}
+
+function getMessageType(mimeType) {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    return 'file';
+}
+
+async function loadMessages() {
+    if (!currentMessageReceiver) return;
+
+    try {
+        const response = await fetch(`fetch_messages.php?other_user_id=${currentMessageReceiver.id}`);
+        const result = await response.json();
+
+        const messagesList = document.getElementById('messages-list');
+        if (result.success) {
+            messagesList.innerHTML = result.messages.map(msg => createMessageElement(msg)).join('');
+            messagesList.scrollTop = messagesList.scrollHeight;
+        }
+    } catch (error) {
+        console.error('Mesajları yükleme hatası:', error);
+    }
+}
+
+function createMessageElement(message) {
+    const isOwn = message.sender_id == window.currentUser.id;
+    const alignment = isOwn ? 'right' : 'left';
+
+    let content = '';
+    if (message.message_type === 'text') {
+        content = `<div class="message-text">${formatMessageContent(message.content)}</div>`;
+    } else if (message.message_type === 'image') {
+        content = `<img src="data:${message.mime_type};base64,${message.file_data}" alt="${message.file_name}" style="max-width: 300px; max-height: 300px; border-radius: 8px;">`;
+    } else if (message.message_type === 'video') {
+        content = `
+        <video controls style="max-width: 300px; max-height: 300px;">
+        <source src="data:${message.mime_type};base64,${message.file_data}" type="${message.mime_type}">
+        </video>
+        `;
+    } else if (message.message_type === 'audio') {
+        content = `
+        <audio controls style="width: 100%;">
+        <source src="data:${message.mime_type};base64,${message.file_data}" type="${message.mime_type}">
+        </audio>
+        `;
+    } else {
+        content = `<a href="data:${message.mime_type};base64,${message.file_data}" download="${message.file_name}" class="btn-secondary">📎 ${message.file_name}</a>`;
+    }
+
+    return `
+    <div class="message-item" style="text-align: ${alignment}; margin-bottom: 15px;">
+    <div style="display: inline-block; max-width: 80%; background: ${isOwn ? 'var(--accent-color)' : 'var(--fixed-bg)'}; color: ${isOwn ? 'white' : 'var(--main-text)'}; padding: 10px; border-radius: 12px; word-wrap: break-word;">
+    ${!isOwn ? `<small><strong>${message.sender_username}</strong></small><br>` : ''}
+    ${content}
+    <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">
+    ${new Date(message.created_at).toLocaleString('tr-TR')}
+    ${message.is_read ? '✓✓' : '✓'}
+    </div>
+    </div>
+    </div>
+    `;
+}
+
+function closeMessageModal() {
+    const modal = document.getElementById('message-modal');
+    if (modal) {
+        modal.remove();
+    }
+    currentMessageReceiver = null;
+}
+
+// Profil sayfasına "Mesaj Gönder" butonu ekleme
+function addMessageButtonToProfile() {
+    if (!window.PROFILE_DATA.isProfileOwner && !window.PROFILE_DATA.isBlockingMe) {
+        const actionButtons = document.querySelector('#profile-actions');
+        if (actionButtons) {
+            const messageButton = document.createElement('button');
+            messageButton.className = 'btn-primary';
+            messageButton.innerHTML = '💬 Mesaj Gönder';
+            messageButton.onclick = () => openMessageModal(
+                window.PROFILE_DATA.userId,
+                window.PROFILE_DATA.profileUsername
+            );
+            actionButtons.appendChild(messageButton);
+        }
+    }
+}
+
+// Mesaj kutusunu aç
+function openMessagesModal() {
+    if (!window.currentUser || !window.currentUser.id) {
+        showNotification('Mesajları görüntülemek için giriş yapmalısınız.', 'error');
+        return;
+    }
+
+    const modal = document.getElementById('messages-modal');
+    if (modal) {
+        modal.classList.add('show');
+        loadConversations();
+    }
+}
+
+// Konuşmaları yükle
+async function loadConversations() {
+    try {
+        const response = await fetch('get_conversations.php');
+        const result = await response.json();
+
+        const container = document.getElementById('conversations-container');
+        if (result.success && result.conversations.length > 0) {
+            allConversations = result.conversations;
+
+            container.innerHTML = result.conversations.map(conv => {
+                const lastMessage = conv.last_message_content || 'Henüz mesaj yok';
+                const unreadCount = conv.unread_count > 0 ? `<span class="unread-badge">${conv.unread_count}</span>` : '';
+                const profilePicSrc = formatProfilePicture(conv.other_user_picture);
+
+                return `
+                <div class="conversation-item" data-user-id="${conv.other_user_id}" style="padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.2s; border-radius: 6px; margin-bottom: 5px;"
+                onclick="selectConversation(${conv.other_user_id}, '${conv.other_username.replace(/'/g, "\\'")}')">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="${profilePicSrc}" alt="Profil" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: var(--accent-color);">${conv.other_username}</strong>
+                ${unreadCount}
+                </div>
+                <div style="font-size: 0.85em; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${lastMessage}
+                </div>
+                <div style="font-size: 0.75em; opacity: 0.6;">
+                ${new Date(conv.last_message_time).toLocaleDateString('tr-TR')}
+                </div>
+                </div>
+                </div>
+                </div>
+                `;
+            }).join('');
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: var(--main-text); opacity: 0.7;">Henüz hiç mesajınız yok.</p>';
+        }
+    } catch (error) {
+        console.error('Konuşmalar yüklenirken hata:', error);
+        const container = document.getElementById('conversations-container');
+        container.innerHTML = '<p style="text-align: center; color: #dc3545;">Konuşmalar yüklenirken hata oluştu.</p>';
+    }
+}
+
+// Konuşma seç
+async function selectConversation(userId, username) {
+    currentConversation = { id: userId, username: username };
+
+    // Seçili konuşmayı vurgula
+    document.querySelectorAll('.conversation-item').forEach(item => {
+        item.style.backgroundColor = '';
+    });
+    document.querySelector(`.conversation-item[data-user-id="${userId}"]`).style.backgroundColor = 'var(--accent-color)';
+
+    // Başlık güncelle
+    document.getElementById('conversation-with').textContent = `${username} ile konuşma`;
+
+    // Mesajları yükle
+    await loadConversationMessages(userId);
+
+    // Yanıt bölümünü göster
+    document.getElementById('reply-section').style.display = 'block';
+
+    // Okunmamış mesajları işaretle
+    markMessagesAsRead(userId);
+}
+
+// Seçili konuşmanın mesajlarını yükle
+async function loadConversationMessages(otherUserId) {
+    try {
+        const response = await fetch(`fetch_messages.php?other_user_id=${otherUserId}`);
+        const result = await response.json();
+
+        const container = document.getElementById('conversation-messages');
+        if (result.success && result.messages.length > 0) {
+            container.innerHTML = result.messages.map(msg => createMessageElement(msg)).join('');
+            container.scrollTop = container.scrollHeight;
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: var(--main-text); opacity: 0.7;">Henüz mesaj yok. İlk mesajı siz gönderin!</p>';
+        }
+    } catch (error) {
+        console.error('Konuşma mesajları yüklenirken hata:', error);
+        const container = document.getElementById('conversation-messages');
+        container.innerHTML = '<p style="text-align: center; color: #dc3545;">Mesajlar yüklenirken hata oluştu.</p>';
+    }
+}
+
+// Yanıt gönder
+async function sendReply() {
+    if (!currentConversation) {
+        showNotification('Lütfen bir konuşma seçin.', 'error');
+        return;
+    }
+
+    const textInput = document.getElementById('reply-input');
+    const content = textInput.value.trim();
+
+    if (!content && !currentFileData) {
+        showNotification('Mesaj veya dosya girin.', 'error');
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('receiver_id', currentConversation.id);
+        formData.append('content', content);
+
+        if (currentFileData) {
+            formData.append('file_data', currentFileData);
+            formData.append('file_name', currentFileName);
+            formData.append('mime_type', currentFileType);
+            formData.append('message_type', getMessageType(currentFileType));
+        } else {
+            formData.append('message_type', 'text');
+        }
+
+        const response = await fetch('send_message.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            textInput.value = '';
+            document.getElementById('reply-file-input').value = '';
+            currentFileData = null;
+            currentFileName = null;
+            currentFileType = null;
+
+            // Mesajları yeniden yükle
+            await loadConversationMessages(currentConversation.id);
+            // Konuşma listesini güncelle
+            await loadConversations();
+            showNotification('Mesaj gönderildi.', 'success');
+        } else {
+            showNotification(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Yanıt gönderme hatası:', error);
+        showNotification('Mesaj gönderilemedi.', 'error');
+    }
+}
+
+// Mesajları okundu olarak işaretle
+async function markMessagesAsRead(otherUserId) {
+    try {
+        await fetch('mark_messages_read.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `sender_id=${otherUserId}`
+        });
+
+        // Bildirim sayacını güncelle
+        updateMessageNotification();
+    } catch (error) {
+        console.error('Mesaj okundu işaretleme hatası:', error);
+    }
+}
+
+// Yanıt için dosya seçme
+document.addEventListener('DOMContentLoaded', function() {
+    const replyFileInput = document.getElementById('reply-file-input');
+    if (replyFileInput) {
+        replyFileInput.addEventListener('change', handleReplyFileSelect);
+    }
+});
+
+function handleReplyFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Dosya boyutu kontrolü (2MB)
+    if (file.size > 2097152) {
+        showNotification('Dosya boyutu 2MB\'dan küçük olmalı.', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    const allowedTypes = ['image/', 'video/', 'audio/', 'application/pdf', 'text/', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const isValidType = allowedTypes.some(type => file.type.startsWith(type));
+
+    if (!isValidType) {
+        showNotification('Desteklenmeyen dosya türü.', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        currentFileData = e.target.result.split(',')[1];
+        currentFileName = file.name;
+        currentFileType = file.type;
+        showNotification(`"${file.name}" dosyası eklendi.`, 'success');
+    };
+    reader.readAsDataURL(file);
 }
 
 /**
@@ -1519,6 +2141,35 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!confirm('Çıkış yapmak istediğinizden emin misiniz?')) {
                 e.preventDefault();
             }
+        });
+    }
+
+    // Mesaj sistemini başlat
+    if (window.currentUser && window.currentUser.id) {
+        initMessagingSystem();
+    }
+
+    // Profil sayfasında mesaj butonu ekle
+    if (typeof addMessageButtonToProfile === 'function') {
+        addMessageButtonToProfile();
+    }
+
+    // Profil sayfasındaki mesaj butonu - GÜNCELLENMİŞ
+    const messageBtn = document.getElementById('messageButton');
+    if (messageBtn) {
+        messageBtn.addEventListener('click', function() {
+            const targetId = this.dataset.targetId;
+            const targetUsername = this.dataset.targetUsername;
+
+            // Mesaj kutusunu aç ve ilgili konuşmayı seç
+            openMessagesModal();
+
+            // Kısa bir gecikmeyle konuşmayı seç (modal açıldıktan sonra)
+            setTimeout(() => {
+                if (typeof selectConversation === 'function') {
+                    selectConversation(targetId, targetUsername);
+                }
+            }, 500);
         });
     }
 });
