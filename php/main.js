@@ -823,143 +823,7 @@ function createPalette() {
     updateSelectedEmojiDisplay();
 }
 
-// --- İÇE/DIŞA AKTARMA FONKSİYONLARI ---
 
-function getDrawingText(formatted = false) {
-    if (!matrixTable) return '';
-
-    let result = [];
-    const rows = matrixTable.rows;
-    const separatorCode = SEPARATOR_MAP[separatorSelect.value].char;
-    const separator = formatted ? '' : separatorCode;
-
-    for (let i = 0; i < rows.length; i++) {
-        let emojisInRow = [];
-        const cells = rows[i].cells;
-        let isRowClipped = false;
-        let rowHasEmoji = false;
-
-        for (let j = 0; j < cells.length; j++) {
-            const cell = cells[j];
-
-            if (cell.classList.contains('fixed')) {
-                continue;
-            }
-
-            if (cell.classList.contains('clipped')) {
-                isRowClipped = true;
-                break;
-            }
-
-            emojisInRow.push(cell.innerHTML);
-            rowHasEmoji = true;
-        }
-
-        if (rowHasEmoji) {
-            let rowText = emojisInRow.join(separator);
-            result.push(rowText);
-        }
-
-        if (isRowClipped) {
-            break;
-        }
-    }
-
-    return formatted ? result.join('\n') : result.join('');
-}
-
-function applyDrawingText(text) {
-    if (!matrixTable) return false;
-
-    const textWithoutLineBreaks = text.replace(/[\n\r]/g, '');
-
-    // 1. Ayırıcıyı tespit et
-    let detectedSeparatorKey = 'none';
-    const keysToCheck = Object.keys(SEPARATOR_MAP).reverse().filter(k => k !== 'none');
-
-    for (const key of keysToCheck) {
-        const separatorData = SEPARATOR_MAP[key];
-        if (separatorData.char && textWithoutLineBreaks.includes(separatorData.char)) {
-            detectedSeparatorKey = key;
-            break;
-        }
-    }
-
-    // 2. Dropdown'u otomatik seç
-    const isSeparatorChange = separatorSelect.value !== detectedSeparatorKey;
-    separatorSelect.value = detectedSeparatorKey;
-
-    // Eğer ayırıcı seçimi matris boyutunu değiştiriyorsa, matrisi yeniden çiz.
-    const newWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
-    const currentDisplayedWidth = matrixTable.rows.length > 0 ? matrixTable.rows[0].cells.length : DEFAULT_MATRIX_WIDTH;
-
-    if (newWidth !== currentDisplayedWidth || isSeparatorChange) {
-        createMatrix();
-    }
-
-    // 3. Ayırıcıyı temizle
-    const selectedSeparator = SEPARATOR_MAP[detectedSeparatorKey];
-    const cleanText = textWithoutLineBreaks.split(selectedSeparator.char).join('');
-
-    // 4. Emojileri doldur ve bütçeyi koru
-    const allEmojis = Object.values(emojiCategories)
-    .flatMap(category => Object.values(category))
-    .sort((a, b) => b.emoji.length - a.emoji.length);
-
-    let charIndex = 0;
-    const allCells = matrixTable.querySelectorAll('td');
-    let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
-    let totalEditableCount = editableCells.length;
-
-    const defaultHeartChars = selectedHeart.chars;
-
-    for (let i = 0; i < totalEditableCount; i++) {
-        const cell = editableCells[i];
-
-        if (charIndex >= cleanText.length) {
-            cell.innerHTML = selectedHeart.emoji;
-            cell.setAttribute('data-chars', defaultHeartChars.toString());
-            cell.classList.remove('clipped');
-            continue;
-        }
-
-        let tempString = cleanText.substring(charIndex);
-        let emojiLength = 1;
-        let detectedCharCost = 1;
-        let charContent = tempString.substring(0, 1);
-        let foundEmoji = null;
-
-        for (const data of allEmojis) {
-            if (tempString.startsWith(data.emoji)) {
-                foundEmoji = data;
-                emojiLength = data.emoji.length;
-                detectedCharCost = data.chars;
-                charContent = data.emoji;
-                break;
-            }
-        }
-
-        if (!foundEmoji) {
-            detectedCharCost = calculateChatChars(charContent);
-        }
-
-        cell.innerHTML = charContent;
-        cell.setAttribute('data-chars', detectedCharCost.toString());
-        cell.classList.remove('clipped');
-        charIndex += emojiLength;
-    }
-
-    updateCharacterCount();
-
-    const stats = calculateAndClip(allCells);
-    if (stats.clippedCount > 0) {
-        showNotification(`⚠️ UYARI: İçe aktarılan metin 200 karakteri aşıyor. ${stats.clippedCount} hücre limit nedeniyle otomatik kırpıldı.`, 'warning', 7000);
-    } else if (charIndex < cleanText.length) {
-        showNotification(`⚠️ UYARI: İçe aktarılan metin matristeki ${totalEditableCount} hücreden daha uzundu. Fazla kısım atıldı.`, 'warning', 7000);
-    }
-
-    return true;
-}
 
 // Özel mesaj sistemi
 let currentMessageReceiver = null;
@@ -2335,6 +2199,144 @@ function handleUrlParameters() {
         const cleanUrl = window.location.pathname + (hash ? hash.split('?')[0] : '');
         window.history.replaceState({}, document.title, cleanUrl);
     }
+}
+
+// --- İÇE/DIŞA AKTARMA FONKSİYONLARI ---
+
+function getDrawingText(formatted = false) {
+    if (!matrixTable) return '';
+
+    let result = [];
+    const rows = matrixTable.rows;
+    const separatorCode = SEPARATOR_MAP[separatorSelect.value].char;
+    const separator = formatted ? '' : separatorCode;
+
+    for (let i = 0; i < rows.length; i++) {
+        let emojisInRow = [];
+        const cells = rows[i].cells;
+        let isRowClipped = false;
+        let rowHasEmoji = false;
+
+        for (let j = 0; j < cells.length; j++) {
+            const cell = cells[j];
+
+            if (cell.classList.contains('fixed')) {
+                continue;
+            }
+
+            if (cell.classList.contains('clipped')) {
+                isRowClipped = true;
+                break;
+            }
+
+            emojisInRow.push(cell.innerHTML);
+            rowHasEmoji = true;
+        }
+
+        if (rowHasEmoji) {
+            let rowText = emojisInRow.join(separator);
+            result.push(rowText);
+        }
+
+        if (isRowClipped) {
+            break;
+        }
+    }
+
+    return formatted ? result.join('\n') : result.join('');
+}
+
+function applyDrawingText(text) {
+    if (!matrixTable) return false;
+
+    const textWithoutLineBreaks = text.replace(/[\n\r]/g, '');
+
+    // 1. Ayırıcıyı tespit et
+    let detectedSeparatorKey = 'none';
+    const keysToCheck = Object.keys(SEPARATOR_MAP).reverse().filter(k => k !== 'none');
+
+    for (const key of keysToCheck) {
+        const separatorData = SEPARATOR_MAP[key];
+        if (separatorData.char && textWithoutLineBreaks.includes(separatorData.char)) {
+            detectedSeparatorKey = key;
+            break;
+        }
+    }
+
+    // 2. Dropdown'u otomatik seç
+    const isSeparatorChange = separatorSelect.value !== detectedSeparatorKey;
+    separatorSelect.value = detectedSeparatorKey;
+
+    // Eğer ayırıcı seçimi matris boyutunu değiştiriyorsa, matrisi yeniden çiz.
+    const newWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
+    const currentDisplayedWidth = matrixTable.rows.length > 0 ? matrixTable.rows[0].cells.length : DEFAULT_MATRIX_WIDTH;
+
+    if (newWidth !== currentDisplayedWidth || isSeparatorChange) {
+        createMatrix();
+    }
+
+    // 3. Ayırıcıyı temizle
+    const selectedSeparator = SEPARATOR_MAP[detectedSeparatorKey];
+    const cleanText = textWithoutLineBreaks.split(selectedSeparator.char).join('');
+
+    // 4. Emojileri doldur ve bütçeyi koru
+    const allEmojis = Object.values(emojiCategories)
+    .flatMap(category => Object.values(category))
+    .sort((a, b) => b.emoji.length - a.emoji.length);
+
+    let charIndex = 0;
+    const allCells = matrixTable.querySelectorAll('td');
+    let editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
+    let totalEditableCount = editableCells.length;
+
+    const defaultHeartChars = selectedHeart.chars;
+
+    for (let i = 0; i < totalEditableCount; i++) {
+        const cell = editableCells[i];
+
+        if (charIndex >= cleanText.length) {
+            cell.innerHTML = selectedHeart.emoji;
+            cell.setAttribute('data-chars', defaultHeartChars.toString());
+            cell.classList.remove('clipped');
+            continue;
+        }
+
+        let tempString = cleanText.substring(charIndex);
+        let emojiLength = 1;
+        let detectedCharCost = 1;
+        let charContent = tempString.substring(0, 1);
+        let foundEmoji = null;
+
+        for (const data of allEmojis) {
+            if (tempString.startsWith(data.emoji)) {
+                foundEmoji = data;
+                emojiLength = data.emoji.length;
+                detectedCharCost = data.chars;
+                charContent = data.emoji;
+                break;
+            }
+        }
+
+        if (!foundEmoji) {
+            detectedCharCost = calculateChatChars(charContent);
+        }
+
+        cell.innerHTML = charContent;
+        cell.setAttribute('data-chars', detectedCharCost.toString());
+        cell.classList.remove('clipped');
+        charIndex += emojiLength;
+    }
+
+    updateCharacterCount();
+
+    const stats = calculateAndClip(allCells);
+    if (stats.clippedCount > 0) {
+        showNotification(`⚠️ UYARI: İçe aktarılan metin 200 karakteri aşıyor. ${stats.clippedCount} hücre limit nedeniyle otomatik kırpıldı.`, 'warning', 7000);
+    } else if (charIndex < cleanText.length) {
+        showNotification(`⚠️ UYARI: İçe aktarılan metin matristeki ${totalEditableCount} hücreden daha uzundu. Fazla kısım atıldı.`, 'warning', 7000);
+    }
+
+    return true;
 }
 
 /**
