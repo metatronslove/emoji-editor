@@ -57,7 +57,12 @@ try {
         }
 
         if (!$canViewComments) {
-            echo json_encode(['success' => true, 'comments' => [], 'access_denied' => true]);
+            echo json_encode([
+                'success' => true,
+                'comments' => [],
+                'access_denied' => true,
+                'message' => 'Bu gizli profilin panosunu görmek için takipçi olmalısınız'
+            ]);
             exit;
         }
     }
@@ -76,7 +81,7 @@ try {
 
     // Yorumları getir
     $query = "
-    SELECT c.*, u.username, u.profile_picture
+    SELECT c.*, u.username, u.profile_picture, u.id as user_id
     FROM comments c
     JOIN users u ON c.commenter_id = u.id
     WHERE c.target_type = ? AND c.target_id = ?
@@ -90,7 +95,7 @@ try {
         $params = [$targetType, $targetId];
     }
 
-    $query .= " ORDER BY c.created_at DESC";
+    $query .= " ORDER BY c.created_at DESC LIMIT 50";
 
     $stmt = $db->prepare($query);
     $stmt->execute($params);
@@ -115,11 +120,13 @@ try {
         'comments' => $comments,
         'current_user_id' => $currentUserId,
         'is_admin' => $isAdmin,
-        'is_moderator' => $isModerator
+        'is_moderator' => $isModerator,
+        'can_view' => true
     ]);
 
 } catch (PDOException $e) {
     http_response_code(500);
+    error_log("Yorumlar getirme hatası: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Veritabanı hatası: ' . $e->getMessage()]);
 }
 ?>

@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'activity_logger.php';
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -17,13 +18,19 @@ if (!isset($_SESSION['user_id'])) {
 $commenterId = $_SESSION['user_id'];
 $db = getDbConnection();
 
-$targetType = $_POST['target_type'] ?? null;
-$targetId = $_POST['target_id'] ?? null;
-$content = $_POST['content'] ?? null;
-$messageType = $_POST['message_type'] ?? 'text';
-$fileName = $_POST['file_name'] ?? null;
-$fileData = $_POST['file_data'] ?? null;
-$mimeType = $_POST['mime_type'] ?? null;
+// Hem JSON hem de FormData desteği
+$input = json_decode(file_get_contents('php://input'), true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    $input = $_POST;
+}
+
+$targetType = $input['target_type'] ?? null;
+$targetId = $input['target_id'] ?? null;
+$content = $input['content'] ?? null;
+$messageType = $input['message_type'] ?? 'text';
+$fileName = $input['file_name'] ?? null;
+$fileData = $input['file_data'] ?? null;
+$mimeType = $input['mime_type'] ?? null;
 
 // Temel doğrulama
 if (!$targetType || !$targetId || (!$content && !$fileData)) {
@@ -35,7 +42,7 @@ if (!$targetType || !$targetId || (!$content && !$fileData)) {
 // Profil yorumları için özel kontroller
 if ($targetType === 'profile') {
     // Profil sahibini bul
-    $profileStmt = $db->prepare("SELECT id, privacy_mode FROM users WHERE id = ?");
+    $profileStmt = $db->prepare("SELECT id, username, privacy_mode FROM users WHERE id = ?");
     $profileStmt->execute([$targetId]);
     $profileUser = $profileStmt->fetch();
 
@@ -127,7 +134,23 @@ try {
         $mimeType
     ]);
 
-    echo json_encode(['success' => true, 'message' => 'Mesaj başarıyla gönderildi.']);
+    $commentId = $db->lastInsertId();
+
+    // Aktivite kaydı oluştur (profil mesajı için)
+    if ($targetType === 'profile') {
+        ActivityLogger::logMessageActivity(
+            $commenterId,
+            $targetId,
+            $profileUser['username'],
+            $sanitizedContent
+        );
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Mesaj başarıyla gönderildi.',
+        'comment_id' => $commentId
+    ]);
 
 } catch (PDOException $e) {
     http_response_code(500);

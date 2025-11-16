@@ -1,5 +1,8 @@
 <?php
+// save_rank_settings.php - DÜZELTİLMİŞ
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../functions.php';
+session_start();
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
@@ -7,36 +10,58 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
     exit;
 }
 
-// Validate user input and sanitize it using PDO prepared statements
-$input = filter_var_array($_POST, FILTER_VALIDATE_INT);
-if (empty($input)) {
-    echo json_encode(['success' => false, 'message' => 'Invalid input data.']);
-    exit;
-}
-
 try {
-    // Establish a connection to the database using PDO
-    $db = new PDO(DB_DSN, DB_USERNAME, DB_PASSWORD);
+    $db = getDbConnection();
 
-    // Start a transaction for more efficient error handling
+    // Gelen verileri al ve doğrula
+    $comment_points = floatval($_POST['comment_points'] ?? 1);
+    $drawing_points = floatval($_POST['drawing_points'] ?? 2);
+    $follower_points = floatval($_POST['follower_points'] ?? 0.5);
+    $upvote_points = floatval($_POST['upvote_points'] ?? 0.2);
+
+    // Rank settings tablosunu kontrol et, yoksa oluştur
+    $db->exec("
+    CREATE TABLE IF NOT EXISTS rank_settings (
+        setting_key VARCHAR(50) PRIMARY KEY,
+              setting_value DECIMAL(10,2) NOT NULL,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+    ");
+
     $db->beginTransaction();
 
-    foreach ($input as $key => $value) {
-        // Prepare the statement with placeholders for each value and execute it using PDO's prepare() method
-        $stmt = $db->prepare("INSERT INTO rank_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
-        $stmt->execute([$key, htmlspecialchars($value), htmlspecialchars($value)]);
+    // Ayarları kaydet/güncelle
+    $settings = [
+        'comment_points' => $comment_points,
+        'drawing_points' => $drawing_points,
+        'follower_points' => $follower_points,
+        'upvote_points' => $upvote_points
+    ];
+
+    foreach ($settings as $key => $value) {
+        $stmt = $db->prepare("
+        INSERT INTO rank_settings (setting_key, setting_value)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE setting_value = ?
+        ");
+        $stmt->execute([$key, $value, $value]);
     }
 
-    // Commit the transaction
     $db->commit();
 
-    echo json_encode(['success' => true, 'message' => 'Rank settings saved.']);
-} catch (PDOException $e) {
-    // In case of an error, rollback the transaction and return the error message
-    $db->rollBack();
-    echo json_encode(['success' => false, 'message' => 'Error saving rank settings: ' . htmlspecialchars($e->getMessage())]);
+    echo json_encode([
+        'success' => true,
+        'message' => 'Rank settings saved successfully!'
+    ]);
+
 } catch (Exception $e) {
-    // Handle any other exceptions not related to PDO errors
-    echo json_encode(['success' => false, 'message' => 'Error saving rank settings: ' . htmlspecialchars($e->getMessage())]);
+    if ($db->inTransaction()) {
+        $db->rollBack();
+    }
+    error_log("Rank settings error: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error saving rank settings: ' . $e->getMessage()
+    ]);
 }
 ?>

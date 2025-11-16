@@ -1,36 +1,28 @@
 <?php
+// admin/fetch_announcements.php - DÜZELTİLDİ
 require_once '../config.php';
 require_once '../functions.php';
+session_start();
+header('Content-Type: application/json');
+
 $userRole = $_SESSION['user_role'] ?? 'user';
-if ($userRole !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Forbidden. Only admins can add platforms.']);
+if (!in_array($userRole, ['admin', 'moderator'])) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
     exit;
 }
-$input = filter_input_array(INPUT_POST, [
-    'name' => FILTER_SANITIZE_STRING,
-    'emoji' => FILTER_SANITIZE_STRING,
-    'regex' => FILTER_VALIDATE_REGEXP,
-]);
-if (empty($input['name']) || empty($input['emoji'])) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Platform name and emoji are required.']);
-    exit;
-}
-$db = getDbConnection();
+
 try {
-    $stmt = $db->prepare("INSERT INTO social_media_platforms (name, emoji, url_regex, is_active) VALUES (?, ?, ?, 1)");
-    $stmt->bindValue(1, htmlspecialchars($input['name'])); // XSS Protection
-    $stmt->bindValue(2, htmlspecialchars($input['emoji'])); // XSS Protection
-    $stmt->bindValue(3, $input['regex']);
-    $result = $stmt->execute();
-    if ($result) {
-        echo json_encode(['success' => true, 'message' => 'Social media platform added successfully.']);
-    } else {
-        throw new Exception('Platform could not be added.');
-    }
+    $db = getDbConnection();
+    $stmt = $db->query("
+    SELECT a.*, u.username as created_by_username
+    FROM announcements a
+    LEFT JOIN users u ON a.created_by = u.id
+    ORDER BY a.created_at DESC
+    ");
+    $announcements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode(['success' => true, 'announcements' => $announcements]);
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Platform addition failed: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Failed to fetch announcements: ' . $e->getMessage()]);
 }
 ?>

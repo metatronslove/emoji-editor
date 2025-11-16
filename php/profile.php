@@ -226,6 +226,54 @@ if (!empty($socialLinks)):
     </div>
     </div>
 
+    <!-- Çevrimiçi Gösterge ve Oyun Butonları -->
+    <div style="display: flex; align-items: center; gap: 15px; margin: 10px 0; flex-wrap: wrap;">
+    <!-- Çevrimiçi Gösterge -->
+    <?php
+    $isOnline = false;
+    if ($profileUser['last_activity']) {
+        $lastActivity = new DateTime($profileUser['last_activity']);
+        $now = new DateTime();
+        $diff = $now->getTimestamp() - $lastActivity->getTimestamp();
+        $isOnline = $diff < 300; // 5 dakika içinde aktifse çevrimiçi
+    }
+    ?>
+    <div style="display: flex; align-items: center; gap: 5px;">
+    <div style="width: 10px; height: 10px; border-radius: 50%; background: <?php echo $isOnline ? '#4CAF50' : '#ccc'; ?>;"></div>
+    <span style="font-size: 14px; color: var(--main-text);">
+    <?php echo $isOnline ? '🟢 Çevrimiçi' : '⚫ Çevrimdışı'; ?>
+    </span>
+    </div>
+
+    <!-- Oyun Butonları - Sadece çevrimiçi ve kendisi değilse -->
+    <?php if ($isOnline && $currentUserId && !$isProfileOwner && !$isBlockingMe): ?>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <button onclick="openGameChallengeModal(<?php echo $profileUser['id']; ?>, 'chess')"
+    class="btn btn-sm btn-primary" title="Satranç Oyna">
+    ♟️ Satranç
+    </button>
+    <button onclick="openGameChallengeModal(<?php echo $profileUser['id']; ?>, 'reversi')"
+    class="btn btn-sm btn-primary" title="Reversi Oyna">
+    🔴 Reversi
+    </button>
+    <button onclick="openGameChallengeModal(<?php echo $profileUser['id']; ?>, 'tavla')"
+    class="btn btn-sm btn-primary" title="Tavla Oyna">
+    🎲 Tavla
+    </button>
+    </div>
+    <?php endif; ?>
+    </div>
+
+    <!-- Aktif Oyunlar Gösterimi -->
+    <?php if ($currentUserId && ($isProfileOwner || $isOnline)): ?>
+    <div id="active-games-section" style="margin: 15px 0;">
+    <h4>🎯 Aktif Oyunlar</h4>
+    <div id="active-games-list">
+    <!-- JavaScript ile doldurulacak -->
+    </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Aksiyon Butonları kısmını şu şekilde güncelleyin -->
     <!-- PROFİL SAYFASINDAKİ MESAJ BUTONU - DÜZELTİLMİŞ -->
     <?php if ($currentUserId && !$isProfileOwner && !$isBlockingMe): ?>
@@ -714,6 +762,129 @@ if (!empty($socialLinks)):
 
     <!-- SOL SÜTUN: Çizimler -->
     <div>
+    <!-- KULLANICI DUVARI -->
+    <section class="card" style="margin-bottom: 20px;">
+    <h2 style="display: flex; align-items: center; gap: 10px;">
+    📝 Aktivite Duvarı
+    </h2>
+    <div id="user-activities">
+    <p style="text-align: center; opacity: 0.7;">Aktiviteler yükleniyor...</p>
+    </div>
+    </section>
+
+    <script>
+    // Kullanıcı aktivitelerini yükle
+    async function loadUserActivities() {
+        try {
+            const response = await fetch(`https://flood.page.gd/get_user_activities.php?user_id=<?php echo $profileUser['id']; ?>`);
+            const result = await response.json();
+
+            const container = document.getElementById('user-activities');
+            if (result.success && result.activities.length > 0) {
+                container.innerHTML = result.activities.map(activity => {
+                    return createActivityHTML(activity);
+                }).join('');
+            } else {
+                container.innerHTML = '<p style="text-align: center; opacity: 0.7;">Henüz aktivite bulunmuyor.</p>';
+            }
+        } catch (error) {
+            console.error('Aktiviteler yüklenirken hata:', error);
+            document.getElementById('user-activities').innerHTML = '<p style="text-align: center; color: #dc3545;">Aktiviteler yüklenirken hata oluştu.</p>';
+        }
+    }
+
+    // Aktivite HTML'i oluştur
+    function createActivityHTML(activity) {
+        const baseUrl = 'https://flood.page.gd';
+        let html = '';
+
+        switch (activity.activity_type) {
+            case 'drawing':
+                html = `
+                <div class="activity-item" style="border-left: 4px solid #4CAF50; padding: 10px 15px; margin-bottom: 10px; background: var(--fixed-bg); border-radius: 0 8px 8px 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">🎨</span>
+                <div>
+                <strong>Yeni bir çizim paylaştı</strong>
+                <div style="font-size: 0.9em; opacity: 0.8; margin-top: 4px;">
+                <a href="${baseUrl}/drawing.php?id=${activity.target_id}" style="color: var(--accent-color);">
+                Çizim #${activity.target_id}'i görüntüle
+                </a>
+                </div>
+                </div>
+                </div>
+                <div style="font-size: 0.8em; opacity: 0.6; margin-top: 5px;">
+                ${new Date(activity.created_at).toLocaleString('tr-TR')}
+                </div>
+                </div>
+                `;
+                break;
+
+            case 'game':
+                const gameData = JSON.parse(activity.activity_data || '{}');
+                html = `
+                <div class="activity-item" style="border-left: 4px solid #2196F3; padding: 10px 15px; margin-bottom: 10px; background: var(--fixed-bg); border-radius: 0 8px 8px 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">🎮</span>
+                <div>
+                <strong>${gameData.opponent} ile ${gameData.game_type} oynadı</strong>
+                <div style="font-size: 0.9em; opacity: 0.8; margin-top: 4px;">
+                Sonuç: <strong style="color: ${gameData.result === 'win' ? '#4CAF50' : gameData.result === 'loss' ? '#f44336' : '#ff9800'}">
+                ${gameData.result === 'win' ? 'Kazandı' : gameData.result === 'loss' ? 'Kaybetti' : 'Berabere'}
+                </strong>
+                </div>
+                </div>
+                </div>
+                <div style="font-size: 0.8em; opacity: 0.6; margin-top: 5px;">
+                ${new Date(activity.created_at).toLocaleString('tr-TR')}
+                </div>
+                </div>
+                `;
+                break;
+
+            case 'message':
+                const messageData = JSON.parse(activity.activity_data || '{}');
+                // Sadece yetkisi varsa göster
+                <?php if ($canViewContent): ?>
+                html = `
+                <div class="activity-item" style="border-left: 4px solid #FF9800; padding: 10px 15px; margin-bottom: 10px; background: var(--fixed-bg); border-radius: 0 8px 8px 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">💬</span>
+                <div>
+                <strong><a href="${baseUrl}/${messageData.target_username}/" style="color: var(--accent-color);">${messageData.target_username}</a> panosuna yazdı</strong>
+                <div style="font-size: 0.9em; opacity: 0.8; margin-top: 4px; background: var(--card-bg); padding: 8px; border-radius: 4px;">
+                ${messageData.message_content}
+                </div>
+                </div>
+                </div>
+                <div style="font-size: 0.8em; opacity: 0.6; margin-top: 5px;">
+                ${new Date(activity.created_at).toLocaleString('tr-TR')}
+                </div>
+                </div>
+                `;
+                <?php endif; ?>
+                break;
+
+            default:
+                html = `
+                <div class="activity-item" style="padding: 10px 15px; margin-bottom: 10px; background: var(--fixed-bg); border-radius: 8px;">
+                <div style="font-size: 0.8em; opacity: 0.6;">
+                ${new Date(activity.created_at).toLocaleString('tr-TR')}
+                </div>
+                <div>Bilinmeyen aktivite</div>
+                </div>
+                `;
+        }
+
+        return html;
+    }
+
+    // Sayfa yüklendiğinde aktiviteleri yükle
+    if (document.getElementById('user-activities')) {
+        loadUserActivities();
+    }
+    </script>
+
     <section id="featured-drawing" class="card" style="margin-bottom: 20px;">
     <h2 style="display: flex; align-items: center; gap: 10px;">
     ⭐ Öne Çıkan Çizim
@@ -1241,6 +1412,38 @@ if (!empty($socialLinks)):
     });
     </script>
 
+    <!-- OYUN CHALLENGE MODAL -->
+    <div id="game-challenge-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+    <button class="modal-close" onclick="closeGameChallengeModal()">❎</button>
+    <h3 id="game-challenge-title" style="margin-bottom: 20px;"></h3>
+
+    <div id="game-challenge-content">
+    <!-- İçerik dinamik olarak yüklenecek -->
+    </div>
+    </div>
+    </div>
+
+    <!-- OYUN MODAL (Tüm oyunlar için ortak) -->
+    <div id="game-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 95%; max-height: 95%; width: 95%; height: 95%;">
+    <button class="modal-close" onclick="closeGameModal()">❎</button>
+
+    <div id="game-modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <h3 id="game-modal-title"></h3>
+    <div id="game-players-info"></div>
+    </div>
+
+    <div id="game-modal-tabs" style="display: flex; gap: 10px; margin-bottom: 15px;">
+    <!-- Sekmeler dinamik olarak eklenecek -->
+    </div>
+
+    <div id="game-modal-content" style="height: calc(100% - 120px); overflow: hidden;">
+    <!-- Oyun içeriği buraya yüklenecek -->
+    </div>
+    </div>
+    </div>
+
     <h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.5 (Sezgisel Giriş Düzeltmesi)</h2>
 
     <div id="main-layout">
@@ -1717,6 +1920,233 @@ if (!empty($socialLinks)):
             `;
         }
     }
+
+    // Oyun Sistemi
+    const GameSystem = {
+        currentChallenges: [],
+        activeGames: [],
+        gameWebSocket: null,
+
+        // Oyun challenge modalını aç
+        openChallengeModal: function(targetUserId, gameType) {
+            const targetUsername = '<?php echo htmlspecialchars($profileUser['username']); ?>';
+            const gameNames = {
+                'chess': 'Satranç',
+                'reversi': 'Reversi',
+                'tavla': 'Tavla'
+            };
+
+            document.getElementById('game-challenge-title').textContent =
+            `🎮 ${gameNames[gameType]} Oyunu - ${targetUsername}`;
+
+            document.getElementById('game-challenge-content').innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">
+            ${this.getGameEmoji(gameType)}
+            </div>
+            <p style="margin-bottom: 20px; font-size: 16px;">
+            <strong>${targetUsername}</strong> kullanıcısına <strong>${gameNames[gameType]}</strong> oyunu için meydan okumak üzeresiniz.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+            <button onclick="sendGameChallenge(${targetUserId}, '${gameType}')"
+            class="btn-primary">
+            🚀 Meydan Oku
+            </button>
+            <button onclick="closeGameChallengeModal()"
+            class="btn-danger">
+            İptal
+            </button>
+            </div>
+            </div>
+            `;
+
+            document.getElementById('game-challenge-modal').style.display = 'flex';
+        },
+
+        // Oyun emojileri
+        getGameEmoji: function(gameType) {
+            const emojis = {
+                'chess': '♟️',
+                'reversi': '🔴',
+                'tavla': '🎲'
+            };
+            return emojis[gameType] || '🎮';
+        },
+
+        // WebSocket bağlantısını başlat
+        initWebSocket: function() {
+            try {
+                this.gameWebSocket = new WebSocket('wss://flood.page.gd/games/websocket');
+
+                this.gameWebSocket.onopen = function() {
+                    console.log('🎮 Oyun WebSocket bağlantısı kuruldu');
+                    // Kullanıcı ID'sini gönder
+                    if (window.currentUser && window.currentUser.id) {
+                        this.send(JSON.stringify({
+                            type: 'register',
+                            userId: window.currentUser.id
+                        }));
+                    }
+                }.bind(this);
+
+                this.gameWebSocket.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    this.handleWebSocketMessage(data);
+                }.bind(this);
+
+                this.gameWebSocket.onclose = function() {
+                    console.log('🎮 Oyun WebSocket bağlantısı kapandı');
+                    // 5 saniye sonra yeniden bağlanmayı dene
+                    setTimeout(() => this.initWebSocket(), 5000);
+                }.bind(this);
+
+            } catch (error) {
+                console.error('WebSocket hatası:', error);
+            }
+        },
+
+        // WebSocket mesajlarını işle
+        handleWebSocketMessage: function(data) {
+            switch (data.type) {
+                case 'challenge_received':
+                    this.showChallengeNotification(data);
+                    break;
+                case 'challenge_accepted':
+                    this.startGame(data.game);
+                    break;
+                case 'challenge_declined':
+                    this.showNotification(`${data.challengerUsername} meydan okumanızı reddetti.`, 'error');
+                    break;
+                case 'game_move':
+                    this.handleGameMove(data);
+                    break;
+                case 'game_message':
+                    this.handleGameMessage(data);
+                    break;
+                case 'game_end':
+                    this.handleGameEnd(data);
+                    break;
+            }
+        },
+
+        // Challenge bildirimi göster
+        showChallengeNotification: function(data) {
+            const confirmed = confirm(
+                `🎮 ${data.challengerUsername} sizi ${this.getGameName(data.gameType)} oyununa davet ediyor!\n\nKabul etmek istiyor musunuz?`
+            );
+
+            if (confirmed) {
+                this.acceptChallenge(data.challengeId);
+            } else {
+                this.declineChallenge(data.challengeId);
+            }
+        },
+
+        // Oyunu başlat
+        startGame: function(gameData) {
+            this.openGameModal(gameData);
+            this.showNotification('🎮 Oyun başladı! İyi eğlenceler!', 'success');
+        },
+
+        // Oyun modalını aç
+        openGameModal: function(gameData) {
+            document.getElementById('game-modal-title').textContent =
+            `${this.getGameName(gameData.game_type)} - ${gameData.opponent_username}`;
+
+            this.loadGameInterface(gameData);
+            document.getElementById('game-modal').style.display = 'flex';
+        }
+    };
+
+    // Oyun challenge gönder
+    async function sendGameChallenge(targetUserId, gameType) {
+        try {
+            const response = await fetch('https://flood.page.gd/games/send_challenge.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    challenged_id: targetUserId,
+                    game_type: gameType
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification('🎮 Meydan okuma gönderildi!', 'success');
+                closeGameChallengeModal();
+            } else {
+                showNotification('❌ ' + result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Challenge gönderme hatası:', error);
+            showNotification('❌ Meydan okuma gönderilirken hata oluştu.', 'error');
+        }
+    }
+
+    // Modal kapatma fonksiyonları
+    function closeGameChallengeModal() {
+        document.getElementById('game-challenge-modal').style.display = 'none';
+    }
+
+    function closeGameModal() {
+        document.getElementById('game-modal').style.display = 'none';
+    }
+
+    // Aktif oyunları yükle
+    async function loadActiveGames() {
+        try {
+            const response = await fetch('https://flood.page.gd/games/get_active_games.php');
+            const result = await response.json();
+
+            const container = document.getElementById('active-games-list');
+            if (result.success && result.games.length > 0) {
+                container.innerHTML = result.games.map(game => `
+                <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 8px; background: var(--fixed-bg);">
+                <div style="display: flex; justify-content: between; align-items: center;">
+                <div>
+                <strong>${GameSystem.getGameEmoji(game.game_type)} ${GameSystem.getGameName(game.game_type)}</strong>
+                <div style="font-size: 0.9em; opacity: 0.8;">
+                vs ${game.opponent_username}
+                </div>
+                </div>
+                <button onclick="GameSystem.openGameModal(${JSON.stringify(game).replace(/"/g, '&quot;')})"
+                class="btn-primary btn-sm">
+                🔄 Devam Et
+                </button>
+                </div>
+                </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p style="opacity: 0.7; text-align: center;">Aktif oyun bulunmuyor.</p>';
+            }
+        } catch (error) {
+            console.error('Aktif oyunlar yüklenirken hata:', error);
+        }
+    }
+
+    // Sayfa yüklendiğinde oyun sistemini başlat
+    document.addEventListener('DOMContentLoaded', function() {
+        // Oyun WebSocket'ini başlat
+        GameSystem.initWebSocket();
+
+        // Aktif oyunları yükle
+        if (document.getElementById('active-games-list')) {
+            loadActiveGames();
+            // Her 30 saniyede bir güncelle
+            setInterval(loadActiveGames, 30000);
+        }
+
+        // ESC tuşu ile modalları kapat
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeGameChallengeModal();
+                closeGameModal();
+            }
+        });
+    });
     </script>
     <script src="../main.js"></script>
     </body>

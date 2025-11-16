@@ -1,13 +1,12 @@
 <?php
-// admin/moderate_user.php
+// admin/moderate_user.php - DÜZELTİLDİ
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../functions.php';
+session_start();
 header('Content-Type: application/json');
-session_start(); // Added session_start() to start the session before using $_SESSION
 
-$db = getDbConnection();
-
-$currentUserId = intval($_SESSION['user_id'] ?? null);
-$userRole = strtolower(trim($_SESSION['user_role'] ?? 'user'));
+$currentUserId = $_SESSION['user_id'] ?? null;
+$userRole = $_SESSION['user_role'] ?? 'user';
 
 if (!$currentUserId || !in_array($userRole, ['admin', 'moderator'])) {
     http_response_code(403);
@@ -15,90 +14,72 @@ if (!$currentUserId || !in_array($userRole, ['admin', 'moderator'])) {
     exit;
 }
 
-$targetUserId = intval($_POST['user_id'] ?? null);
+$targetUserId = intval($_POST['user_id'] ?? 0);
+$action = $_POST['action'] ?? '';
+
 if (!$targetUserId) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Missing parameter user_id.']);
+    echo json_encode(['success' => false, 'message' => 'Missing user ID.']);
     exit;
 }
 
-$action = strtolower(trim($_POST['action'] ?? null));
-if (!$action) {
+if (empty($action)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Missing parameter action.']);
+    echo json_encode(['success' => false, 'message' => 'Missing action.']);
     exit;
 }
 
-if ($targetUserId == $currentUserId && in_array($action, ['ban', 'mute', 'set_role'])) {
+// Kendi üzerinde işlem yapmayı engelle
+if ($targetUserId == $currentUserId) {
     echo json_encode(['success' => false, 'message' => 'Cannot operate on your own account.']);
     exit;
 }
 
-$csrfToken = trim(filter_input(INPUT_POST, 'csrf_token') ?? null);
-if (!$csrfToken || !verifyCsrfToken($csrfToken)) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'CSRF protection failed.']);
-    exit;
-}
-
-function verifyCsrfToken($token)
-{
-    $sessionToken = $_SESSION['csrf_token'] ?? null;
-    return hash_equals($token, $sessionToken);
-}
-
 try {
-    // Kendini banlamayı/mute etmeyi engelle
-    if ($targetUserId == $currentUserId) {
-        throw new Exception("Cannot operate on your own account.");
-    }
-
-    $updateField = '';
-    $updateValue = null;
+    $db = getDbConnection();
 
     switch ($action) {
         case 'ban':
-            $updateField = 'is_banned';
-            $updateValue = 1;
+            $stmt = $db->prepare("UPDATE users SET is_banned = 1 WHERE id = ?");
+            $stmt->execute([$targetUserId]);
+            $message = "User banned successfully.";
             break;
+
         case 'unban':
-            $updateField = 'is_banned';
-            $updateValue = 0;
+            $stmt = $db->prepare("UPDATE users SET is_banned = 0 WHERE id = ?");
+            $stmt->execute([$targetUserId]);
+            $message = "User unbanned successfully.";
             break;
+
         case 'mute':
-            // Yorum yasağı koyma (Gelen süreye göre hesapla)
-            $durationDays = intval($_POST['duration'] ?? 7);
-            $muteUntil = date('Y-m-d H:i:s', strtotime("+{$durationDays} days"));
-            $updateField = 'comment_mute_until';
-            $updateValue = $muteUntil;
+            $duration = intval($_POST['duration'] ?? 7);
+            $muteUntil = date('Y-m-d H:i:s', strtotime("+{$duration} days"));
+            $stmt = $db->prepare("UPDATE users SET comment_mute_until = ? WHERE id = ?");
+            $stmt->execute([$muteUntil, $targetUserId]);
+            $message = "User muted for {$duration} days.";
             break;
+
         case 'unmute':
-            $updateField = 'comment_mute_until';
-            $updateValue = null;
+            $stmt = $db->prepare("UPDATE users SET comment_mute_until = NULL WHERE id = ?");
+            $stmt->execute([$targetUserId]);
+            $message = "User unmuted successfully.";
             break;
+
         case 'set_role':
-            // Sadece Admin rol değiştirebilir
             if ($userRole !== 'admin') {
-                throw new Exception("Role change permission denied.");
+                throw new Exception("Only admins can change roles.");
             }
-            $newRole = strtolower(trim($_POST['new_role'] ?? 'user'));
-            if (!in_array($newRole, ['user', 'moderator'])) {
-                throw new Exception("Invalid role.");
-            }
-            $updateField = 'role';
-            $updateValue = $newRole;
+            $newRole = in_array($_POST['new_role'], ['user', 'moderator']) ? $_POST['new_role'] : 'user';
+            $stmt = $db->prepare("UPDATE users SET role = ? WHERE id = ?");
+            $stmt->execute([$newRole, $targetUserId]);
+            $message = "User role updated to {$newRole}.";
             break;
+
         default:
             throw new Exception("Invalid action.");
     }
 
-    // Update user in database
-    $stmt = $db->prepare("UPDATE users SET {$updateField} = :value WHERE id = :id");
-    $stmt->bindParam(':value', $updateValue, PDO::PARAM_INT);
-    $stmt->bindParam(':id', $targetUserId, PDO::PARAM_INT);
-    $stmt->execute();
-
-    echo json_encode(['success' => true, 'message' => "User updated successfully."]);
+    echo json_encode(['success' => true, 'message' => $message]);
 
 } catch (Exception $e) {
     http_response_code(500);

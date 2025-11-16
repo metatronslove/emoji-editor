@@ -382,6 +382,155 @@ async function loadPrivateMessages() {
     conversationContainer.innerHTML = '<p>Bir konuşma seçin</p>';
 }
 
+// admin_actions.js - calculateRanks fonksiyonunu ekle
+async function calculateRanks() {
+    try {
+        const response = await fetch('calculate_ranks.php');
+        const result = await response.json();
+
+        const container = document.getElementById('rank-distribution');
+
+        if (result.success) {
+            let html = `
+            <div style="margin-bottom: 20px;">
+            <h4>Kullanılan Puan Ayarları:</h4>
+            <p>Yorum: ${result.settings_used.comment_points} puan | Çizim: ${result.settings_used.drawing_points} puan</p>
+            <p>Takipçi: ${result.settings_used.follower_points} puan | Beğeni: ${result.settings_used.upvote_points} puan</p>
+            </div>
+            <div style="max-height: 600px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead>
+            <tr style="background-color: var(--accent-color); color: white;">
+            <th style="padding: 10px; border: 1px solid var(--border-color);">Sıra</th>
+            <th style="padding: 10px; border: 1px solid var(--border-color);">Kullanıcı</th>
+            <th style="padding: 10px; border: 1px solid var(--border-color);">Toplam Puan</th>
+            <th style="padding: 10px; border: 1px solid var(--border-color);">Çizimler</th>
+            <th style="padding: 10px; border: 1px solid var(--border-color);">Yorumlar</th>
+            <th style="padding: 10px; border: 1px solid var(--border-color);">Takipçiler</th>
+            <th style="padding: 10px; border: 1px solid var(--border-color);">Beğeniler</th>
+            </tr>
+            </thead>
+            <tbody>
+            `;
+
+            result.users.forEach(user => {
+                html += `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center; font-weight: bold;">${user.rank}</td>
+                <td style="padding: 8px; border: 1px solid var(--border-color);">
+                <a href="../${user.username}/" target="_blank">${user.username}</a>
+                </td>
+                <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center; font-weight: bold; color: var(--accent-color);">
+                ${user.total_points}
+                </td>
+                <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center;">
+                ${user.drawing_count} (${user.drawing_points}p)
+                </td>
+                <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center;">
+                ${user.comment_count} (${user.comment_points}p)
+                </td>
+                <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center;">
+                ${user.follower_count} (${user.follower_points}p)
+                </td>
+                <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center;">
+                ${user.upvote_count} (${user.upvote_points}p)
+                </td>
+                </tr>
+                `;
+            });
+
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+
+            showAdminNotification(`✅ Rütbeler başarıyla hesaplandı! Toplam ${result.users.length} kullanıcı sıralandı.`, 'success');
+        } else {
+            container.innerHTML = `<p style="color: red;">Hata: ${result.message}</p>`;
+            showAdminNotification('❌ Rütbe hesaplama başarısız.', 'error');
+        }
+    } catch (error) {
+        console.error('Rütbe hesaplama hatası:', error);
+        document.getElementById('rank-distribution').innerHTML = '<p style="color: red;">Rütbe hesaplanırken hata oluştu.</p>';
+        showAdminNotification('❌ Rütbe hesaplanırken hata oluştu.', 'error');
+    }
+}
+
+// Eksik sosyal medya fonksiyonlarını ekle
+async function togglePlatform(platformId, currentState) {
+    const action = currentState ? 'deactivate' : 'activate';
+
+    try {
+        const response = await fetch('moderate_social_platform.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `platform_id=${platformId}&action=${action}`
+        });
+
+        const result = await response.json();
+        showAdminNotification(result.message, result.success ? 'success' : 'error');
+
+        if (result.success) {
+            loadSocialMediaSettings();
+        }
+    } catch (error) {
+        console.error('Platform durumu değiştirme hatası:', error);
+        showAdminNotification('Platform durumu değiştirilirken hata oluştu.', 'error');
+    }
+}
+
+async function deletePlatform(platformId) {
+    const confirmed = await showConfirm(
+        'Platform Sil',
+        'Bu sosyal medya platformunu silmek istediğinizden emin misiniz?'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch('moderate_social_platform.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `platform_id=${platformId}&action=delete`
+        });
+
+        const result = await response.json();
+        showAdminNotification(result.message, result.success ? 'success' : 'error');
+
+        if (result.success) {
+            loadSocialMediaSettings();
+        }
+    } catch (error) {
+        console.error('Platform silme hatası:', error);
+        showAdminNotification('Platform silinirken hata oluştu.', 'error');
+    }
+}
+
+async function deleteAnnouncement(announcementId) {
+    const confirmed = await showConfirm(
+        'Duyuru Sil',
+        'Bu duyuruyu silmek istediğinizden emin misiniz?'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch('delete_announcement.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `announcement_id=${announcementId}`
+        });
+
+        const result = await response.json();
+        showAdminNotification(result.message, result.success ? 'success' : 'error');
+
+        if (result.success) {
+            loadAnnouncements();
+        }
+    } catch (error) {
+        console.error('Duyuru silme hatası:', error);
+        showAdminNotification('Duyuru silinirken hata oluştu.', 'error');
+    }
+}
+
 // Onay modalı fonksiyonu
 function showConfirm(title, message) {
     return new Promise((resolve) => {
