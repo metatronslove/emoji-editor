@@ -114,6 +114,8 @@ try {
     die("Bir hata oluştu.");
 }
 
+require_once 'online_status_manager.php';
+
 $counters = getCounters();
 $totalViews = $counters['total_views'] ?? 0;
 ?>
@@ -230,16 +232,14 @@ if (!empty($socialLinks)):
     <div style="display: flex; align-items: center; gap: 15px; margin: 10px 0; flex-wrap: wrap;">
     <!-- Çevrimiçi Gösterge -->
     <?php
-    $isOnline = false;
-    if ($profileUser['last_activity']) {
-        $lastActivity = new DateTime($profileUser['last_activity']);
-        $now = new DateTime();
-        $diff = $now->getTimestamp() - $lastActivity->getTimestamp();
-        $isOnline = $diff < 300; // 5 dakika içinde aktifse çevrimiçi
-    }
+    $isOnline = OnlineStatusManager::isUserOnline($profileUser);
+
+    // Hata ayıklama için (sonra kaldırabilirsiniz)
+    error_log("User {$profileUser['id']} online status: " . ($isOnline ? 'online' : 'offline') .
+    ", is_online: " . ($profileUser['is_online'] ?? 'null') .
+    ", last_activity: " . ($profileUser['last_activity'] ?? 'null'));
     ?>
     <div style="display: flex; align-items: center; gap: 5px;">
-    <div style="width: 10px; height: 10px; border-radius: 50%; background: <?php echo $isOnline ? '#4CAF50' : '#ccc'; ?>;"></div>
     <span style="font-size: 14px; color: var(--main-text);">
     <?php echo $isOnline ? '🟢 Çevrimiçi' : '⚫ Çevrimdışı'; ?>
     </span>
@@ -2061,7 +2061,7 @@ if (!empty($socialLinks)):
     // Oyun challenge gönder
     async function sendGameChallenge(targetUserId, gameType) {
         try {
-            const response = await fetch('https://flood.page.gd/games/send_challenge.php', {
+            const response = await fetch('../games/send_challenge.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2098,7 +2098,7 @@ if (!empty($socialLinks)):
     // Aktif oyunları yükle
     async function loadActiveGames() {
         try {
-            const response = await fetch('https://flood.page.gd/games/get_active_games.php');
+            const response = await fetch('../games/get_active_games.php');
             const result = await response.json();
 
             const container = document.getElementById('active-games-list');

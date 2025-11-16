@@ -109,6 +109,19 @@ function calculateSeparatorCharCosts() {
 }
 
 // --- TEMEL FONKSİYONLAR ---
+// JavaScript ile periyodik olarak çevrimiçi durumu güncelle
+function updateOnlineStatus() {
+    if (!window.currentUser || !window.currentUser.id) return;
+
+    fetch('/update_online_status.php')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Online status updated:', data.timestamp);
+        }
+    })
+    .catch(error => console.error('Online status update error:', error));
+}
 
 function showNotification(message, type = 'info', duration = 3000) {
     if (!notification) {
@@ -2771,6 +2784,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 500);
         });
     }
+    updateOnlineStatus();
+    setInterval(updateOnlineStatus, 30000); // 30 saniye
 });
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -5,15 +5,6 @@ RewriteEngine On
 RewriteBase /
 
 # -----------------------------------------------------------------
-# 0. LOGIN VE REGISTER YÖNLENDİRMELERİ (EN BAŞTA OLMALI)
-# -----------------------------------------------------------------
-# Herhangi bir klasördeki login.php'yi köke yönlendir
-RewriteRule ^[^/]+/login\.php$ login.php [L,QSA]
-
-# Herhangi bir klasördeki register.php'yi köke yönlendir
-RewriteRule ^[^/]+/register\.php$ register.php [L,QSA]
-
-# -----------------------------------------------------------------
 # 1. VAROLAN DOSYALARI VE KLASÖRLERİ ATLA
 # -----------------------------------------------------------------
 RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -21,31 +12,13 @@ RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
 # -----------------------------------------------------------------
-# 2. API VE ÖZEL DOSYALARI KORU
+# 2. PROFİL SAYFASI YÖNLENDİRMESİ (TEK GERÇEK İHTİYACINIZ)
 # -----------------------------------------------------------------
-RewriteRule ^(admin|includes|config|vendor)/ - [L]
-
-# -----------------------------------------------------------------
-# 3. ÖZEL ROTALARIN YÖNLENDİRİLMESİ
-# -----------------------------------------------------------------
-
-# a) Admin Paneli Yönlendirmesi
-RewriteRule ^admin/dashboard/?$ admin/dashboard.php [L]
-
-# b) Çizim Sayfası
-RewriteRule ^drawing/([0-9]+)/?$ drawing.php?id=$1 [L,QSA]
-
-# c) API endpoint'leri
-RewriteRule ^api/(.*)$ api/$1 [L]
-
-# -----------------------------------------------------------------
-# 4. PROFİL SAYFASI YÖNLENDİRMESİ
-# -----------------------------------------------------------------
-# Sadece kullanıcı adı benzeri pattern'leri yakala
-# Rakam, harf, tire ve alt çizgi içeren 3-20 karakterli kullanıcı adları
+# Kullanıcı adı benzeri pattern'leri profile.php'ye yönlendir
+# Örnek: /ahmet/ -> profile.php?username=ahmet
 RewriteRule ^([a-zA-Z0-9_-]{3,20})/?$ profile.php?username=$1 [L,QSA]
 
 # -----------------------------------------------------------------
-# 5. DİĞER TÜM İSTEKLERİ INDEX'E YÖNLENDİR
+# 3. DİĞER TÜM İSTEKLERİ INDEX'E YÖNLENDİR
 # -----------------------------------------------------------------
 RewriteRule ^(.*)$ index.php [L,QSA]

@@ -1,4 +1,5 @@
 <?php
+// update_online_status.php - GÜNCELLENMİŞ
 require_once 'config.php';
 header('Content-Type: application/json');
 
@@ -11,17 +12,29 @@ if (!isset($_SESSION['user_id'])) {
 $userId = $_SESSION['user_id'];
 
 try {
-    $db = getDbConnection();
+    require_once 'online_status_manager.php';
 
     // Kullanıcının çevrimiçi durumunu güncelle
-    $stmt = $db->prepare("UPDATE users SET is_online = TRUE, last_activity = NOW() WHERE id = ?");
-    $stmt->execute([$userId]);
+    $result = OnlineStatusManager::updateOnlineStatus($userId);
 
-    echo json_encode(['success' => true, 'message' => 'Çevrimiçi durum güncellendi']);
+    if ($result) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'Çevrimiçi durum güncellendi',
+            'user_id' => $userId,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+    } else {
+        throw new Exception('Update failed');
+    }
 
 } catch (Exception $e) {
     error_log("Çevrimiçi durum güncelleme hatası: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Çevrimiçi durum güncellenirken hata oluştu']);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Çevrimiçi durum güncellenirken hata oluştu',
+        'error' => $e->getMessage()
+    ]);
 }
 ?>
