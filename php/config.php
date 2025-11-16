@@ -48,6 +48,10 @@ function getDbConnection() {
         exit("Veritabanı bağlantı hatası: " . $e->getMessage());
     }
 }
+
+// config.php dosyasının sonuna ekleyin
+require_once 'activity_logger.php';
+
 // Hata raporlama
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
