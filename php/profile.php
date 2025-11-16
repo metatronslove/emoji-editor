@@ -188,7 +188,7 @@ style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--ac
 <?php echo htmlspecialchars($profileUser['username'] ?? ''); ?>
 <?php
 // Rütbe yıldızlarını göster - HATA DÜZELTİLDİ
-$userRank = calculateUserRank($profileUser['id'] ?? 0);
+$userRank = intval($profileUser['rank']);
 echo str_repeat('⭐', $userRank);
 ?>
 </h1>
@@ -1321,6 +1321,12 @@ if (!empty($socialLinks)):
     </div>
     </div>
     </div>
+
+    <!-- TEMA DEĞİŞTİRME BUTONU -->
+    <button class="theme-toggle-btn" onclick="toggleDarkMode()" title="Tema Değiştir">
+    <span id="theme-icon">🌙</span>
+    </button>
+
     <script>
     // Hata ayıklama için global fonksiyonlar
     window.debugMessages = {

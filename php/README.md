@@ -1,62 +1,60 @@
-# Emoji Piksel Sanatı ve Sosyal Sohbet Platformu
+Welcome to the README for this refactored PHP project! This document will provide an overview of the project, including its purpose, main features, database usage, security issues, code quality, improvements needed, template commonality, and setup instructions.
 
-Hoş geldiniz! Bu proje, kullanıcıların emoji tabanlı piksel sanatı oluşturmasına, paylaşmasına ve sosyal etkileşimde bulunmasına olanak tanıyan bir PHP tabanlı web uygulamasıdır. YouTube sohbetleri gibi platformlarda "flood mesajları" oluşturmak için ideal bir araçtır. Proje, sanatı eğlenceyle birleştirerek topluluk odaklı bir deneyim sunar.
+Project Purpose:
+This site allows users to create and share their own digital artwork. It provides a platform for artists to showcase their work, receive feedback from the community, and connect with other like-minded individuals.
 
-## Proje Amacı
-Bu site, dijital sanatçıların kendi emoji piksel sanatlarını oluşturup paylaşabileceği bir platform sağlar. Kullanıcılar eserlerini sergileyebilir, topluluktan geri bildirim alabilir ve benzer ilgi alanlarına sahip kişilerle bağlantı kurabilir. Ayrıca, sosyal sohbet özellikleri ile etkileşim artırılır.
+Main Features:
 
-## Ana Özellikler
-- **Kullanıcı Kayıt ve Profil Yönetimi**: Kullanıcılar kayıt olur, profil fotoğrafı ekler (Gravatar veya Google entegrasyonu), gizlilik ayarları yapar.
-- **Emoji Piksel Sanat Editörü**: Kalp şeklinde piksel sanatı oluşturma, filtre atlatma yöntemleri (ZWNJ, ZWSP vb.), panoya kopyalama ve dosya kaydetme.
-- **Sanat Paylaşımı ve Topluluk Akışı**: Çizimler paylaşılır, beğenilir, yorumlanır. Takip sistemi ile kişiselleştirilmiş akış.
-- **Özel Mesajlaşma ve Medya Desteği**: Medya (resim, video, ses) gönderme, galeriden seçme, okunmamış mesaj bildirimi.
-- **Yönetim Paneli**: Admin/moderatörler için kullanıcı yönetimi, içerik moderasyonu.
-- **Güvenlik ve Performans**: Otomatik sayaç güncellemesi, çevrimiçi kullanıcı takibi, engelleme sistemi.
-- **Yeni Eklenenler (v6.5)**: Medya galerisi, takip istekleri, profil görüntüleme sayaçları, sezgisel giriş düzeltmeleri.
+* User registration
+* User profiles
+* Artwork submission
+* Artwork rating and reviewing
+* Community forum
 
-## Veritabanı Kullanımı
-- **Kullanıcılar**: `users` tablosunda kimlik doğrulama ve profil verileri saklanır.
-- **Sanat Eserleri**: `drawings` tablosunda çizimler, kategoriler ve meta veriler tutulur.
-- **Yorumlar ve Mesajlar**: `comments` ve `private_messages` tablolarında etkileşimler kaydedilir (medya blob desteğiyle).
-- **Takip ve Engelleme**: `follows`, `follow_requests` ve `blocks` tabloları sosyal dinamikleri yönetir.
-- **İstatistikler**: `stats` ve `sessions` tabloları ziyaretçi sayaçları ve çevrimiçi kullanıcıları izler.
+Database Usage:
 
-## Güvenlik Sorunları ve Çözümler
-- **Şifre Güvenliği**: Argon2 hashing ile güçlendirildi; zayıf şifreler önlenir.
-- **XSS ve SQL Injection**: Tüm girişler PDO prepared statements ile filtrelenir; htmlspecialchars() kullanılır.
-- **Oturum Yönetimi**: Güvenli session_start() ve token tabanlı koruma.
-- **Medya Güvenliği**: Dosya boyut sınırlaması (2MB), MIME tipi doğrulama.
-- **Gizlilik**: Özel profiller ve engelleme sistemi eklendi.
+* Users are stored in a database for user authentication and profile management.
+* Submitted artwork is stored in a database for moderation and viewing.
+* Ratings and reviews are stored in a database for community engagement.
 
-Kod kalitesi: 8/10. Kod modüler hale getirildi (sınıflar: Auth, User, Drawing), ancak daha fazla unit test eklenebilir.
+Security Issues:
 
-## İyileştirmeler Gereken Alanlar
-- **Kod Organizasyonu**: Daha fazla sınıf ve namespace kullanımı.
-- **Testler**: PHPUnit ile unit/integration testleri ekleyin; %80 kapsama hedefleyin.
-- **Güvenlik**: HTTPS zorunlu kılın, CAPTCHA entegrasyonu (reCAPTCHA).
-- **İki Faktörlü Kimlik Doğrulama**: OTP desteği ekleyin.
-- **İçerik Moderasyonu**: AI tabanlı (örneğin, Grok entegrasyonu) uygunsuz içerik filtreleme.
-- **Gizlilik Politikaları**: GDPR uyumlu veri koruma, kullanıcı silme seçenekleri.
-- **Performans**: Caching (Redis) ve lazy loading ekleyin.
-- **Yeni Öneri**: AI destekli sanat önerileri (xAI Grok entegrasyonuyla).
+* Insufficient password hashing (users can choose weak passwords)
+* Cross-site scripting (XSS) vulnerabilities in user input forms
+* Broken authentication and session management
 
-## Ortak Şablonlar
-- `nav.php`: Üst navigasyon.
-- `footer.php`: Alt bilgi.
-- `index.php`: Ana sayfa ve editör.
-- `profile.php`: Kullanıcı profilleri.
-- `messages_modal.php`: Mesaj kutusu modalı.
-- `styles.css`: Global stiller.
-- `main.js`: JavaScript fonksiyonları.
+Code Quality:
+The code quality of this project is rated at 6 out of 10. While the code is generally well-structured and easy to understand, there are some areas for improvement in terms of organization and modularity.
 
-## Kurulum Talimatları
-1. **Sunucu Kurulumu**: PHP 8+ ve MySQL/MariaDB içeren bir web sunucusu (Apache/Nginx) kurun. Composer önerilir.
-2. **Kaynak Kodunu İndirin**: Depodan klonlayın veya ZIP indirin.
-3. **Veritabanı Oluşturun**: Yeni bir DB oluşturun, `schema.sql` scriptini çalıştırın (tabloları içe aktarın).
-4. **Konfigürasyon**: `config.php` dosyasını düzenleyin (DB bilgileri, site URL'si).
-5. **Admin Hesabı**: `config/admin.php` ile admin kimlik bilgilerini ayarlayın.
-6. **Bağımlılıklar**: Gerekliyse `composer install` ile paketleri yükleyin (örneğin, Google OAuth için).
-7. **Test Edin**: Tarayıcıda ana sayfayı açın; kayıt/giriş yapın.
-8. **Üretim Modu**: `.htaccess` ile rewrite kuralları etkinleştirin; error_reporting'i kapatın.
+Improvements Needed:
 
-Sorun mu yaşadınız? Issue açın veya destek için iletişime geçin. Katkıda bulunun – pull request'ler hoş karşılanır! 🚀
+* Improve code organization and modularity
+* Add unit tests and code coverage metrics
+* Use a secure SSL/TLS connection for HTTPS
+* Implement two-factor authentication
+* Add content moderation and removal of offensive or inappropriate artwork
+* Implement user privacy settings and data protection policies
+
+Template Commonality:
+The project makes use of several common templates, including:
+
+* nav.php
+* footer.php
+* index.php
+* user.php
+* artist.php
+* search.php
+
+Setup Instructions:
+To set up this project, follow these steps:
+
+1. Install a web server and PHP interpreter on your local machine or hosting platform.
+2. Download the source code from the repository.
+3. Extract the downloaded archive to a directory on your server.
+4. Create a new database for the project and update the database configuration file (e.g., `config/database.php`) with your database credentials.
+5. Import the database schema using the provided SQL script (e.g., `schema.sql`).
+6. Update the site URL in the configuration file (`config/site.php`) to match your site's URL.
+7. Create a new admin user for the project and update the admin credentials in the configuration file (`config/admin.php`).
+8. Test the site by visiting the homepage in your web browser.
+
+That's it! With these setup instructions, you should be able to get started with this refactored PHP project.

@@ -309,7 +309,7 @@ async function postProfileComment() {
             formData.append('message_type', getMessageType(boardFileType));
         }
 
-        const response = await fetch('../comment_action.php', {
+        const response = await fetch('https://flood.page.gd/comment_action.php', {
             method: 'POST',
             body: formData
         });
@@ -457,7 +457,7 @@ async function deleteComment(commentId) {
     if (!confirmed) return;
 
     try {
-        const response = await fetch('../delete_comment.php', {
+        const response = await fetch('https://flood.page.gd/delete_comment.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `comment_id=${commentId}`
@@ -650,7 +650,7 @@ async function sendDirectMessage(receiverId, content) {
         formData.append('content', content);
         formData.append('message_type', 'text');
 
-        const response = await fetch('send_message.php', {
+        const response = await fetch('https://flood.page.gd/send_message.php', {
             method: 'POST',
             body: formData
         });
@@ -1039,7 +1039,7 @@ async function sendDirectMessageFromModal() {
         }
 
         console.log('📤 Mesaj gönderiliyor...');
-        const response = await fetch('send_message.php', {
+        const response = await fetch('https://flood.page.gd/send_message.php', {
             method: 'POST',
             body: formData
         });
@@ -1147,7 +1147,7 @@ async function sendDirectMessage(receiverId, content, fileData = null, fileName 
         }
 
         console.log('📤 Mesaj gönderiliyor...');
-        const response = await fetch('send_message.php', {
+        const response = await fetch('https://flood.page.gd/send_message.php', {
             method: 'POST',
             body: formData
         });
@@ -1194,7 +1194,7 @@ async function updateMessageNotification() {
     if (!window.currentUser || !window.currentUser.id) return;
 
     try {
-        const response = await fetch('get_unread_message_count.php');
+        const response = await fetch('https://flood.page.gd/get_unread_message_count.php');
         const result = await response.json();
 
         const messageBadge = document.getElementById('message-notification-badge');
@@ -1287,7 +1287,7 @@ async function sendMessage(fileName = null, fileData = null, mimeType = null) {
             formData.append('message_type', getMessageType(mimeType));
         }
 
-        const response = await fetch('send_message.php', {
+        const response = await fetch('https://flood.page.gd/send_message.php', {
             method: 'POST',
             body: formData
         });
@@ -1319,7 +1319,7 @@ async function loadMessages() {
     if (!currentMessageReceiver) return;
 
     try {
-        const response = await fetch(`fetch_messages.php?other_user_id=${currentMessageReceiver.id}`);
+        const response = await fetch(`../fetch_messages.php?other_user_id=${currentMessageReceiver.id}`);
         const result = await response.json();
 
         const messagesList = document.getElementById('messages-list');
@@ -1413,7 +1413,7 @@ function openMessagesModal() {
 // Konuşmaları yükle
 async function loadConversations() {
     try {
-        const response = await fetch('get_conversations.php');
+        const response = await fetch('https://flood.page.gd/get_conversations.php');
         const result = await response.json();
 
         const container = document.getElementById('conversations-container');
@@ -1482,7 +1482,7 @@ async function selectConversation(userId, username) {
 // Seçili konuşmanın mesajlarını yükle
 async function loadConversationMessages(otherUserId) {
     try {
-        const response = await fetch(`fetch_messages.php?other_user_id=${otherUserId}`);
+        const response = await fetch(`../fetch_messages.php?other_user_id=${otherUserId}`);
         const result = await response.json();
 
         const container = document.getElementById('conversation-messages');
@@ -1528,7 +1528,7 @@ async function sendReply() {
             formData.append('message_type', 'text');
         }
 
-        const response = await fetch('send_message.php', {
+        const response = await fetch('https://flood.page.gd/send_message.php', {
             method: 'POST',
             body: formData
         });
@@ -1559,7 +1559,7 @@ async function sendReply() {
 // Mesajları okundu olarak işaretle
 async function markMessagesAsRead(otherUserId) {
     try {
-        await fetch('mark_messages_read.php', {
+        await fetch('https://flood.page.gd/mark_messages_read.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -1809,7 +1809,7 @@ async function deleteDrawing(drawingId) {
     if (!confirmed) return;
 
     try {
-        const response = await fetch('delete_drawing.php', {
+        const response = await fetch('https://flood.page.gd/delete_drawing.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1893,7 +1893,7 @@ async function saveToDatabase(drawingContent) {
     const width = (separatorSelect.value === 'SP_BS') ? 10 : 11;
 
     // Sunucuya gönder
-    const response = await fetch('/save_drawing.php', {
+    const response = await fetch('https://flood.page.gd/save_drawing.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1981,7 +1981,7 @@ async function fetchDrawings(page = 1) {
     if (PAGINATION_ELEMENT) PAGINATION_ELEMENT.innerHTML = '';
 
     try {
-        const response = await fetch(`list_drawings.php?page=${page}`);
+        const response = await fetch(`../list_drawings.php?page=${page}`);
         const result = await response.json();
 
         if (result.success) {
@@ -2016,7 +2016,7 @@ async function fetchFollowingFeed() {
     FOLLOWING_FEED_ELEMENT.innerHTML = '<p>Akış yükleniyor...</p>';
 
     try {
-        const response = await fetch('fetch_following_feed.php');
+        const response = await fetch('https://flood.page.gd/fetch_following_feed.php');
         const result = await response.json();
 
         if (result.success && result.drawings.length > 0) {
@@ -2437,6 +2437,128 @@ function showContextMenu(x, y) {
     }, 100);
 }
 
+// ========================================
+// SİSTEM TEMA TERCİHİ ALGILAMA
+// ========================================
+
+/**
+ * Sistemin tercih ettiği renk modunu algılar ve uygular
+ */
+function detectAndApplySystemTheme() {
+    // Sistem tercihini kontrol et
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (prefersDark) {
+        // Koyu mod tercih ediliyorsa
+        document.body.classList.add('dark-mode');
+        console.log('🌙 Sistem koyu mod tercihi algılandı, koyu tema uygulanıyor.');
+    } else {
+        // Aydınlık mod tercih ediliyorsa
+        document.body.classList.remove('dark-mode');
+        console.log('☀️ Sistem aydınlık mod tercihi algılandı, aydınlık tema uygulanıyor.');
+    }
+}
+
+/**
+ * Manuel tema değiştirme fonksiyonu
+ */
+function toggleDarkMode() {
+    const isDark = document.body.classList.contains('dark-mode');
+    const themeIcon = document.getElementById('theme-icon');
+
+    if (isDark) {
+        // Koyu moddan aydınlık moda geç
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('theme', 'light');
+        if (themeIcon) themeIcon.textContent = '🌙';
+        showNotification('☀️ Aydınlık moda geçildi', 'info');
+    } else {
+        // Aydınlık moddan koyu moda geç
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
+        if (themeIcon) themeIcon.textContent = '☀️';
+        showNotification('🌙 Koyu moda geçildi', 'info');
+    }
+}
+
+/**
+ * Kullanıcının önceki tercihini yükler ve ikonu günceller
+ */
+function loadUserThemePreference() {
+    const savedTheme = localStorage.getItem('theme');
+    const themeIcon = document.getElementById('theme-icon');
+
+    if (savedTheme) {
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            if (themeIcon) themeIcon.textContent = '☀️';
+        } else {
+            document.body.classList.remove('dark-mode');
+            if (themeIcon) themeIcon.textContent = '🌙';
+        }
+        console.log(`🎨 Kullanıcı tema tercihi yüklendi: ${savedTheme}`);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Sistem tema tercihi değişikliklerini dinler ve ikonu günceller
+ */
+function watchSystemThemeChanges() {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const themeIcon = document.getElementById('theme-icon');
+
+    const handleThemeChange = (e) => {
+        if (e.matches) {
+            // Koyu moda geçiş
+            document.body.classList.add('dark-mode');
+            if (themeIcon) themeIcon.textContent = '☀️';
+            console.log('🌙 Sistem koyu moda geçti, tema güncelleniyor.');
+        } else {
+            // Aydınlık moda geçiş
+            document.body.classList.remove('dark-mode');
+            if (themeIcon) themeIcon.textContent = '🌙';
+            console.log('☀️ Sistem aydınlık moda geçti, tema güncelleniyor.');
+        }
+
+        // Sistem tercihi değiştiğinde localStorage'ı temizle (kullanıcı tercihini sıfırla)
+        localStorage.removeItem('theme');
+    };
+
+    mediaQuery.addEventListener('change', handleThemeChange);
+}
+
+/**
+ * Sayfa yüklendiğinde tema ikonunu başlangıç durumuna ayarla
+ */
+function initializeThemeIcon() {
+    const themeIcon = document.getElementById('theme-icon');
+    if (!themeIcon) return;
+
+    const isDark = document.body.classList.contains('dark-mode');
+    themeIcon.textContent = isDark ? '☀️' : '🌙';
+}
+
+// Tema yönetimini başlat
+function initThemeSystem() {
+    // Önce kullanıcının kayıtlı tercihini kontrol et
+    const hasUserPreference = loadUserThemePreference();
+
+    // Eğer kullanıcının kayıtlı tercihi yoksa, sistem tercihini uygula
+    if (!hasUserPreference) {
+        detectAndApplySystemTheme();
+    }
+
+    // Tema ikonunu başlat
+    initializeThemeIcon();
+
+    // Sistem tercihi değişikliklerini izlemeye başla
+    watchSystemThemeChanges();
+
+    console.log('🎨 Tema sistemi başlatıldı');
+}
+
 // --- OLAY DİNLEYİCİLERİ ---
 // Event listener'ları güncelle
 document.addEventListener('DOMContentLoaded', () => {
@@ -2655,6 +2777,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Emoji Sanat Uygulaması Başlatılıyor...');
 
     try {
+        // TEMA SİSTEMİNİ BAŞLAT
+        initThemeSystem();
+
         // Mevcut kodlar aynı kalacak...
         initModalSystem();
         initAuthForms();

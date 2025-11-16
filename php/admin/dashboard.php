@@ -259,6 +259,11 @@ style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 6px; bord
 </div>
 </div>
 
+<!-- TEMA DEĞİŞTİRME BUTONU -->
+<button class="theme-toggle-btn" onclick="toggleDarkMode()" title="Tema Değiştir">
+<span id="theme-icon">🌙</span>
+</button>
+
 <script>
 // Current User bilgisini global olarak ayarla
 window.currentUser = {

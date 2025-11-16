@@ -151,7 +151,7 @@ function openMessagesModal() {
 // Konuşmaları yükle - GÜNCELLENMİŞ
 async function loadConversations() {
     try {
-        const response = await fetch('get_conversations.php');
+        const response = await fetch('https://flood.page.gd/get_conversations.php');
         const result = await response.json();
 
         const container = document.getElementById('conversations-container');
@@ -482,7 +482,7 @@ async function sendMessageReply() {
             formData.append('message_type', 'text');
         }
 
-        const response = await fetch('send_message.php', {
+        const response = await fetch('https://flood.page.gd/send_message.php', {
             method: 'POST',
             body: formData
         });
@@ -533,7 +533,7 @@ async function loadMediaGallery() {
         const container = document.getElementById('media-gallery-container');
         container.innerHTML = '<p style="text-align: center; grid-column: 1 / -1; opacity: 0.7;">Medya yükleniyor...</p>';
 
-        const response = await fetch('fetch_user_media.php');
+        const response = await fetch('https://flood.page.gd/fetch_user_media.php');
         const result = await response.json();
 
         if (result.success && result.media.length > 0) {
@@ -637,7 +637,7 @@ function closeMediaPreview() {
 // Mesajları okundu olarak işaretle
 async function markMessagesAsRead(otherUserId) {
     try {
-        await fetch('mark_messages_read.php', {
+        await fetch('https://flood.page.gd/mark_messages_read.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

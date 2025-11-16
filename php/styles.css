@@ -1,31 +1,50 @@
 /* ========================================
- *  1. TEMEL VE TEMA TANIMLARI (DARK/LIGHT)
- *  ======================================== */
+ * 1. TEMEL VE TEMA TANIMLARI (DARK/LIGHT)
+ * ======================================== */
 :root {
-    --bg-color-light: #f0f3f8;
-    --main-text-light: #2c3e50;
-    --accent-color-light: #007bff;
-    --accent-hover-light: #209bff;
-    --card-bg-light: rgba(255, 255, 255, 0.66);
-    --border-color-light: #e0e6ed;
-    --fixed-bg-light: #d4e3f5;
-    --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.1);
+    /* Hafif Tema (LIGHT) */
+    /* #f0f3f8 -> rgba(240, 243, 248, 0.5) */
+    --bg-color-light: rgba(240, 243, 248, 0.5);
+    /* #2c3e50 -> rgba(44, 62, 80, 0.5) */
+    --main-text-light: rgba(44, 62, 80, 0.9);
+    /* #007bff -> rgba(0, 123, 255, 0.5) */
+    --accent-color-light: rgba(0, 123, 255, 0.5);
+    /* #209bff -> rgba(32, 155, 255, 0.5) */
+    --accent-hover-light: rgba(32, 155, 255, 0.5);
+    /* Zaten ayarlı olan RGBA değeri korunmuştur */
+    --card-bg-light: rgba(255, 255, 255, 0.5);
+    /* #e0e6ed -> rgba(224, 230, 237, 0.5) */
+    --border-color-light: rgba(224, 230, 237, 0.5);
+    /* #d4e3f5 -> rgba(212, 227, 245, 0.5) */
+    --fixed-bg-light: rgba(212, 227, 245, 0.5);
+    /* Gölge rengi (siyah) 0.5 opaklığa ayarlanmıştır (Mevcut opaklık: 0.1) */
+    --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg-color: #1a1a2e;
-        --main-text: #e0eaf1;
-        --accent-color: #3f72af;
-        --accent-hover: #4f92cf;
-        --card-bg: rgba(25, 25, 45, 0.66);
-        --border-color: #3b3b64;
-        --fixed-bg: #2c2c4d;
-        --shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        /* Koyu Tema (DARK - prefers-color-scheme) */
+        /* #1a1a2e -> rgba(26, 26, 46, 0.5) */
+        --bg-color: rgba(26, 26, 46, 0.5);
+        /* #e0eaf1 -> rgba(224, 234, 241, 0.5) */
+        --main-text: rgba(224, 234, 241, 0.9);
+        /* #3f72af -> rgba(63, 114, 175, 0.5) */
+        --accent-color: rgba(63, 114, 175, 0.5);
+        /* #4f92cf -> rgba(79, 146, 207, 0.5) */
+        --accent-hover: rgba(79, 146, 207, 0.5);
+        /* Zaten ayarlı olan RGBA değeri korunmuştur */
+        --card-bg: rgba(25, 25, 45, 0.5);
+        /* #3b3b64 -> rgba(59, 59, 100, 0.5) */
+        --border-color: rgba(59, 59, 100, 0.5);
+        /* #2c2c4d -> rgba(44, 44, 77, 0.5) */
+        --fixed-bg: rgba(44, 44, 77, 0.5);
+        /* Gölge rengi (siyah) 0.5 opaklığa ayarlanmıştır (Mevcut opaklık: 0.4) */
+        --shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     }
 }
 
 :root {
+    /* Varsayılan değerler (Yukarıdaki RGBA'ya çevrilmiş değerleri kullanacaktır) */
     --bg-color: var(--bg-color-light);
     --main-text: var(--main-text-light);
     --accent-color: var(--accent-color-light);
@@ -36,13 +55,21 @@
 }
 
 body.dark-mode {
-    --bg-color: #1a1a2e;
-    --main-text: #e0eaf1;
-    --accent-color: #3f72af;
-    --card-bg: rgba(25, 25, 45, 0.66);
-    --border-color: #3b3b64;
-    --fixed-bg: #2c2c4d;
-    --shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    /* Koyu Tema (DARK - Manuel Geçiş) */
+    /* #1a1a2e -> rgba(26, 26, 46, 0.5) */
+    --bg-color: rgba(26, 26, 46, 0.5);
+    /* #e0eaf1 -> rgba(224, 234, 241, 0.5) */
+    --main-text: rgba(224, 234, 241, 0.9);
+    /* #3f72af -> rgba(63, 114, 175, 0.5) */
+    --accent-color: rgba(63, 114, 175, 0.5);
+    /* Zaten ayarlı olan RGBA değeri korunmuştur */
+    --card-bg: rgba(25, 25, 45, 0.5);
+    /* #3b3b64 -> rgba(59, 59, 100, 0.5) */
+    --border-color: rgba(59, 59, 100, 0.5);
+    /* #2c2c4d -> rgba(44, 44, 77, 0.5) */
+    --fixed-bg: rgba(44, 44, 77, 0.5);
+    /* Gölge rengi (siyah) 0.5 opaklığa ayarlanmıştır (Mevcut opaklık: 0.4) */
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
 /* ========================================
@@ -51,12 +78,20 @@ body.dark-mode {
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    font-family: 'Space Mono', 'Segoe UI', monospace;
+    background-image: url('https://flood.page.gd/emoji-background.jpg');
+    background-attachment: fixed;
+    background-size: 100vw auto;
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0;
+    padding: 20px;
+    padding-top: 20px;
+    min-width: 100vw;
+    height: 100%;
+    font-family: 'Segoe UI', monospace;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
-    min-height: 100vh;
     color: var(--main-text);
     background-color: var(--bg-color);
     transition: background-color 0.5s, color 0.5s;
@@ -138,13 +173,13 @@ align-items: center;
 }
 
 #info-panel {
-    background: var(--fixed-bg);
-    padding: 12px 18px;
-    border-radius: 10px;
-    text-align: center;
-    font-size: 0.95em;
-    border-left: 4px solid var(--accent-color);
-    margin-bottom: 15px;
+background: var(--fixed-bg);
+padding: 12px 18px;
+border-radius: 10px;
+text-align: center;
+font-size: 0.95em;
+border-left: 4px solid var(--accent-color);
+margin-bottom: 15px;
 }
 
 /* Çizim Grid Stili */
@@ -162,7 +197,7 @@ align-items: center;
 /* Çizim önizleme - çizimin boyutuna tam uyumlu */
 .drawing-preview {
     white-space: pre;
-    font-family: 'Space Mono', monospace;
+    font-family: monospace;
     font-size: 16px; /* Daha küçük emoji boyutu */
     line-height: 1.1;
     margin: 0;
@@ -355,7 +390,7 @@ position: relative;
 }
 
 .btn-success {
-    background: #28a745;
+    background: rgba(26,125,30,0.33);
     color: white;
     padding: 6px 12px;
     font-size: 13px;
@@ -391,7 +426,7 @@ position: relative;
 }
 
 .btn-info {
-    background: #17a2b8;
+    background: rgba(23,162,184,0.66);
     color: white;
     padding: 6px 12px;
     font-size: 13px;
@@ -557,7 +592,7 @@ padding: 5px;
     color: white;
     transition: background-color 0.2s;
 }
-.modal-btn.confirm { background: #28a745; }
+.modal-btn.confirm { background: rgba(26,125,30,0.33); }
 .modal-btn.cancel { background: #dc3545; }
 .modal-btn.confirm:hover { background: #218838; }
 .modal-btn.cancel:hover { background: #c82333; }
@@ -751,10 +786,10 @@ transition: transform 0.4s ease;
 box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 #notification.show { transform: translateX(0); }
-#notification.success { background: #28a745; }
+#notification.success { background: rgba(26,125,30,0.33); }
 #notification.error { background: #dc3545; }
 #notification.warning { background: #ffc107; color: #212529; }
-#notification.info { background: #17a2b8; }
+#notification.info { background: rgba(23,162,184,0.66); }
 
 /* ========================================
  *  8. YÖNETİM PANELİ SEKMELERİ
@@ -1316,6 +1351,54 @@ border-radius: 3px;
 #conversation-messages::-webkit-scrollbar-thumb {
 background: var(--accent-color);
 border-radius: 3px;
+}
+
+/* ========================================
+ *  TEMA DEĞİŞTİRME BUTONU - FIXED
+ *  ======================================== */
+.theme-toggle-btn {
+    position: fixed;
+    top: 50%;
+    right: 12px; /* Scroll bar'dan biraz solunda */
+    transform: translateY(-50%);
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-color);
+    background: var(--card-bg);
+    color: var(--main-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+    opacity: 0.8;
+}
+
+.theme-toggle-btn:hover {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 0 15px var(--accent-color);
+}
+
+/* Scroll bar genişliğine göre responsive ayar */
+@media (max-width: 768px) {
+    .theme-toggle-btn {
+        right: 8px;
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+}
+
+/* Koyu modda buton stilleri */
+body.dark-mode .theme-toggle-btn {
+    background: var(--fixed-bg);
+    border-color: var(--accent-hover);
 }
 
 @media (max-width: 768px) {
