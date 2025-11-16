@@ -49,6 +49,30 @@ function getDbConnection() {
     }
 }
 
+// Otomatik aktivite güncelleme fonksiyonu
+function updateUserActivity() {
+    if (isset($_SESSION['user_id'])) {
+        try {
+            $db = getDbConnection();
+            $stmt = $db->prepare("UPDATE users SET last_activity = NOW() WHERE id = ?");
+            $stmt->execute([$_SESSION['user_id']]);
+        } catch (Exception $e) {
+            error_log("Activity update error: " . $e->getMessage());
+        }
+    }
+}
+
+// Sayfa yüklendiğinde aktiviteyi güncelle
+updateUserActivity();
+
+// Online status manager'ı dahil et
+require_once 'online_status_manager.php';
+
+// Kullanıcı aktivitesini güncelle - HER SAYFA YÜKLENİŞİNDE
+if (isset($_SESSION['user_id'])) {
+    OnlineStatusManager::updateOnlineStatus($_SESSION['user_id']);
+}
+
 // config.php dosyasının sonuna ekleyin
 require_once 'activity_logger.php';
 
