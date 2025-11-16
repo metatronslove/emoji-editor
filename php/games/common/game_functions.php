@@ -1,5 +1,5 @@
 <?php
-require_once '../../config.php';
+require_once '../games_config.php';
 
 class GameCommon {
     // Oyun türlerini tanımla

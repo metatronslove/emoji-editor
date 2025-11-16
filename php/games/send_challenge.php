@@ -1,5 +1,5 @@
 <?php
-require_once '../common/game_functions.php';
+require_once 'common/game_functions.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {

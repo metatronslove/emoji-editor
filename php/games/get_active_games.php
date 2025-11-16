@@ -1,5 +1,5 @@
 <?php
-require_once '../common/game_functions.php';
+require_once 'common/game_functions.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
@@ -12,6 +12,18 @@ $userId = $_SESSION['user_id'];
 
 try {
     $db = getDbConnection();
+
+    // Önce active_games tablosunun var olup olmadığını kontrol et
+    $tableCheck = $db->query("SHOW TABLES LIKE 'active_games'")->fetch();
+
+    if (!$tableCheck) {
+        echo json_encode([
+            'success' => true,
+            'games' => [],
+            'message' => 'Henüz aktif oyun bulunmuyor'
+        ]);
+        exit;
+    }
 
     $stmt = $db->prepare("
     SELECT
@@ -44,7 +56,7 @@ try {
         $game['current_turn_username'] = $game['current_turn'] == $game['player1_id'] ? $game['player1_username'] : $game['player2_username'];
         $game['is_my_turn'] = $game['current_turn'] == $userId;
         $game['last_updated'] = $game['updated_at'];
-        $game['game_duration'] = $this->calculateGameDuration($game['created_at']);
+        $game['game_duration'] = calculateGameDuration($game['created_at']);
 
         // Oyun durumundan ek bilgileri çıkar
         if ($gameState) {
