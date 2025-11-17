@@ -1,0 +1,327 @@
+/* Oyunlar için ortak stiller */
+
+.game-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 2px solid var(--border-color);
+}
+
+.game-board {
+    display: grid;
+    gap: 2px;
+    background: var(--fixed-bg);
+    padding: 10px;
+    border-radius: 8px;
+    margin: 0 auto;
+}
+
+.game-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 24px;
+    user-select: none;
+}
+
+.game-cell:hover {
+    background: var(--accent-color);
+    opacity: 0.8;
+}
+
+.game-cell.selected {
+    background: var(--accent-color);
+    border-color: var(--accent-hover);
+}
+
+.game-cell.valid-move {
+    background: rgba(76, 175, 80, 0.3);
+    border: 2px dashed #4CAF50;
+}
+
+.game-cell.invalid-move {
+    background: rgba(244, 67, 54, 0.3);
+    border: 2px dashed #f44336;
+}
+
+.game-info {
+    background: var(--fixed-bg);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.game-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 6px;
+    background: var(--card-bg);
+    margin-bottom: 10px;
+}
+
+.player-info.current-turn {
+    border-left: 4px solid var(--accent-color);
+    background: rgba(63, 114, 175, 0.1);
+}
+
+.online-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4CAF50;
+}
+
+.offline-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+}
+
+.game-messages {
+    height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px;
+    background: var(--fixed-bg);
+    margin-top: 10px;
+}
+
+.game-message {
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    background: var(--card-bg);
+}
+
+.game-message.own {
+    background: rgba(63, 114, 175, 0.2);
+    text-align: right;
+}
+
+.dice-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 15px 0;
+}
+
+.dice {
+    width: 60px;
+    height: 60px;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--main-text);
+}
+
+.dice.rolling {
+    animation: dice-roll 0.5s ease-in-out;
+}
+
+@keyframes dice-roll {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(90deg); }
+    50% { transform: rotate(180deg); }
+    75% { transform: rotate(270deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.score-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.score-item {
+    text-align: center;
+    padding: 10px;
+    background: var(--fixed-bg);
+    border-radius: 6px;
+}
+
+.move-history {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px;
+    background: var(--fixed-bg);
+    font-size: 12px;
+}
+
+/* Satranç tahtası */
+.chess-board {
+    grid-template-columns: repeat(8, 50px);
+    grid-template-rows: repeat(8, 50px);
+}
+
+.chess-cell {
+    position: relative;
+}
+
+.chess-cell.white {
+    background: #f0d9b5;
+}
+
+.chess-cell.black {
+    background: #b58863;
+}
+
+.chess-coordinates {
+    position: absolute;
+    font-size: 10px;
+    color: var(--main-text);
+    opacity: 0.7;
+}
+
+.coord-file {
+    bottom: 2px;
+    right: 4px;
+}
+
+.coord-rank {
+    top: 2px;
+    left: 4px;
+}
+
+/* Reversi tahtası */
+.reversi-board {
+    grid-template-columns: repeat(8, 50px);
+    grid-template-rows: repeat(8, 50px);
+}
+
+.reversi-cell {
+    background: #2a9d8f;
+}
+
+.reversi-piece {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.reversi-piece.black {
+    background: #264653;
+    color: white;
+}
+
+.reversi-piece.white {
+    background: #e9c46a;
+    color: #264653;
+}
+
+/* Tavla tahtası */
+.tavla-board {
+    display: flex;
+    flex-direction: column;
+    background: #8b4513;
+    padding: 20px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.tavla-point {
+    width: 40px;
+    height: 200px;
+    background: #deb887;
+    position: relative;
+    border: 1px solid #8b4513;
+}
+
+.tavla-piece {
+    width: 35px;
+    height: 20px;
+    border-radius: 8px;
+    position: absolute;
+    border: 1px solid #000;
+}
+
+.tavla-piece.black {
+    background: #000;
+}
+
+.tavla-piece.white {
+    background: #fff;
+}
+
+/* Responsive tasarım */
+@media (max-width: 768px) {
+    .chess-board,
+    .reversi-board {
+        grid-template-columns: repeat(8, 35px);
+        grid-template-rows: repeat(8, 35px);
+    }
+
+    .game-cell {
+        font-size: 18px;
+    }
+
+    .dice {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+}
+
+/* Oyun modalı sekmeleri */
+.game-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.game-tab {
+    padding: 10px 15px;
+    background: var(--fixed-bg);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.game-tab.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+.game-tab-content {
+    display: none;
+}
+
+.game-tab-content.active {
+    display: block;
+}
+
+.game-tab.has-notification::after {
+    content: '●';
+    color: #f44336;
+    margin-left: 5px;
+    font-size: 12px;
+}
