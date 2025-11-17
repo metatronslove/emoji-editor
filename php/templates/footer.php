@@ -7,6 +7,10 @@
 <p>Toplam Ziyaretçi: <?php echo $totalViews; ?> |
 <?php echo $isLoggedIn ? 'Hoş geldin, ' . htmlspecialchars($_SESSION['username']) : 'Misafir'; ?></p>
 </div>
+<!-- 1. ÖNCE Core kütüphaneler -->
+<script src="<?php echo $baseSiteUrl; ?>assets/js/core/utils.js"></script>
+<script src="<?php echo $baseSiteUrl; ?>assets/js/core/theme.js"></script>
+<script src="<?php echo $baseSiteUrl; ?>assets/js/core/online.js"></script>
 <!-- 2. SONRA UI bileşenleri -->
 <script src="<?php echo $baseSiteUrl; ?>assets/js/ui/notifications.js"></script>
 <!-- 3. DAHA SONRA Feature modüller (sıralı) -->

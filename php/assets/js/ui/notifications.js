@@ -31,7 +31,7 @@ class NotificationSystem {
         try {
             // AuthUrl ile Ably başlat - DÜZELTME
             this.ably = new Ably.Realtime({
-                authUrl: SITE_BASE_URL + 'games/ably_token.php',
+                authUrl: window.SITE_BASE_URL + 'games/ably_token.php',
                 authMethod: 'GET',
                 clientId: 'user_' + userId
             });
@@ -354,7 +354,7 @@ const notificationSystem = new NotificationSystem();
  * Bildirim göster
  */
 function showNotification(message, type = 'info', duration = 3000) {
-    const { notification } = DOM_ELEMENTS;
+    const { notification } = window.DOM_ELEMENTS;
 
     if (!notification) {
         console.log('Notification:', message);

@@ -45,12 +45,8 @@ $totalViews = $counters['total_views'] ?? 0;
     <title><?php echo $pageTitle ?? 'Emoji Piksel Sanatı'; ?></title>
     <link rel="stylesheet" href="<?php echo $site_url; ?>assets/css/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <!-- 1. ÖNCE Core kütüphaneler -->
-    <script src="<?php echo $baseSiteUrl; ?>assets/js/core/constants.js"></script>
-    <script src="<?php echo $baseSiteUrl; ?>assets/js/core/utils.js"></script>
-    <script src="<?php echo $baseSiteUrl; ?>assets/js/core/theme.js"></script>
-    <script src="<?php echo $baseSiteUrl; ?>assets/js/core/online.js"></script>
     <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
+    <script src="<?php echo $baseSiteUrl; ?>assets/js/core/constants.js"></script>
 </head>
 <body>
 <!-- Global değişkenleri EN BAŞTA tanımla -->
@@ -76,6 +72,31 @@ window.ABLY_CONFIG = {
     autoConnect: true,
     reconnectAttempts: 5
 };
+// Mesaj bildirimini güncelle
+async function updateMessageNotification() {
+    if (!window.currentUser || !window.currentUser.id) return;
+    const dom = window.DOM_ELEMENTS;
+    if (!dom) {
+        console.warn('⚠️ DOM elementleri bulunamadı');
+        return;
+    }
+
+    try {
+        const response = await fetch(window.SITE_BASE_URL + 'core/get_unread_message_count.php');
+        const result = await response.json();
+
+        if (dom.messageBadge) {
+            if (result.unread_count > 0) {
+                dom.messageBadge.textContent = result.unread_count;
+                dom.messageBadge.style.display = 'inline';
+            } else {
+                dom.messageBadge.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Mesaj bildirimi güncelleme hatası:', error);
+    }
+}
 </script>
     <!-- FÜTÜRİSTİK ARKA PLAN -->
     <div id="background-grid"></div>

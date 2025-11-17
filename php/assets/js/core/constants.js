@@ -110,7 +110,8 @@ function getDomElements() {
         separatorSelect: document.getElementById('separator-select'),
 
         // Notification element
-        notification: document.getElementById('notification')
+        notification: document.getElementById('notification'),
+        messageBadge: document.getElementById('message-notification-badge')
     };
 
     // Fallback mekanizması - kritik elementler

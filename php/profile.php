@@ -436,8 +436,8 @@ if (!empty($socialLinks)):
             }
         };
         if (document.getElementById('active-games-list')) {
-            loadActiveGames();
-            setInterval(loadActiveGames, 30000);
+            window.gameSystem.loadActiveGames();
+            setInterval(window.gameSystem.loadActiveGames, 30000);
         }
     });
     </script>
