@@ -1,0 +1,50 @@
+/* ========================================
+ * 1. TEMEL VE TEMA TANIMLARI (DARK/LIGHT)
+ * ======================================== */
+:root {
+    /* Hafif Tema (LIGHT) */
+    --bg-color-light: rgba(240, 243, 248, 0.5);
+    --main-text-light: rgba(44, 62, 80, 0.9);
+    --accent-color-light: rgba(0, 123, 255, 0.5);
+    --accent-hover-light: rgba(32, 155, 255, 0.5);
+    --card-bg-light: rgba(255, 255, 255, 0.5);
+    --border-color-light: rgba(224, 230, 237, 0.5);
+    --fixed-bg-light: rgba(212, 227, 245, 0.5);
+    --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Koyu Tema (DARK - prefers-color-scheme) */
+        --bg-color: rgba(26, 26, 46, 0.5);
+        --main-text: rgba(224, 234, 241, 0.9);
+        --accent-color: rgba(63, 114, 175, 0.5);
+        --accent-hover: rgba(79, 146, 207, 0.5);
+        --card-bg: rgba(25, 25, 45, 0.5);
+        --border-color: rgba(59, 59, 100, 0.5);
+        --fixed-bg: rgba(44, 44, 77, 0.5);
+        --shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+}
+
+:root {
+    /* Varsayılan değerler */
+    --bg-color: var(--bg-color-light);
+    --main-text: var(--main-text-light);
+    --accent-color: var(--accent-color-light);
+    --card-bg: var(--card-bg-light);
+    --border-color: var(--border-color-light);
+    --fixed-bg: var(--fixed-bg-light);
+    --shadow: var(--shadow-light);
+}
+
+body.dark-mode {
+    /* Koyu Tema (DARK - Manuel Geçiş) */
+    --bg-color: rgba(26, 26, 46, 0.5);
+    --main-text: rgba(224, 234, 241, 0.9);
+    --accent-color: rgba(63, 114, 175, 0.5);
+    --card-bg: rgba(25, 25, 45, 0.5);
+    --border-color: rgba(59, 59, 100, 0.5);
+    --fixed-bg: rgba(44, 44, 77, 0.5);
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}

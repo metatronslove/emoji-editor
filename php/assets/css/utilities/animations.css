@@ -1,0 +1,15 @@
+/* ANİMASYONLAR */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pop {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes grid-flow {
+    from { background-position: 0 0; }
+    to { background-position: 500px 500px; }
+}

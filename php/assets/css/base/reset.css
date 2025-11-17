@@ -1,0 +1,43 @@
+/* ========================================
+ *  2. ANATOMİ VE ARKA PLAN
+ *  ======================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background-image: url('https://flood.page.gd/assets/img/emoji-background.jpg');
+    background-attachment: fixed;
+    background-size: 100vw auto;
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0;
+    padding: 20px;
+    padding-top: 20px;
+    min-width: 100vw;
+    height: 100%;
+    font-family: 'Segoe UI', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--main-text);
+    background-color: var(--bg-color);
+    transition: background-color 0.5s, color 0.5s;
+    position: relative;
+    z-index: 1;
+}
+
+#background-grid {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    opacity: 0.18;
+    background:
+    linear-gradient(to right, var(--accent-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--accent-color) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: grid-flow 80s linear infinite;
+}
+
+@keyframes grid-flow {
+    from { background-position: 0 0; }
+    to { background-position: 500px 500px; }
+}

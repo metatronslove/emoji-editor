@@ -1,0 +1,35 @@
+/* BİLDİRİM */
+#notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 14px 24px;
+    border-radius: 10px;
+    color: white;
+    font-weight: bold;
+    z-index: 10000;
+    transform: translateX(120%);
+    transition: transform 0.4s ease;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+#notification.show {
+    transform: translateX(0);
+}
+
+#notification.success {
+    background: rgba(26,125,30,0.33);
+}
+
+#notification.error {
+    background: #dc3545;
+}
+
+#notification.warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+#notification.info {
+    background: rgba(23,162,184,0.66);
+}

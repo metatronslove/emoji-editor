@@ -1,0 +1,45 @@
+/* ========================================
+ *  TEMA DEĞİŞTİRME BUTONU - FIXED
+ *  ======================================== */
+.theme-toggle-btn {
+    position: fixed;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-color);
+    background: var(--card-bg);
+    color: var(--main-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+    opacity: 0.8;
+}
+
+.theme-toggle-btn:hover {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 0 15px var(--accent-color);
+}
+
+body.dark-mode .theme-toggle-btn {
+    background: var(--fixed-bg);
+    border-color: var(--accent-hover);
+}
+
+@media (max-width: 768px) {
+    .theme-toggle-btn {
+        right: 8px;
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+}

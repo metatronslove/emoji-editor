@@ -1,0 +1,34 @@
+/* ========================================
+ *  3. LAYOUT
+ *  ======================================== */
+#stats-bar {
+    max-width: 1400px;
+    margin: 0 auto 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+#main-layout {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 1400px;
+    z-index: 2;
+    margin-top: 15px;
+}
+
+#left-panel {
+    width: 350px;
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+
+#right-panel {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}

@@ -1,0 +1,7 @@
+{
+    "minimum-stability": "stable",
+    "require": {
+        "google/apiclient": "^2.0",
+        "ably/ably-php": "^1.1"
+    }
+}

@@ -1,0 +1,36 @@
+# Mod_Rewrite motorunu aç
+RewriteEngine On
+
+# Base dizinini ayarla
+RewriteBase /
+
+# -----------------------------------------------------------------
+# 0. LOGIN VE REGISTER YÖNLENDİRMELERİ (EN BAŞTA OLMALI)
+# -----------------------------------------------------------------
+# Herhangi bir klasördeki login.php'yi auth'a yönlendir
+RewriteRule ^[^/]+/login\.php$ auth/login.php [L,QSA]
+
+# Herhangi bir klasördeki login-handler.php'yi auth'a yönlendir
+RewriteRule ^[^/]+/login-handler\.php$ auth/login-handler.php [L,QSA]
+
+# Herhangi bir klasördeki register.php'yi auth'a yönlendir
+RewriteRule ^[^/]+/register\.php$ auth/register.php [L,QSA]
+
+# -----------------------------------------------------------------
+# 1. VAROLAN DOSYALARI VE KLASÖRLERİ ATLA
+# -----------------------------------------------------------------
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# -----------------------------------------------------------------
+# 2. PROFİL SAYFASI YÖNLENDİRMESİ (TEK GERÇEK İHTİYACINIZ)
+# -----------------------------------------------------------------
+# Kullanıcı adı benzeri pattern'leri profile.php'ye yönlendir
+# Örnek: /ahmet/ -> profile.php?username=ahmet
+RewriteRule ^([a-zA-Z0-9_-]{3,20})/?$ profile.php?username=$1 [L,QSA]
+
+# -----------------------------------------------------------------
+# 3. DİĞER TÜM İSTEKLERİ INDEX'E YÖNLENDİR
+# -----------------------------------------------------------------
+RewriteRule ^(.*)$ index.php [L,QSA]

@@ -1,0 +1,109 @@
+/* ========================================
+ *  4. KARTLAR - GÜNCELLENMİŞ
+ *  ======================================== */
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.card:hover {
+    transform: none;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+#info-panel {
+    background: var(--fixed-bg);
+    padding: 12px 18px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 0.95em;
+    border-left: 4px solid var(--accent-color);
+    margin-bottom: 15px;
+}
+
+/* Çizim Grid Stili */
+.drawing-card {
+    display: inline-block;
+    margin: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    background-color: var(--fixed-bg);
+    vertical-align: top;
+}
+
+.drawing-preview {
+    white-space: pre;
+    font-family: monospace;
+    font-size: 16px;
+    line-height: 1.1;
+    margin: 0;
+    padding: 8px;
+    background-color: var(--card-bg);
+    border-radius: 4px;
+    display: block;
+    overflow: hidden;
+}
+
+.drawing-preview[data-width="10"] {
+    width: auto;
+}
+
+.drawing-preview[data-width="11"] {
+    width: auto;
+}
+
+.drawing-preview {
+    height: 360px;
+}
+
+.drawings-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    width: 100%;
+}
+
+.profile-pic-small {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 5px;
+}
+
+.drawing-meta {
+    margin-top: 8px;
+    font-size: 10px;
+    line-height: 1.3;
+}
+
+.drawing-meta p {
+    margin: 2px 0;
+}
+
+.drawing-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.btn-action {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.btn-action:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-1px);
+}
