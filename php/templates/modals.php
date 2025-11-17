@@ -3,13 +3,13 @@
     <div class="modal-content">
         <button class="modal-close">❎</button>
         <h2>Giriş Yap</h2>
-        <form action="/login_handler" method="POST" class="auth-form">
+        <form action="<?php echo $site_url; ?>auth/login_handler.php" method="POST" class="auth-form">
             <input type="text" name="username" placeholder="Kullanıcı Adı" required>
             <input type="password" name="password" placeholder="Şifre" required>
             <button type="submit">Giriş Yap</button>
         </form>
         <div class="divider"><span>YA DA</span></div>
-        <a href="login.php" class="btn-google">
+        <a href="<?php echo $site_url; ?>auth/login.php" class="btn-google">
             <img src="<?php echo $site_url; ?>assets/img/google_logo.svg" alt="Google Logo" style="width: 20px; height: 20px; margin-right: 10px;">
             Google ile Giriş Yap
         </a>
@@ -24,7 +24,7 @@
     <div class="modal-content">
         <button class="modal-close">❎</button>
         <h2>Yeni Kayıt</h2>
-        <form action="/register" method="POST" class="auth-form">
+        <form action="<?php echo $site_url; ?>auth/register.php" method="POST" class="auth-form">
             <input type="text" name="username" placeholder="Kullanıcı Adı" required minlength="3" maxlength="20">
             <input type="email" name="email" placeholder="E-posta" required>
             <input type="password" name="password" placeholder="Şifre (Min 6 Karakter)" required minlength="6">
@@ -33,7 +33,7 @@
         </form>
         <div class="divider"><span>YA DA</span></div>
         <a href="<?php echo $site_url; ?>auth/login.php" class="btn-google">
-            <img src="google_logo.svg" alt="Google Logo" style="width: 20px; height: 20px; margin-right: 10px;">
+            <img src="<?php echo $site_url; ?>assets/img/google_logo.svg" alt="Google Logo" style="width: 20px; height: 20px; margin-right: 10px;">
             Google ile Kayıt Ol
         </a>
         <div class="auth-links">
@@ -168,3 +168,4 @@ style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8p
 <button class="theme-toggle-btn" onclick="toggleDarkMode()" title="Tema Değiştir">
     <span id="theme-icon">🌙</span>
 </button>
+<script src="<?php echo $baseSiteUrl; ?>assets/js/ui/modals.js"></script>

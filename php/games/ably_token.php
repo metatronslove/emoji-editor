@@ -1,13 +1,16 @@
 <?php
-// games/ably_token.php - TAMAMEN DÜZELTİLMİŞ VERSİYON
+// games/ably_token.php - DÜZELTİLMİŞ VERSİYON
 
 // TÜM hata ve çıktıları kapat
 ini_set('display_errors', 0);
 error_reporting(0);
-ob_start(); // Çıktı tamponlamasını başlat
+ob_start();
 
 try {
     require_once __DIR__ . '/../config.php';
+
+    // Ably SDK'sını manuel olarak yükle - DOĞRU YOL
+    require_once __DIR__ . '/../vendor/autoload.php';
 
     // Session başlat
     if (session_status() === PHP_SESSION_NONE) {
@@ -23,14 +26,14 @@ try {
     // CORS preflight isteği
     if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
         http_response_code(200);
-        ob_end_clean(); // Tamponu temizle
+        ob_end_clean();
         exit(0);
     }
 
     // Oturum kontrolü
     if (!isset($_SESSION['user_id'])) {
         http_response_code(401);
-        ob_end_clean(); // Tamponu temizle
+        ob_end_clean();
         echo json_encode(['error' => 'Oturum yok']);
         exit;
     }
@@ -43,8 +46,8 @@ try {
         throw new Exception('ABLY_API_KEY tanımlı değil');
     }
 
-    // Ably SDK'sını kullanarak token oluştur
-    $ably = new AblyRest(['key' => ABLY_API_KEY]);
+    // Ably SDK'sını başlat
+    $ably = new Ably\AblyRest(['key' => ABLY_API_KEY]);
 
     // Token oluştur
     $tokenDetails = $ably->auth->requestToken([
@@ -52,12 +55,12 @@ try {
         'ttl' => 3600000 // 1 saat
     ]);
 
-    // Tamponu temizle (olası tüm çıktıları kaldır)
+    // Tamponu temizle
     ob_end_clean();
 
-    // Başarılı yanıt - Ably'nin beklediği EXACT format
+    // Başarılı yanıt - Ably'nin beklediği format
     echo json_encode([
-        'token' => $tokenDetails
+        'token' => $tokenDetails->token
     ]);
 
 } catch (Exception $e) {

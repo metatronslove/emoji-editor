@@ -12,3 +12,8 @@
 @import url('utilities/responsive.css');
 @import url('utilities/animations.css');
 @import url('utilities/theme-toggle.css');
+
+/* Oyun stilleri */
+@import url('games/chess_styles.css');
+@import url('games/reversi_styles.css');
+@import url('games/tavla_styles.css');

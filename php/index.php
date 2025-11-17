@@ -83,3 +83,4 @@ require_once __DIR__ . '/templates/messages_modal.php';
 require_once __DIR__ . '/templates/emoji_editor_modal.php';
 require_once __DIR__ . '/templates/modals.php';
 require_once __DIR__ . '/templates/footer.php';
+?>

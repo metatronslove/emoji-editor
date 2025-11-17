@@ -1,129 +1,118 @@
-// OYUN SİSTEMİ - Basitleştirilmiş ve Düzeltilmiş
+// assets/js/features/game-system.js
 class GameSystem {
     constructor() {
         this.ably = null;
-        this.userChannel = null;
+        this.ablyChannel = null;
         this.isConnected = false;
+        this.currentGame = null;
+        this.pendingChallenges = [];
+        this.activeGames = [];
     }
 
     async init() {
-        console.log('🎮 GameSystem başlatılıyor...');
-        await this.initAbly();
-        this.bindEvents();
-
-        // Aktif oyunları yükle
-        setTimeout(() => {
-            this.loadActiveGames();
-        }, 1000);
-    }
-
-    // ABLY BAĞLANTISI
-    async initAbly() {
-        // Kullanıcı kontrolü
-        const userId = window.PROFILE_DATA?.currentUserId || window.currentUser?.id;
-        if (!userId) {
-            console.warn('❌ GameSystem: Kullanıcı ID bulunamadı');
-            return;
-        }
-
-        // Ably kütüphanesi kontrolü
-        if (typeof Ably === 'undefined') {
-            console.warn('❌ Ably kütüphanesi yüklenmemiş');
+        if (!window.currentUser || !window.currentUser.id) {
+            console.log('Game system: Kullanıcı girişi yok');
             return;
         }
 
         try {
-            console.log('🔗 Ably bağlantısı kuruluyor...');
+            await this.connectToAbly();
+            this.setupEventListeners();
+            this.loadActiveGames();
+            this.loadPendingChallenges();
 
+            console.log('🎮 Oyun sistemi başlatıldı');
+        } catch (error) {
+            console.error('Oyun sistemi başlatma hatası:', error);
+        }
+    }
+
+    async connectToAbly() {
+        try {
+            // Ably token al
+            const tokenResponse = await fetch(SITE_BASE_URL + 'games/ably_token.php');
+            const tokenData = await tokenResponse.json();
+
+            if (!tokenData.token) {
+                throw new Error('Token alınamadı');
+            }
+
+            // Ably client'ı başlat
             this.ably = new Ably.Realtime({
-                authUrl: SITE_BASE_URL + 'games/ably_token.php',
-                authMethod: 'GET',
-                clientId: 'user_' + userId
+                token: tokenData.token,
+                echoMessages: false
             });
 
             this.ably.connection.on('connected', () => {
-                console.log('✅ Ably bağlandı!');
                 this.isConnected = true;
-                this.subscribeToChannels();
+                console.log('🔗 Ably bağlantısı kuruldu');
+
+                // Kullanıcı kanalına abone ol
+                this.ablyChannel = this.ably.channels.get('user-' + window.currentUser.id);
+                this.ablyChannel.subscribe('game_event', (message) => {
+                    this.handleGameEvent(message.data);
+                });
             });
 
-            this.ably.connection.on('failed', (err) => {
-                console.error('❌ Ably bağlantı hatası:', err);
+            this.ably.connection.on('failed', () => {
                 this.isConnected = false;
+                console.error('❌ Ably bağlantısı başarısız');
             });
-
-        } catch (err) {
-            console.error('❌ Ably başlatma hatası:', err);
-        }
-    }
-
-    // KANAL ABONELİKLERİ
-    subscribeToChannels() {
-        const userId = window.PROFILE_DATA?.currentUserId || window.currentUser?.id;
-        if (!this.ably || !userId) return;
-
-        try {
-            // Kişisel kanal
-            this.userChannel = this.ably.channels.get('user-' + userId);
-
-            this.userChannel.subscribe('game_event', (message) => {
-                console.log('🎮 Game event:', message.data);
-                this.handleGameMessage(message.data);
-            });
-
-            console.log('✅ Kanal abonelikleri tamamlandı');
 
         } catch (error) {
-            console.error('❌ Kanal aboneliği hatası:', error);
+            console.error('Ably bağlantı hatası:', error);
+            this.isConnected = false;
         }
     }
 
-    // MEYDAN OKUMA SİSTEMİ
-    openChallengeModal(targetUserId, gameType) {
-        if (!this.checkAuth()) return;
+    setupEventListeners() {
+        // Oyun butonlarına event listener ekle
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('[data-game-challenge]')) {
+                this.handleGameChallenge(e.target);
+            }
 
-        const targetUsername = document.querySelector('.profile-username')?.textContent || 'Kullanıcı';
-        const gameName = this.getGameName(gameType);
+            if (e.target.matches('[data-accept-challenge]')) {
+                this.handleAcceptChallenge(e.target);
+            }
 
-        // Modal içeriğini ayarla
-        document.getElementById('game-challenge-title').textContent = `🎮 ${gameName} - ${targetUsername}`;
+            if (e.target.matches('[data-decline-challenge]')) {
+                this.handleDeclineChallenge(e.target);
+            }
+        });
 
-        document.getElementById('game-challenge-content').innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-        <div style="font-size: 48px; margin-bottom: 20px;">
-        ${this.getGameEmoji(gameType)}
-        </div>
-        <p style="margin-bottom: 20px;">
-        <strong>${targetUsername}</strong> kullanıcısına
-        <strong>${gameName}</strong> oyunu için meydan okumak üzeresiniz.
-        </p>
-        <div style="display: flex; gap: 10px; justify-content: center;">
-        <button onclick="gameSystem.sendChallenge(${targetUserId}, '${gameType}')" class="btn-primary">
-        🚀 Meydan Oku
-        </button>
-        <button onclick="gameSystem.closeChallengeModal()" class="btn-secondary">
-        İptal
-        </button>
-        </div>
-        </div>
-        `;
+        // Sayfa görünürlüğü değiştiğinde aktif oyunları yenile
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                this.loadActiveGames();
+                this.loadPendingChallenges();
+            }
+        });
 
-        // Modal'ı aç
-        const modal = document.getElementById('game-challenge-modal');
-        if (modal) {
-            modal.style.display = 'block';
-        }
+        // Her 30 saniyede bir aktif oyunları kontrol et
+        setInterval(() => {
+            this.loadActiveGames();
+            this.loadPendingChallenges();
+        }, 30000);
     }
 
-    async sendChallenge(targetUserId, gameType) {
-        if (!this.checkAuth()) return;
+    async handleGameChallenge(button) {
+        const targetId = button.dataset.targetId;
+        const gameType = button.dataset.gameType;
+
+        if (!targetId || !gameType) {
+            showNotification('Geçersiz oyun daveti parametreleri', 'error');
+            return;
+        }
 
         try {
             const response = await fetch(SITE_BASE_URL + 'games/send_challenge.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({
-                    challenged_id: targetUserId,
+                    challenged_id: targetId,
                     game_type: gameType
                 })
             });
@@ -131,340 +120,327 @@ class GameSystem {
             const result = await response.json();
 
             if (result.success) {
-                this.showNotification('Meydan okuma gönderildi!', 'success');
-                this.closeChallengeModal();
+                showNotification(result.message, 'success');
             } else {
-                this.showNotification(result.message, 'error');
+                showNotification(result.message, 'error');
             }
-
         } catch (error) {
-            console.error('Challenge gönderme hatası:', error);
-            this.showNotification('Meydan okuma gönderilemedi', 'error');
+            console.error('Oyun daveti gönderme hatası:', error);
+            showNotification('Davet gönderilirken hata oluştu', 'error');
         }
     }
 
-    async acceptChallenge(challengeId) {
+    async handleAcceptChallenge(button) {
+        const challengeId = button.dataset.challengeId;
+
         try {
             const response = await fetch(SITE_BASE_URL + 'games/accept_challenge.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ challenge_id: challengeId, action: 'accept' })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    challenge_id: challengeId,
+                    action: 'accept'
+                })
             });
 
             const result = await response.json();
 
             if (result.success) {
-                this.showNotification('Oyun kabul edildi!', 'success');
+                showNotification(result.message, 'success');
+                this.loadPendingChallenges();
+                this.loadActiveGames();
+
+                // Oyunu başlat
+                if (result.game_id) {
+                    this.openGameModal(result.game_id);
+                }
             } else {
-                this.showNotification(result.message, 'error');
+                showNotification(result.message, 'error');
             }
         } catch (error) {
-            console.error('Challenge kabul hatası:', error);
-            this.showNotification('İşlem başarısız', 'error');
+            console.error('Davet kabul etme hatası:', error);
+            showNotification('Davet kabul edilirken hata oluştu', 'error');
         }
     }
 
-    async declineChallenge(challengeId) {
+    async handleDeclineChallenge(button) {
+        const challengeId = button.dataset.challengeId;
+
         try {
-            await fetch(SITE_BASE_URL + 'games/decline_challenge.php', {
+            const response = await fetch(SITE_BASE_URL + 'games/decline_challenge.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ challenge_id: challengeId })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    challenge_id: challengeId
+                })
             });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification(result.message, 'success');
+                this.loadPendingChallenges();
+            } else {
+                showNotification(result.message, 'error');
+            }
         } catch (error) {
-            console.error('Challenge reddetme hatası:', error);
+            console.error('Davet reddetme hatası:', error);
+            showNotification('Davet reddedilirken hata oluştu', 'error');
         }
     }
 
-    closeChallengeModal() {
-        const modal = document.getElementById('game-challenge-modal');
-        if (modal) {
-            modal.style.display = 'none';
+    async loadActiveGames() {
+        try {
+            const response = await fetch(SITE_BASE_URL + 'games/get_active_games.php');
+            const result = await response.json();
+
+            if (result.success) {
+                this.activeGames = result.games || [];
+                this.updateActiveGamesDisplay();
+            }
+        } catch (error) {
+            console.error('Aktif oyunlar yüklenirken hata:', error);
         }
     }
 
-    // OYUN SİSTEMİ
-    startGame(gameData) {
-        this.showNotification('Oyun başladı! İyi eğlenceler!', 'success');
-        this.openGameModal(gameData);
-    }
+    async loadPendingChallenges() {
+        try {
+            const response = await fetch(SITE_BASE_URL + 'core/get_pending_challenges.php');
+            const result = await response.json();
 
-    openGameModal(gameData) {
-        document.getElementById('game-modal-title').textContent =
-        `${this.getGameName(gameData.game_type)} - ${gameData.opponent_username}`;
-
-        this.loadGameInterface(gameData);
-
-        const modal = document.getElementById('game-modal');
-        if (modal) {
-            modal.style.display = 'block';
+            if (result.success) {
+                this.pendingChallenges = result.challenges || [];
+                this.updatePendingChallengesDisplay();
+            }
+        } catch (error) {
+            console.error('Bekleyen davetler yüklenirken hata:', error);
         }
     }
 
-    loadGameInterface(gameData) {
-        const content = document.getElementById('game-modal-content');
-        const gameEmoji = this.getGameEmoji(gameData.game_type);
+    updateActiveGamesDisplay() {
+        const container = document.getElementById('active-games-list');
+        if (!container) return;
 
-        content.innerHTML = `
-        <div style="display: flex; flex-direction: column; height: 100%; max-width: 800px; margin: 0 auto;">
-        <!-- Oyun Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #ccc;">
+        if (this.activeGames.length === 0) {
+            container.innerHTML = '<p style="opacity: 0.7; text-align: center;">Aktif oyununuz yok</p>';
+            return;
+        }
+
+        container.innerHTML = this.activeGames.map(game => `
+        <div class="active-game-item" style="
+        padding: 10px;
+        margin-bottom: 8px;
+        background: var(--fixed-bg);
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        ">
         <div>
-        <span style="font-size: 24px;">${gameEmoji}</span>
-        <span style="margin-left: 10px; font-weight: bold;">${this.getGameName(gameData.game_type)}</span>
+        <strong>${this.getGameEmoji(game.game_type)} ${this.getGameName(game.game_type)}</strong>
+        <br>
+        <small>vs ${game.opponent_username}</small>
         </div>
-        <div id="game-turn-indicator" style="font-size: 14px; opacity: 0.8;">
-        Rakip bekleniyor...
-        </div>
-        </div>
-
-        <!-- Oyun Tahtası -->
-        <div id="game-board-container" style="flex: 1; padding: 20px; text-align: center;">
-        <div style="font-size: 48px; margin: 40px 0;">
-        ${gameEmoji} Oyun Tahtası
-        </div>
-        <div style="margin-top: 20px; font-size: 14px;">
-        Oyun yükleniyor...
-        </div>
-        </div>
-
-        <!-- Kontroller -->
-        <div style="padding: 15px; border-top: 1px solid #ccc; text-align: center;">
-        <button onclick="gameSystem.closeGameModal()" class="btn-secondary">
-        ← Geri Dön
+        <div>
+        ${game.is_my_turn ?
+            '<span style="color: #4CAF50;">▶️ Sıra sizde</span>' :
+            '<span style="opacity: 0.7;">⏸️ Rakibin sırası</span>'
+        }
+        <br>
+        <button onclick="gameSystem.openGameModal(${game.game_id})"
+        class="btn-primary btn-sm"
+        style="margin-top: 5px; padding: 4px 8px; font-size: 12px;">
+        Oyna
         </button>
         </div>
         </div>
-        `;
-
-        // Oyun tahtasını yükle
-        this.loadGameBoard(gameData.game_type, gameData.game_id);
+        `).join('');
     }
 
-    loadGameBoard(gameType, gameId) {
-        const container = document.getElementById('game-board-container');
+    updatePendingChallengesDisplay() {
+        // Profil sayfasındaki takip istekleri bölümünü kullan
+        const container = document.getElementById('follow-requests-list');
+        if (!container || this.pendingChallenges.length === 0) return;
 
-        // Basit oyun tahtası - gerçek implementasyon için hazır
-        container.innerHTML += `
-        <div style="background: #f0f0f0; padding: 20px; border-radius: 10px; margin: 20px auto; max-width: 400px;">
-        <p><strong>${this.getGameName(gameType)} Tahtası</strong></p>
-        <p>Oyun ID: ${gameId}</p>
-        <p>⚡ Gerçek oyun tahtası buraya yüklenecek</p>
+        const challengeHTML = this.pendingChallenges.map(challenge => `
+        <div class="challenge-item" style="
+        padding: 12px;
+        margin-bottom: 10px;
+        background: var(--fixed-bg);
+        border-radius: 8px;
+        border: 2px solid var(--accent-color);
+        ">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <img src="${challenge.challenger_picture || '/images/default.png'}"
+        alt="Profil"
+        style="width: 40px; height: 40px; border-radius: 50%;">
+        <div>
+        <strong>${challenge.challenger_username}</strong>
+        <br>
+        <span>${challenge.game_name} oyunu için meydan okudu</span>
+        </div>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: space-between;">
+        <button data-accept-challenge data-challenge-id="${challenge.id}"
+        class="btn-success btn-sm"
+        style="flex: 1;">
+        ✅ Kabul Et
+        </button>
+        <button data-decline-challenge data-challenge-id="${challenge.id}"
+        class="btn-danger btn-sm"
+        style="flex: 1;">
+        ❌ Reddet
+        </button>
+        </div>
+        <div style="text-align: center; margin-top: 8px; font-size: 0.8em; opacity: 0.7;">
+        ${challenge.formatted_time}
+        </div>
+        </div>
+        `).join('');
+
+        // Mevcut içeriğin yanına ekle
+        container.innerHTML = challengeHTML + container.innerHTML;
+    }
+
+    handleGameEvent(event) {
+        console.log('Oyun eventi alındı:', event);
+
+        switch (event.type) {
+            case 'challenge_received':
+                this.showChallengeNotification(event);
+                this.loadPendingChallenges();
+                break;
+
+            case 'challenge_accepted':
+                showNotification(`${event.challenger_username} davetinizi kabul etti!`, 'success');
+                this.loadActiveGames();
+                break;
+
+            case 'challenge_declined':
+                showNotification(`${event.challenger_username} davetinizi reddetti.`, 'warning');
+                break;
+
+            case 'game_move':
+                if (this.currentGame && this.currentGame.id === event.game_id) {
+                    this.updateGameBoard(event.game_state);
+                }
+                break;
+
+            case 'game_end':
+                showNotification(`Oyun bitti: ${event.result}`, 'info');
+                if (this.currentGame && this.currentGame.id === event.game_id) {
+                    this.closeGameModal();
+                }
+                this.loadActiveGames();
+                break;
+        }
+    }
+
+    showChallengeNotification(event) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--card-bg);
+        border: 2px solid var(--accent-color);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        max-width: 300px;
+        `;
+
+        notification.innerHTML = `
+        <strong>🎮 Oyun Daveti!</strong>
+        <p>${event.challenger_username} size ${this.getGameName(event.game_type)} oyunu için meydan okudu.</p>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button onclick="gameSystem.handleAcceptFromNotification(${event.challenge_id})"
+        class="btn-success btn-sm">
+        ✅ Kabul
+        </button>
+        <button onclick="gameSystem.handleDeclineFromNotification(${event.challenge_id})"
+        class="btn-danger btn-sm">
+        ❌ Reddet
+        </button>
         </div>
         `;
-    }
 
-    closeGameModal() {
-        const modal = document.getElementById('game-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
+        document.body.appendChild(notification);
 
-    // AKTİF OYUNLARI YÜKLE
-    async loadActiveGames() {
-        const userId = window.PROFILE_DATA?.currentUserId || window.currentUser?.id;
-        if (!userId) return;
-
-        try {
-            const response = await fetch(SITE_BASE_URL + 'games/get_active_games.php');
-            const responseText = await response.text();
-
-            let result;
-            try {
-                result = JSON.parse(responseText);
-            } catch (parseError) {
-                console.error('JSON parse hatası:', parseError);
-                return;
+        // 30 saniye sonra otomatik kaldır
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
             }
-
-            const container = document.getElementById('active-games-list');
-            if (!container) return;
-
-            if (result.success && result.games && result.games.length > 0) {
-                container.innerHTML = result.games.map(game => `
-                <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 8px; background: #f9f9f9;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                <strong>${this.getGameEmoji(game.game_type)} ${this.getGameName(game.game_type)}</strong>
-                <div style="font-size: 0.9em; opacity: 0.8;">vs ${game.opponent_username}</div>
-                </div>
-                <button onclick="gameSystem.startGame(${JSON.stringify(game).replace(/"/g, '&quot;')})"
-                class="btn-primary btn-sm">
-                🔄 Devam Et
-                </button>
-                </div>
-                </div>
-                `).join('');
-            } else {
-                container.innerHTML = '<p style="opacity: 0.7; text-align: center;">Aktif oyun bulunmuyor.</p>';
-            }
-
-        } catch (error) {
-            console.error('Aktif oyunlar yüklenirken hata:', error);
-            const container = document.getElementById('active-games-list');
-            if (container) {
-                container.innerHTML = '<p style="opacity: 0.7; text-align: center; color: red;">Oyunlar yüklenirken hata oluştu.</p>';
-            }
-        }
+        }, 30000);
     }
 
-    // MESAJ İŞLEME
-    handleGameMessage(data) {
-        console.log('🎮 Game mesajı:', data);
-
-        switch (data.type) {
-            case 'challenge_received':
-                this.showChallengeNotification(data);
-                break;
-            case 'challenge_accepted':
-                this.showNotification(`${data.opponent_username} meydan okumanızı kabul etti!`, 'success');
-                break;
-            case 'challenge_declined':
-                this.showNotification(`${data.declined_by_username} meydan okumanızı reddetti.`, 'warning');
-                break;
-            case 'game_move':
-                this.handleGameMove(data);
-                break;
-            case 'game_ended':
-                this.handleGameEnd(data);
-                break;
-        }
+    async handleAcceptFromNotification(challengeId) {
+        await this.handleAcceptChallenge({ dataset: { challengeId: challengeId } });
+        this.removeChallengeNotification();
     }
 
-    showChallengeNotification(data) {
-        const gameName = this.getGameName(data.game_type);
-        const challengerName = data.challenger_username;
-
-        if (confirm(`${challengerName} sizi ${gameName} oyununa davet ediyor!\n\nKabul etmek istiyor musunuz?`)) {
-            this.acceptChallenge(data.challenge_id);
-        } else {
-            this.declineChallenge(data.challenge_id);
-        }
+    async handleDeclineFromNotification(challengeId) {
+        await this.handleDeclineChallenge({ dataset: { challengeId: challengeId } });
+        this.removeChallengeNotification();
     }
 
-    handleGameMove(data) {
-        console.log('🎯 Rakip hamlesi:', data);
-        this.showNotification('Rakip hamle yaptı!', 'info');
-
-        // Tahta güncelleme event'i
-        const event = new CustomEvent('opponentMove', { detail: data });
-        document.dispatchEvent(event);
-    }
-
-    handleGameEnd(data) {
-        const userId = window.PROFILE_DATA?.currentUserId || window.currentUser?.id;
-        let message = 'Oyun sona erdi.';
-        let type = 'info';
-
-        if (data.winner_id === userId) {
-            message = '🎉 Tebrikler! Oyunu kazandınız!';
-            type = 'success';
-        } else if (data.winner_id) {
-            message = `😞 Maalesef rakibiniz oyunu kazandı.`;
-            type = 'warning';
-        }
-
-        this.showNotification(message, type);
-        this.closeGameModal();
-        this.loadActiveGames();
-    }
-
-    // YARDIMCI FONKSİYONLAR
-    checkAuth() {
-        const isAuthenticated = !!(window.PROFILE_DATA?.currentUserId || window.currentUser?.id);
-        if (!isAuthenticated) {
-            this.showNotification('Önce giriş yapmalısınız!', 'error');
-        }
-        return isAuthenticated;
-    }
-
-    showNotification(message, type = 'info') {
-        // Basit notification - mevcut sisteminizle değiştirebilirsiniz
-        console.log(`Notification [${type}]:`, message);
-
-        if (typeof showNotification === 'function') {
-            showNotification(message, type);
-        } else {
-            alert(`${type.toUpperCase()}: ${message}`);
+    removeChallengeNotification() {
+        const notification = document.querySelector('[style*="position: fixed"][style*="top: 20px"][style*="right: 20px"]');
+        if (notification) {
+            notification.remove();
         }
     }
 
     getGameEmoji(gameType) {
         const emojis = {
-            chess: '♟️',
-            reversi: '🔴',
-            tavla: '🎲'
+            'chess': '♟️',
+            'reversi': '🔴',
+            'tavla': '🎲'
         };
         return emojis[gameType] || '🎮';
     }
 
     getGameName(gameType) {
         const names = {
-            chess: 'Satranç',
-            reversi: 'Reversi',
-            tavla: 'Tavla'
+            'chess': 'Satranç',
+            'reversi': 'Reversi',
+            'tavla': 'Tavla'
         };
         return names[gameType] || 'Oyun';
     }
 
-    // EVENT BINDING
-    bindEvents() {
-        // Challenge butonları
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('[data-game-challenge]')) {
-                const targetId = e.target.getAttribute('data-target-id');
-                const gameType = e.target.getAttribute('data-game-type');
-                this.openChallengeModal(targetId, gameType);
-            }
-        });
+    openGameModal(gameId) {
+        // Oyun modalını açma kodu buraya gelecek
+        console.log('Oyun modalı açılıyor:', gameId);
+        showNotification('Oyun modülü hazırlanıyor...', 'info');
+    }
 
-        // ESC tuşu ile modal kapatma
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeChallengeModal();
-                this.closeGameModal();
-            }
-        });
+    closeGameModal() {
+        // Oyun modalını kapatma kodu buraya gelecek
+        this.currentGame = null;
+    }
 
-        // Modal dışına tıklama ile kapatma
-        document.addEventListener('click', (e) => {
-            if (e.target.id === 'game-challenge-modal') {
-                this.closeChallengeModal();
-            }
-            if (e.target.id === 'game-modal') {
-                this.closeGameModal();
-            }
-        });
-
-        // Aktif oyunları periyodik yenile
-        setInterval(() => {
-            this.loadActiveGames();
-        }, 30000);
+    updateGameBoard(gameState) {
+        // Oyun tahtasını güncelleme kodu buraya gelecek
+        console.log('Oyun tahtası güncelleniyor:', gameState);
     }
 }
 
-// GLOBAL INSTANCE
-const gameSystem = new GameSystem();
+// Global game system instance
+window.gameSystem = new GameSystem();
 
-// COMPATIBILITY FONKSİYONLARI
-function openGameChallengeModal(targetUserId, gameType) {
-    gameSystem.openChallengeModal(targetUserId, gameType);
-}
-
-function closeGameChallengeModal() {
-    gameSystem.closeChallengeModal();
-}
-
-function closeGameModal() {
-    gameSystem.closeGameModal();
-}
-
-function loadActiveGames() {
-    gameSystem.loadActiveGames();
-}
-
-// OTOMATİK BAŞLATMA
-document.addEventListener('DOMContentLoaded', () => {
-    gameSystem.init();
+// Sayfa yüklendiğinde oyun sistemini başlat
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        if (window.gameSystem) {
+            window.gameSystem.init();
+        }
+    }, 2000);
 });

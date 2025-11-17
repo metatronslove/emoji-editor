@@ -9,6 +9,7 @@ $isLoggedIn = false;
 $userRole = 'user';
 $username = '';
 $site_url = BASE_SITE_URL;
+$baseSiteUrl = BASE_SITE_URL . '../';
 
 if (class_exists('Auth') && method_exists('Auth', 'isLoggedIn')) {
     $isLoggedIn = Auth::isLoggedIn();
@@ -44,8 +45,38 @@ $totalViews = $counters['total_views'] ?? 0;
     <title><?php echo $pageTitle ?? 'Emoji Piksel Sanatı'; ?></title>
     <link rel="stylesheet" href="<?php echo $site_url; ?>assets/css/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 1. ÖNCE Core kütüphaneler -->
+    <script src="<?php echo $baseSiteUrl; ?>assets/js/core/constants.js"></script>
+    <script src="<?php echo $baseSiteUrl; ?>assets/js/core/utils.js"></script>
+    <script src="<?php echo $baseSiteUrl; ?>assets/js/core/theme.js"></script>
+    <script src="<?php echo $baseSiteUrl; ?>assets/js/core/online.js"></script>
     <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
 </head>
 <body>
+<!-- Global değişkenleri EN BAŞTA tanımla -->
+<script>
+// KRİTİK GLOBAL DEĞİŞKENLER
+window.SITE_BASE_URL = <?php echo json_encode($baseSiteUrl); ?>;
+window.APP_DATA = {
+    isLoggedIn: <?php echo json_encode($isLoggedIn); ?>,
+    userRole: <?php echo json_encode($userRole); ?>,
+    currentUserId: <?php echo json_encode($currentUserId); ?>,
+    totalViews: <?php echo json_encode($totalViews); ?>
+};
+window.currentUser = {
+    id: <?php echo json_encode($_SESSION['user_id'] ?? null); ?>,
+    username: <?php echo json_encode($_SESSION['username'] ?? null); ?>,
+    role: <?php echo json_encode($_SESSION['role'] ?? 'user'); ?>,
+    isAdmin: <?php echo json_encode(($_SESSION['role'] ?? 'user') === 'admin'); ?>
+};
+
+// Ably konfigürasyonu
+window.ABLY_CONFIG = {
+    enabled: <?php echo json_encode($isLoggedIn); ?>,
+    autoConnect: true,
+    reconnectAttempts: 5
+};
+</script>
     <!-- FÜTÜRİSTİK ARKA PLAN -->
     <div id="background-grid"></div>
+    <main>

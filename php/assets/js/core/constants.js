@@ -1,4 +1,35 @@
-// Sabitler ve yapılandırma
+// assets/js/core/constants.js
+
+// KRİTİK: Global değişken güvenliği
+(function() {
+    // SITE_BASE_URL güvenli tanımlama
+    if (typeof window.SITE_BASE_URL === 'undefined') {
+        console.warn('⚠️ SITE_BASE_URL tanımlı değil, otomatik belirleniyor...');
+        window.SITE_BASE_URL = window.location.protocol + '//' + window.location.host + '/';
+    }
+
+    // APP_DATA güvenli tanımlama
+    if (typeof window.APP_DATA === 'undefined') {
+        window.APP_DATA = {
+            isLoggedIn: false,
+ userRole: 'user',
+ currentUserId: null,
+ totalViews: 0
+        };
+    }
+
+    // currentUser güvenli tanımlama
+    if (typeof window.currentUser === 'undefined') {
+        window.currentUser = {
+            id: null,
+ username: null,
+ role: 'user',
+ isAdmin: false
+        };
+    }
+})();
+
+// SABİT DEĞERLER - Değiştirilemez
 const EMOJI_JSON_URL = SITE_BASE_URL + 'assets/json/emoji.json';
 const SAVE_DRAWING_URL = SITE_BASE_URL + 'core/save_drawing.php';
 const LOAD_DRAWING_URL = SITE_BASE_URL + 'core/load_drawing.php';
@@ -8,7 +39,7 @@ const DEFAULT_MATRIX_WIDTH = 11;
 const SP_BS_MATRIX_WIDTH = 10;
 const DEFAULT_HEART = '🖤';
 
-// Global değişkenler
+// Global uygulama değişkenleri - Dikkatli kullanılmalı
 let matrix = [];
 let selectedEmoji = null;
 let emojiCategories = {};
@@ -16,55 +47,8 @@ let currentCategory = null;
 let allConversations = [];
 let currentMessageReceiver = null;
 
-// Sabit değerler
-const Constants = {
-    MAX_CHARACTERS: 200,
-    SEPARATORS: {
-        NONE: 'none',
-        ZWNJ: 'ZWNJ',
-        ZWSP: 'ZWSP',
-        ZWJ: 'ZWJ',
-        WJ: 'WJ',
-        SHY: 'SHY',
-        HAIR: 'HAIR',
-        LRM: 'LRM',
-        RLM: 'RLM',
-        ZWNBSP: 'ZWNBSP',
-        LRE: 'LRE',
-        RLE: 'RLE',
-        PDF: 'PDF',
-        LRI: 'LRI',
-        RLI: 'RLI',
-        PDI: 'PDI',
-        CGJ: 'CGJ',
-        SP_BS: 'SP_BS'
-    },
-    GAME_TYPES: {
-        CHESS: 'chess',
-        REVERSI: 'reversi',
-        TAVLA: 'tavla'
-    },
-    MESSAGE_TYPES: {
-        TEXT: 'text',
-        IMAGE: 'image',
-        VIDEO: 'video',
-        AUDIO: 'audio',
-        FILE: 'file'
-    },
-    GAME_NAMES: {
-        'chess': 'Satranç',
-        'reversi': 'Reversi',
-        'tavla': 'Tavla'
-    },
-    GAME_EMOJIS: {
-        'chess': '♟️',
-        'reversi': '🔴',
-        'tavla': '🎲'
-    }
-};
-
-// Ayırıcı karakterler
-const SEPARATOR_MAP = {
+// Ayırıcı karakter sabitleri
+const SEPARATOR_MAP = Object.freeze({
     'none': { char: '', length: 0, name: 'Hiçbiri' },
     'ZWNJ': { char: '\u200C', name: 'ZWNJ' },
     'ZWSP': { char: '\u200B', name: 'ZWSP' },
@@ -83,131 +67,102 @@ const SEPARATOR_MAP = {
     'PDI': { char: '\u2069', name: 'PDI' },
     'CGJ': { char: '\u034F', name: 'CGJ' },
     'SP_BS': { char: '\u0020\u0008', name: 'Space + Backspace' }
-};
+});
 
+// Matris değişkenleri
 let currentMatrixWidth = DEFAULT_MATRIX_WIDTH;
-let selectedHeart = { emoji: DEFAULT_HEART, chars: 0, name: 'black heart' };
+let selectedHeart = { emoji: DEFAULT_HEART, chars: 1, name: 'Siyah Kalp' };
 
-// DOM element referansları
-const DOM_ELEMENTS = {
-    // Matrix elements
-    firstRowLengthInput: document.getElementById('firstRowLength'),
-    matrixTable: document.getElementById('matrix'),
-    currentCharsSpan: document.getElementById('currentChars'),
-    charWarningSpan: document.getElementById('charWarning'),
-    matrixContainer: document.getElementById('matrix-container'),
+// DOM element referansları - FONKSİYON olarak
+function getDomElements() {
+    const elements = {
+        // Matrix elements
+        firstRowLengthInput: document.getElementById('firstRowLength'),
+        matrixTable: document.getElementById('matrix'),
+        currentCharsSpan: document.getElementById('currentChars'),
+        charWarningSpan: document.getElementById('charWarning'),
+        matrixContainer: document.getElementById('matrix-container'),
 
-    // Modal elements
-    guideModal: document.getElementById('guide-modal'),
-    showGuideButton: document.getElementById('showGuideButton'),
-    closeGuideButton: document.getElementById('close-guide-btn'),
-    confirmModal: document.getElementById('confirm-modal'),
-    modalTitle: document.getElementById('modal-title'),
-    modalMessage: document.getElementById('modal-message'),
-    modalConfirm: document.getElementById('modal-confirm'),
-    modalCancel: document.getElementById('modal-cancel'),
+        // Modal elements
+        guideModal: document.getElementById('guide-modal'),
+        showGuideButton: document.getElementById('showGuideButton'),
+        closeGuideButton: document.getElementById('close-guide-btn'),
+        confirmModal: document.getElementById('confirm-modal'),
+        modalTitle: document.getElementById('modal-title'),
+        modalMessage: document.getElementById('modal-message'),
+        modalConfirm: document.getElementById('modal-confirm'),
+        modalCancel: document.getElementById('modal-cancel'),
 
-    // Button elements
-    updateMatrixButton: document.getElementById('updateMatrixButton'),
-    copyButton: document.getElementById('copyButton'),
-    importButton: document.getElementById('importButton'),
-    saveButton: document.getElementById('saveButton'),
-    loadButton: document.getElementById('loadButton'),
-    fileInput: document.getElementById('fileInput'),
-    clearButton: document.getElementById('clearButton'),
+        // Button elements
+        updateMatrixButton: document.getElementById('updateMatrixButton'),
+        copyButton: document.getElementById('copyButton'),
+        importButton: document.getElementById('importButton'),
+        saveButton: document.getElementById('saveButton'),
+        loadButton: document.getElementById('loadButton'),
+        fileInput: document.getElementById('fileInput'),
+        clearButton: document.getElementById('clearButton'),
 
-    // Emoji elements
-    colorOptionsContainer: document.getElementById('color-options-container'),
-    categoryTabsContainer: document.getElementById('category-tabs'),
-    currentBrushEmoji: document.getElementById('current-brush-emoji'),
-    currentBrushName: document.getElementById('current-brush-name'),
-    separatorSelect: document.getElementById('separator-select'),
+        // Emoji elements
+        colorOptionsContainer: document.getElementById('color-options-container'),
+        categoryTabsContainer: document.getElementById('category-tabs'),
+        currentBrushEmoji: document.getElementById('current-brush-emoji'),
+        currentBrushName: document.getElementById('current-brush-name'),
+        separatorSelect: document.getElementById('separator-select'),
 
-    // Notification element
-    notification: document.getElementById('notification'),
+        // Notification element
+        notification: document.getElementById('notification')
+    };
 
-    // Drawing elements
-    DRAWING_LIST_ELEMENT: document.getElementById('user-drawing-list'),
-    PAGINATION_ELEMENT: document.getElementById('pagination'),
-    FOLLOWING_FEED_ELEMENT: document.getElementById('following-feed-list'),
-
-    // Message elements
-    replyInput: document.getElementById('reply-input'),
-    replyFileInput: document.getElementById('reply-file-input'),
-    conversationsContainer: document.getElementById('conversations-container'),
-    conversationMessages: document.getElementById('conversation-messages'),
-    conversationWith: document.getElementById('conversation-with'),
-    replySection: document.getElementById('reply-section'),
-
-    // Profile board elements
-    boardCommentInput: document.getElementById('boardCommentInput'),
-    boardFileInput: document.getElementById('boardFileInput'),
-    boardFileInfo: document.getElementById('boardFileInfo'),
-    boardFileName: document.getElementById('boardFileName'),
-    boardCommentsList: document.getElementById('board-comments-list'),
-
-    // Fallback mekanizması
-    _createFallback: function() {
-        // Notification container fallback
-        if (!this.notification) {
-            this.notification = document.createElement('div');
-            this.notification.id = 'notification';
-            this.notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000;';
-            document.body.appendChild(this.notification);
-        }
-
-        // Diğer kritik elementler için fallback
-        const criticalElements = ['matrixTable', 'currentCharsSpan', 'charWarningSpan'];
-        criticalElements.forEach(element => {
-            if (!this[element]) {
-                console.warn(`${element} bulunamadı, fallback oluşturuluyor...`);
-                this[element] = document.createElement('div');
-            }
-        });
-
-        return this;
+    // Fallback mekanizması - kritik elementler
+    if (!elements.notification) {
+        elements.notification = document.createElement('div');
+        elements.notification.id = 'notification';
+        elements.notification.style.cssText = 'position:fixed;top:20px;right:20px;z-index:10000;padding:10px;border-radius:5px;display:none;';
+        document.body.appendChild(elements.notification);
     }
-};
+
+    return elements;
+}
 
 // API Endpoints
-const API_ENDPOINTS = {
+const API_ENDPOINTS = Object.freeze({
     // User endpoints
-    login: '/core/login.php',
-    register: '/core/register.php',
-    logout: '/core/logout.php',
+    login: 'auth/login.php',
+    register: 'auth/register.php',
+    logout: 'auth/logout.php',
 
     // Drawing endpoints
-    saveDrawing: '/core/save_drawing.php',
-    listDrawings: '/core/list_drawings.php',
-    fetchDrawing: '/core/fetch_drawing.php',
-    fetchUserDrawings: '/core/fetch_user_drawings.php',
+    saveDrawing: 'core/save_drawing.php',
+    listDrawings: 'core/list_drawings.php',
+    fetchDrawing: 'core/fetch_drawing.php',
+    fetchUserDrawings: 'core/fetch_user_drawings.php',
 
     // Game endpoints
-    createGame: '/core/create_game.php',
-    joinGame: '/core/join_game.php',
-    makeMove: '/core/make_move.php',
-    activeGames: '/core/get_active_games.php',
+    createGame: 'core/create_game.php',
+    joinGame: 'core/join_game.php',
+    makeMove: 'core/make_move.php',
+    activeGames: 'games/get_active_games.php',
 
     // Social endpoints
-    followUser: '/actions/follow_action.php',
-    sendMessage: '/actions/message_action.php',
-    postComment: '/actions/comment_action.php',
-    blockUser: '/actions/block_action.php',
+    followUser: 'actions/follow_action.php',
+    sendMessage: 'actions/message_action.php',
+    postComment: 'actions/comment_action.php',
+    blockUser: 'actions/block_action.php',
 
     // Profile endpoints
-    profilePicture: '/core/upload_profile_picture.php',
-    updateUsername: '/core/update_username.php',
-    socialLinks: '/core/profile_social_links.php',
-    getSocialLinks: '/core/get_user_social_links.php',
-    getSocialPlatforms: '/core/get_social_platforms.php',
-    fetchComments: '/core/fetch_comments.php',
-    fetchFollowRequests: '/core/fetch_follow_requests.php',
-    manageFollowRequest: '/core/manage_follow_request.php',
-    getUserActivities: '/core/get_user_activities.php'
-};
+    profilePicture: 'core/upload_profile_picture.php',
+    updateUsername: 'core/update_username.php',
+    socialLinks: 'core/profile_social_links.php',
+    getSocialLinks: 'core/get_user_social_links.php',
+    getSocialPlatforms: 'core/get_social_platforms.php',
+    fetchComments: 'core/fetch_comments.php',
+    fetchFollowRequests: 'core/fetch_follow_requests.php',
+    manageFollowRequest: 'core/manage_follow_request.php',
+    getUserActivities: 'core/get_user_activities.php'
+});
 
 // Game Constants
-const GAME_CONSTANTS = {
+const GAME_CONSTANTS = Object.freeze({
     CHESS: {
         BOARD_SIZE: 8,
         PIECES: {
@@ -234,65 +189,28 @@ const GAME_CONSTANTS = {
             WHITE: '⚪'
         }
     }
-};
-
-// Drawing Constants
-const DRAWING_CONSTANTS = {
-    CANVAS: {
-        WIDTH: 800,
-        HEIGHT: 600,
-        BACKGROUND_COLOR: '#FFFFFF'
-    },
-    BRUSH: {
-        MIN_SIZE: 1,
-        MAX_SIZE: 50,
-        DEFAULT_SIZE: 5
-    },
-    COLORS: {
-        BLACK: '#000000',
-        WHITE: '#FFFFFF',
-        RED: '#FF0000',
-        GREEN: '#00FF00',
-        BLUE: '#0000FF',
-        YELLOW: '#FFFF00'
-    }
-};
-
-// Notification Constants
-const NOTIFICATION_CONSTANTS = {
-    TYPES: {
-        SUCCESS: 'success',
-        ERROR: 'error',
-        WARNING: 'warning',
-        INFO: 'info'
-    },
-    DURATION: {
-        SHORT: 3000,
-        MEDIUM: 5000,
-        LONG: 10000
-    },
-    POSITIONS: {
-        TOP_RIGHT: 'top-right',
-        TOP_LEFT: 'top-left',
-        BOTTOM_RIGHT: 'bottom-right',
-        BOTTOM_LEFT: 'bottom-left'
-    }
-};
-
-// DOM yüklendikten sonra fallback'leri oluştur
-document.addEventListener('DOMContentLoaded', function() {
-    DOM_ELEMENTS._createFallback();
-
-    // Global değişkenleri kontrol et
-    if (typeof window.SITE_BASE_URL === 'undefined') {
-        window.SITE_BASE_URL = 'https://flood.page.gd/';
-    }
-
-    if (typeof window.currentUser === 'undefined') {
-        window.currentUser = {
-            id: null,
-            username: null,
-            role: 'user'
-        };
-    }
 });
+
+// Sistem sabitleri
+const SYSTEM_CONSTANTS = Object.freeze({
+    VERSION: '1.0.0',
+    MAX_FILE_SIZE: 2097152, // 2MB
+    ALLOWED_FILE_TYPES: [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav',
+        'application/pdf', 'text/plain'
+    ],
+    REQUEST_TIMEOUT: 10000,
+    DEBOUNCE_DELAY: 300
+});
+
+// Hata mesajları
+const ERROR_MESSAGES = Object.freeze({
+    NETWORK_ERROR: 'Ağ hatası. Lütfen bağlantınızı kontrol edin.',
+    SERVER_ERROR: 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.',
+    UNAUTHORIZED: 'Bu işlem için giriş yapmalısınız.',
+    PERMISSION_DENIED: 'Bu işlemi yapmaya yetkiniz yok.',
+    INVALID_FILE: 'Geçersiz dosya türü veya boyutu.'
+});
+
+console.log('✅ Constants.js başarıyla yüklendi');

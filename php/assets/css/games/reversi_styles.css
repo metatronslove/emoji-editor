@@ -1,0 +1,366 @@
+/* Reversi tahtası ve oyun stilleri */
+.reversi-game-container {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.reversi-board {
+    display: grid;
+    grid-template-columns: repeat(8, 60px);
+    grid-template-rows: repeat(8, 60px);
+    gap: 2px;
+    background: #2a9d8f;
+    padding: 10px;
+    border-radius: 8px;
+    margin: 0 auto;
+    border: 3px solid #264653;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.reversi-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2a9d8f;
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.reversi-cell:hover {
+    background: rgba(42, 157, 143, 0.8);
+    transform: scale(1.05);
+    z-index: 2;
+}
+
+.reversi-cell.valid-move {
+    background: rgba(142, 202, 230, 0.6);
+    cursor: pointer;
+    animation: pulse-valid 2s infinite;
+}
+
+.reversi-cell.valid-move::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: rgba(233, 196, 106, 0.6);
+    border-radius: 50%;
+    animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-valid {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes glow {
+    from { box-shadow: 0 0 5px #e9c46a; }
+    to { box-shadow: 0 0 15px #e9c46a; }
+}
+
+.reversi-piece {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+.reversi-piece.black {
+    background: linear-gradient(145deg, #264653, #1a3551);
+    border: 2px solid #1a3551;
+    color: white;
+}
+
+.reversi-piece.white {
+    background: linear-gradient(145deg, #e9c46a, #f4a261);
+    border: 2px solid #f4a261;
+    color: #264653;
+}
+
+.reversi-piece.flipping {
+    animation: flip-piece 0.6s ease-in-out;
+}
+
+@keyframes flip-piece {
+    0% {
+        transform: scaleY(1);
+        background: linear-gradient(145deg, #264653, #1a3551);
+    }
+    50% {
+        transform: scaleY(0.1);
+        background: linear-gradient(145deg, #e9c46a, #f4a261);
+    }
+    100% {
+        transform: scaleY(1);
+        background: linear-gradient(145deg, #e9c46a, #f4a261);
+    }
+}
+
+.reversi-piece.new {
+    animation: drop-in 0.4s ease-out;
+}
+
+@keyframes drop-in {
+    0% {
+        transform: scale(0) translateY(-50px);
+        opacity: 0;
+    }
+    70% {
+        transform: scale(1.1) translateY(10px);
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.score-display {
+    display: flex;
+    justify-content: space-around;
+    margin: 15px 0;
+    background: var(--fixed-bg);
+    padding: 15px;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+}
+
+.score-item {
+    text-align: center;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    min-width: 100px;
+}
+
+.score-black {
+    background: rgba(38, 70, 83, 0.2);
+    border: 2px solid #264653;
+    color: #264653;
+}
+
+.score-white {
+    background: rgba(233, 196, 106, 0.2);
+    border: 2px solid #e9c46a;
+    color: #e9c46a;
+}
+
+.score-current {
+    background: var(--accent-color);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.piece-count {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.control-panel {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.pass-button {
+    background: #6c757d;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.pass-button:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.pass-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.game-prediction {
+    margin: 10px 0;
+    padding: 10px;
+    background: var(--fixed-bg);
+    border-radius: 6px;
+    text-align: center;
+    font-size: 14px;
+    border-left: 4px solid var(--accent-color);
+}
+
+.prediction-bar {
+    display: flex;
+    height: 20px;
+    margin: 10px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--border-color);
+}
+
+.prediction-black {
+    background: #264653;
+    transition: width 0.5s ease;
+}
+
+.prediction-white {
+    background: #e9c46a;
+    transition: width 0.5s ease;
+}
+
+.prediction-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.mobile-controls {
+    display: none;
+    gap: 10px;
+    margin: 15px 0;
+    justify-content: center;
+}
+
+.direction-button {
+    width: 50px;
+    height: 50px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.direction-button:hover {
+    background: var(--accent-hover);
+    transform: scale(1.1);
+}
+
+/* Responsive tasarım */
+@media (max-width: 768px) {
+    .reversi-board {
+        grid-template-columns: repeat(8, 40px);
+        grid-template-rows: repeat(8, 40px);
+        padding: 8px;
+    }
+
+    .reversi-piece {
+        width: 35px;
+        height: 35px;
+    }
+
+    .score-display {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .score-item {
+        min-width: auto;
+    }
+
+    .mobile-controls {
+        display: flex;
+    }
+}
+
+@media (max-width: 480px) {
+    .reversi-board {
+        grid-template-columns: repeat(8, 35px);
+        grid-template-rows: repeat(8, 35px);
+        padding: 5px;
+    }
+
+    .reversi-piece {
+        width: 30px;
+        height: 30px;
+    }
+
+    .control-panel {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Oyun durumu göstergeleri */
+.game-status {
+    text-align: center;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    font-weight: bold;
+    animation: status-pulse 2s infinite;
+}
+
+@keyframes status-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.status-black-turn {
+    background: rgba(38, 70, 83, 0.3);
+    border: 2px solid #264653;
+    color: #264653;
+}
+
+.status-white-turn {
+    background: rgba(233, 196, 106, 0.3);
+    border: 2px solid #e9c46a;
+    color: #e9c46a;
+}
+
+.status-game-over {
+    background: rgba(220, 53, 69, 0.3);
+    border: 2px solid #dc3545;
+    color: #dc3545;
+    animation: celebrate 1s ease-in-out;
+}
+
+.winning-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10000;
+}
+
+.winning-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: particle-float 3s ease-in forwards;
+}
+
+@keyframes particle-float {
+    0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+    }
+}

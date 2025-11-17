@@ -208,16 +208,6 @@ if (!empty($socialLinks)):
     </span>
     </div>
 
-    <!-- Oyun Butonları - Sadece çevrimiçi ve kendisi değilse -->
-    <?php if ($isOnline && $currentUserId && !$isProfileOwner && !$isBlockingMe): ?>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-    <button data-game-challenge data-target-id="<?php echo $profileUser['id']; ?>" data-game-type="chess" class="btn btn-sm btn-primary" title="Satranç Oyna">♟️ Satranç</button>
-    <button data-game-challenge data-target-id="<?php echo $profileUser['id']; ?>" data-game-type="reversi" class="btn btn-sm btn-primary" title="Reversi Oyna">🔴 Reversi</button>
-    <button data-game-challenge data-target-id="<?php echo $profileUser['id']; ?>" data-game-type="tavla" class="btn btn-sm btn-primary" title="Tavla Oyna">🎲 Tavla</button>
-    </div>
-    <?php endif; ?>
-    </div>
-
     <!-- Aktif Oyunlar Gösterimi -->
     <?php if ($currentUserId && ($isProfileOwner || $isOnline)): ?>
     <div id="active-games-section" style="margin: 15px 0;">
@@ -228,16 +218,55 @@ if (!empty($socialLinks)):
     <!-- Aksiyon Butonları -->
     <?php if ($currentUserId && !$isProfileOwner && !$isBlockingMe): ?>
     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
-    <button data-simple-message data-target-id="<?php echo $profileUser['id']; ?>" data-target-username="<?php echo htmlspecialchars($profileUser['username']); ?>" class="btn btn-sm btn-primary">💬 Mesaj Gönder</button>
-    <button id="followButton" data-action="<?php echo $followButtonAction; ?>" data-target-id="<?php echo $profileUser['id']; ?>" class="btn btn-sm btn-primary" <?php echo $followRequestPending ? 'disabled' : ''; ?>>
+    <button data-simple-message
+    data-target-id="<?php echo $profileUser['id']; ?>"
+    data-target-username="<?php echo htmlspecialchars($profileUser['username']); ?>"
+    class="btn btn-sm btn-primary">
+    💬 Mesaj Gönder
+    </button>
+
+    <button id="followButton"
+    data-action="<?php echo $followButtonAction; ?>"
+    data-target-id="<?php echo $profileUser['id']; ?>"
+    class="btn btn-sm btn-primary"
+    <?php echo $followRequestPending ? 'disabled' : ''; ?>>
     <?php echo $followButtonText; ?>
     </button>
-    <button id="blockButton" data-target-id="<?php echo $profileUser['id']; ?>" class="btn btn-sm btn-danger">
+
+    <button id="blockButton"
+    data-target-id="<?php echo $profileUser['id']; ?>"
+    class="btn btn-sm btn-danger">
     <?php echo $isBlockedByMe ? 'Engellemeyi Kaldır' : 'Engelle'; ?>
     </button>
     </div>
     <?php endif; ?>
+
+    <!-- Oyun Butonları - Sadece çevrimiçi ve kendisi değilse -->
+    <?php if ($isOnline && $currentUserId && !$isProfileOwner && !$isBlockingMe): ?>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+    <button data-game-challenge
+    data-target-id="<?php echo $profileUser['id']; ?>"
+    data-game-type="chess"
+    class="btn btn-sm btn-primary"
+    title="Satranç Oyna">
+    ♟️ Satranç
+    </button>
+    <button data-game-challenge
+    data-target-id="<?php echo $profileUser['id']; ?>"
+    data-game-type="reversi"
+    class="btn btn-sm btn-primary"
+    title="Reversi Oyna">
+    🔴 Reversi
+    </button>
+    <button data-game-challenge
+    data-target-id="<?php echo $profileUser['id']; ?>"
+    data-game-type="tavla"
+    class="btn btn-sm btn-primary"
+    title="Tavla Oyna">
+    🎲 Tavla
+    </button>
     </div>
+    <?php endif; ?>
     </header>
 
     <?php if ($isProfileOwner): ?>
@@ -412,4 +441,4 @@ if (!empty($socialLinks)):
         }
     });
     </script>
-    <?php require_once __DIR__ . '/templates/footer.php';
+    <?php require_once __DIR__ . '/templates/footer.php'; ?>
