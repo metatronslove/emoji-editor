@@ -215,6 +215,20 @@ function initEventListeners() {
         });
     }
 
+    // SaveButton
+    if (dom.saveButton) {
+        dom.saveButton.addEventListener('click', async () => {
+            const drawingText = safeExecute('getDrawingText', getDrawingText, false);
+            if (!drawingText) return;
+
+            try {
+                await handleSaveDrawing();
+            } catch (err) {
+                console.error('Kopyalama hatası:', err);
+            }
+        });
+    }
+
     // Copy Button
     if (dom.copyButton) {
         dom.copyButton.addEventListener('click', async () => {

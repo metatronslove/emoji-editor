@@ -11,7 +11,6 @@ $currentUserId = $_SESSION['user_id'] ?? null;
 try {
     $db = getDbConnection();
 
-    // GELİŞTİRİLMİŞ SORGU - author_id ve profil fotoğrafı dahil
     $sql = "
     SELECT
     d.id,

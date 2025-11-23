@@ -54,7 +54,7 @@ accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.mp3,.mp4,.wav,.avi,.mov,.z
 <!-- MEDYA GALERİSİ MODALI -->
 <div id="media-gallery-modal" class="modal">
 <div class="modal-content" style="max-width: 800px; max-height: 80vh;">
-<button class="modal-close">&times;</button>
+<button class="modal-close">❎</button>
 <h2>🖼️ Medya Galerisi</h2>
 
 <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">

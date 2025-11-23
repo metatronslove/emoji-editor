@@ -19,17 +19,11 @@
 <script src="<?php echo $baseSiteUrl; ?>assets/js/features/drawing.js"></script>
 <script src="<?php echo $baseSiteUrl; ?>assets/js/features/comments.js"></script>
 <script src="<?php echo $baseSiteUrl; ?>assets/js/features/community.js"></script>
-<script src="<?php echo $baseSiteUrl; ?>assets/js/features/save.js"></script>
 
 <!-- 4. EN SON Social/Game sistemleri -->
 <script src="<?php echo $baseSiteUrl; ?>assets/js/features/profile.js"></script>
 <script src="<?php echo $baseSiteUrl; ?>assets/js/features/messaging.js"></script>
 <script src="<?php echo $baseSiteUrl; ?>assets/js/features/game-system.js"></script>
-
-<!-- 5. VE SON OLARAK App başlatıcı -->
-<script src="<?php echo $baseSiteUrl; ?>assets/js/app.js"></script>
-<script src="<?php echo $baseSiteUrl; ?>assets/js/main.js"></script>
-
 <script>// Topluluk çizimlerini yükle
 async function loadCommunityDrawings(page = 1) {
     const drawingListElement = document.getElementById('user-drawing-list');
@@ -139,6 +133,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<!-- 5. VE SON OLARAK App başlatıcı -->
+<script src="<?php echo $baseSiteUrl; ?>assets/js/features/save.js"></script>
+<script src="<?php echo $baseSiteUrl; ?>assets/js/app.js"></script>
+<script src="<?php echo $baseSiteUrl; ?>assets/js/main.js"></script>
 </footer>
 </body>
 </html>

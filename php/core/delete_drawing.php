@@ -1,16 +1,13 @@
 <?php
-// delete_drawing.php
 require_once __DIR__ . '/../config.php';
 header('Content-Type: application/json');
 
-// Sadece POST isteği kabul edilir
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed']);
     exit;
 }
 
-// JSON verisini al
 $input = json_decode(file_get_contents('php://input'), true);
 $drawingId = $input['drawing_id'] ?? null;
 
@@ -20,7 +17,6 @@ if (!$drawingId) {
     exit;
 }
 
-// Oturum kontrolü
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Bu işlem için giriş yapmalısınız']);
@@ -30,7 +26,6 @@ if (!isset($_SESSION['user_id'])) {
 try {
     $db = getDbConnection();
 
-    // Önce çizimi ve sahibini kontrol et
     $stmt = $db->prepare("SELECT user_id FROM drawings WHERE id = ?");
     $stmt->execute([$drawingId]);
     $drawing = $stmt->fetch();
@@ -44,14 +39,12 @@ try {
     $currentUserId = $_SESSION['user_id'];
     $currentUserRole = $_SESSION['role'] ?? 'user';
 
-    // Yetki kontrolü: sadece çizimin sahibi veya admin silebilir
     if ($drawing['user_id'] != $currentUserId && $currentUserRole !== 'admin') {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Bu çizimi silme yetkiniz yok']);
         exit;
     }
 
-    // Çizimi sil
     $deleteStmt = $db->prepare("DELETE FROM drawings WHERE id = ?");
     $success = $deleteStmt->execute([$drawingId]);
 

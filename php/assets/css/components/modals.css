@@ -2,10 +2,10 @@
  *  7. PALET + MODALLER
  *  ======================================== */
 #category-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 15px;
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-bottom: 15px;
 }
 
 .category-tab {
@@ -27,16 +27,16 @@
 }
 
 #emoji-container {
-    max-height: 400px;
-    overflow-y: auto;
+max-height: 400px;
+overflow-y: auto;
 }
 
 #color-options-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    padding: 5px;
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+justify-content: center;
+padding: 5px;
 }
 
 .color-option {
@@ -124,20 +124,19 @@
 .modal-btn.cancel:hover { background: #c82333; }
 
 #close-guide-btn {
-    margin-top: 20px;
-    padding: 12px 24px;
-    background: var(--accent-color);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    width: 100%;
-    font-weight: 600;
-    transition: opacity 0.2s;
+margin-top: 20px;
+padding: 12px 24px;
+background: var(--accent-color);
+color: white;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+font-weight: 600;
+transition: opacity 0.2s;
 }
 
 #close-guide-btn:hover {
-    opacity: 0.9;
+opacity: 0.9;
 }
 
 /* MODAL SİSTEMİ - TAMAMEN DÜZELTİLMİŞ */
@@ -157,6 +156,10 @@
 .modal.show {
     opacity: 1;
     visibility: visible;
+}
+
+.modal-close {
+    width: min-content;
 }
 
 .modal-content {
@@ -200,6 +203,184 @@
     opacity: 1;
     visibility: visible;
     pointer-events: all;
+}
+
+/* BÜYÜK MODALLAR */
+#messages-modal .modal-content,
+#game-modal .modal-content,
+#media-gallery-modal .modal-content,
+#simple-media-gallery-modal .modal-content {
+max-width: 900px;
+max-height: 90vh;
+width: 95%;
+}
+
+#messages-modal .modal-content {
+display: flex;
+flex-direction: column;
+}
+
+/* MESAJ MODALI İÇ YAPISI */
+#messages-modal .modal-content > div {
+display: flex;
+gap: 20px;
+height: 600px;
+flex-direction: row;
+}
+
+#conversations-list {
+flex: 1;
+border-right: 1px solid var(--border-color);
+padding-right: 15px;
+overflow-y: auto;
+min-width: 250px;
+}
+
+#message-view {
+flex: 2;
+display: flex;
+flex-direction: column;
+min-width: 300px;
+}
+
+#conversation-messages {
+flex: 1;
+overflow-y: auto;
+margin-bottom: 15px;
+padding: 10px;
+background: var(--fixed-bg);
+border-radius: 8px;
+min-height: 300px;
+}
+
+/* MEDYA GALERİSİ */
+#media-gallery-container,
+#simple-media-gallery-container {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+gap: 10px;
+max-height: 400px;
+overflow-y: auto;
+padding: 10px;
+background: var(--fixed-bg);
+border-radius: 8px;
+}
+
+/* OYUN MODALI */
+#game-modal .modal-content {
+max-width: 95%;
+max-height: 95%;
+width: 95%;
+height: 95%;
+}
+
+/* BASİT MESAJ MODALI */
+#simple-message-modal .modal-content {
+max-width: 500px;
+}
+
+/* MOBİL STİLLER - TAM EKRAN */
+@media (max-width: 768px) {
+    /* TÜM MODALLAR MOBİLDE TAM EKRAN */
+    .modal-content,
+    .modal-content-guide {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        padding: 20px !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        margin: 0 !important;
+    }
+
+    .modal.show .modal-content {
+        transform: none !important;
+    }
+
+    /* MESAJ MODALI MOBİL DÜZENİ */
+    #messages-modal .modal-content > div {
+    flex-direction: column !important;
+    height: calc(100vh - 120px) !important;
+    gap: 15px !important;
+    }
+
+    #messages-modal #conversations-list {
+    flex: none !important;
+    height: 35% !important;
+    min-height: 200px;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color);
+    padding-right: 0 !important;
+    padding-bottom: 15px;
+    }
+
+    #messages-modal #message-view {
+    flex: 1 !important;
+    height: 65% !important;
+    min-height: 300px;
+    }
+
+    #messages-modal #conversation-messages {
+    min-height: 200px;
+    height: calc(100% - 140px) !important;
+    max-height: none !important;
+    }
+
+    #messages-modal #reply-section {
+    position: sticky;
+    bottom: 0;
+    background: var(--card-bg);
+    padding: 10px 0;
+    border-top: 1px solid var(--border-color);
+    margin-bottom: 0;
+    }
+
+    /* MESAJ BALONLARI MOBİL */
+    .message-item > div {
+        max-width: 90% !important;
+    }
+
+    /* MEDYA GALERİSİ MOBİL */
+    #media-gallery-container,
+    #simple-media-gallery-container {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+    gap: 8px !important;
+    max-height: calc(100vh - 250px) !important;
+    }
+
+    /* FORM ELEMENTLERİ MOBİL */
+    .auth-form input,
+    .text-input,
+    select,
+    textarea {
+        font-size: 16px !important;
+        padding: 12px !important;
+    }
+
+    /* BUTONLAR MOBİL */
+    .btn {
+        padding: 12px 16px !important;
+        font-size: 16px !important;
+    }
+}
+
+/* TABLET STİLLER */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #messages-modal .modal-content,
+    #game-modal .modal-content {
+    width: 95vw !important;
+    height: 95vh !important;
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+    }
+
+    #messages-modal .modal-content > div {
+    height: calc(95vh - 120px) !important;
+    }
 }
 
 /* Form stilleri */

@@ -11,11 +11,7 @@ function initModalSystem() {
         if (target.matches('[data-modal-toggle]')) {
             e.preventDefault();
             const modalId = target.getAttribute('data-modal-toggle');
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.add('show');
-                document.body.style.overflow = 'hidden';
-            }
+            openModal(modalId);
         }
 
         // Modal kapatma
@@ -23,8 +19,7 @@ function initModalSystem() {
             e.preventDefault();
             const modal = target.closest('.modal');
             if (modal) {
-                modal.classList.remove('show');
-                document.body.style.overflow = '';
+                closeModal(modal);
             }
         }
 
@@ -35,14 +30,11 @@ function initModalSystem() {
             const targetModalId = target.getAttribute('data-modal-switch');
 
             if (currentModal) {
-                currentModal.classList.remove('show');
+                closeModal(currentModal);
             }
 
             setTimeout(() => {
-                const targetModal = document.getElementById(targetModalId);
-                if (targetModal) {
-                    targetModal.classList.add('show');
-                }
+                openModal(targetModalId);
             }, 300);
         }
     });
@@ -50,13 +42,143 @@ function initModalSystem() {
     // ESC tuşu ile kapatma
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            const openModal = document.querySelector('.modal.show');
-            if (openModal) {
-                openModal.classList.remove('show');
-                document.body.style.overflow = '';
-            }
+            closeAllModals();
         }
     });
+
+    // Pencere boyutu değiştiğinde modaları güncelle
+    window.addEventListener('resize', function() {
+        updateAllModals();
+    });
+}
+
+/**
+ * Modal aç
+ */
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        // Responsive ayarları uygula
+        applyResponsiveModalSettings(modalId);
+
+        // Mesaj modalı ise yükseklikleri ayarla
+        if (modalId === 'messages-modal') {
+            adjustMessageModalLayout();
+        }
+    }
+}
+
+/**
+ * Modal kapat
+ */
+function closeModal(modal) {
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+/**
+ * Tüm modaları kapat
+ */
+function closeAllModals() {
+    document.querySelectorAll('.modal.show').forEach(modal => {
+        closeModal(modal);
+    });
+}
+
+/**
+ * Responsive modal ayarlarını uygula
+ */
+function applyResponsiveModalSettings(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    const modalContent = modal.querySelector('.modal-content, .modal-content-guide');
+    if (!modalContent) return;
+
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+        // Mobil için inline stiller
+        modalContent.style.width = '100vw';
+        modalContent.style.height = '100vh';
+        modalContent.style.maxWidth = '100vw';
+        modalContent.style.maxHeight = '100vh';
+        modalContent.style.borderRadius = '0';
+        modalContent.style.padding = '20px';
+        modalContent.style.position = 'fixed';
+        modalContent.style.top = '0';
+        modalContent.style.left = '0';
+        modalContent.style.transform = 'none';
+        modalContent.style.margin = '0';
+    } else {
+        // Masaüstü için inline stilleri temizle (CSS'e bırak)
+        modalContent.style.width = '';
+        modalContent.style.height = '';
+        modalContent.style.maxWidth = '';
+        modalContent.style.maxHeight = '';
+        modalContent.style.borderRadius = '';
+        modalContent.style.padding = '';
+        modalContent.style.position = '';
+        modalContent.style.top = '';
+        modalContent.style.left = '';
+        modalContent.style.transform = '';
+        modalContent.style.margin = '';
+    }
+}
+
+/**
+ * Mesaj modalı layout ayarları
+ */
+function adjustMessageModalLayout() {
+    const modalContent = document.querySelector('#messages-modal .modal-content');
+    const container = modalContent?.querySelector('div > div');
+    const messagesArea = document.getElementById('conversation-messages');
+
+    if (!modalContent || !container) return;
+
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+        container.style.height = 'calc(100vh - 120px)';
+        if (messagesArea) {
+            messagesArea.style.height = 'calc(100% - 140px)';
+        }
+    } else {
+        container.style.height = '600px';
+        if (messagesArea) {
+            messagesArea.style.height = '';
+        }
+    }
+}
+
+/**
+ * Tüm açık modaları güncelle
+ */
+function updateAllModals() {
+    document.querySelectorAll('.modal.show').forEach(modal => {
+        applyResponsiveModalSettings(modal.id);
+        if (modal.id === 'messages-modal') {
+            adjustMessageModalLayout();
+        }
+    });
+}
+
+/**
+ * Mesaj modalını aç
+ */
+function openMessagesModal() {
+    if (!window.currentUser || !window.currentUser.id) {
+        showNotification('Mesajları görüntülemek için giriş yapmalısınız.', 'error');
+        return;
+    }
+
+    openModal('messages-modal');
+    loadConversations();
 }
 
 /**
@@ -155,6 +277,7 @@ function handleUrlParameters() {
                     if (modal) {
                         modal.classList.add('show');
                         document.body.style.overflow = 'hidden';
+                        applyResponsiveModalSettings(modalId);
                     }
                 }, 1000);
             }
@@ -224,28 +347,15 @@ class ModalSystem {
     }
 
     openModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('show'), 10);
-            document.body.style.overflow = 'hidden';
-        }
+        openModal(modalId);
     }
 
     closeModal(modal) {
-        if (modal) {
-            modal.classList.remove('show');
-            document.body.style.overflow = '';
-            setTimeout(() => {
-                modal.style.display = 'none';
-            }, 300);
-        }
+        closeModal(modal);
     }
 
     closeAllModals() {
-        document.querySelectorAll('.modal').forEach(modal => {
-            this.closeModal(modal);
-        });
+        closeAllModals();
     }
 
     switchModal(targetModalId) {

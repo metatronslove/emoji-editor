@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config.php';
+
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
@@ -39,8 +40,8 @@ try {
 
     foreach ($challenges as &$challenge) {
         $challenge['game_name'] = $gameNames[$challenge['game_type']] ?? $challenge['game_type'];
-        $challenge['game_emoji'] = $this->getGameEmoji($challenge['game_type']);
-        $challenge['formatted_time'] = $this->formatRemainingTime($challenge['expires_in_seconds']);
+        $challenge['game_emoji'] = getGameEmoji($challenge['game_type']);
+        $challenge['formatted_time'] = formatRemainingTime($challenge['expires_in_seconds']);
     }
 
     echo json_encode(['success' => true, 'challenges' => $challenges]);
