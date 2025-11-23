@@ -1,3 +1,5 @@
+SIKILDIMM; BAŞKASI GELİŞTİRSİN GERİSİNİ; ÇOK SIKICI... DOYDUM; BU KADAR.
+
 Welcome to the README for this refactored PHP project! This document will provide an overview of the project, including its purpose, main features, database usage, security issues, code quality, improvements needed, template commonality, and setup instructions.
 
 Project Purpose:
