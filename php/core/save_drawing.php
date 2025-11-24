@@ -31,18 +31,31 @@ $userId = $_SESSION['user_id'] ?? null;
 try {
     $db = getDbConnection();
 
-    // MÜKERRER KAYIT KONTROLÜ - MEVCUT content KOLONU İLE
-    $checkStmt = $db->prepare("SELECT id FROM drawings WHERE content = ? LIMIT 1");
-    $checkStmt->execute([$drawingContent]);
-    $existingDrawing = $checkStmt->fetch();
-
-    if ($existingDrawing) {
+    if ($userId == null) {
         http_response_code(409);
         echo json_encode([
             'success' => false,
-            'message' => 'Bu çizim zaten kayıtlı! (ID: '.$existingDrawing['id'].')'
+            'message' => 'Üye olmadan veri tabanına yazamazsın, üye ol'
         ]);
         exit;
+    }
+
+    // TÜM ÇİZİMLERİ AL VE PHP'DE KONTROL ET
+    $checkStmt = $db->prepare("SELECT id, content FROM drawings");
+    $checkStmt->execute();
+    $allDrawings = $checkStmt->fetchAll();
+
+    // Her bir çizimi kontrol et
+    foreach ($allDrawings as $existingDrawing) {
+        // drawingContent mevcut içerikte var mı?
+        if (strpos($existingDrawing['content'], $drawingContent) !== false) {
+            http_response_code(409);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Bu çizim içeriği zaten kayıtlı! (ID: '.$existingDrawing['id'].')'
+            ]);
+            exit;
+        }
     }
 
     // Yeni kayıt ekleme
