@@ -50,24 +50,36 @@ let currentMessageReceiver = null;
 // Ayırıcı karakter sabitleri
 const SEPARATOR_MAP = Object.freeze({
     'none': { char: '', length: 0, name: 'Hiçbiri' },
-    'ZWNJ': { char: '\u200C', name: 'ZWNJ' },
-    'ZWSP': { char: '\u200B', name: 'ZWSP' },
-    'ZWJ': { char: '\u200D', name: 'ZWJ' },
-    'WJ': { char: '\u2060', name: 'WJ' },
-    'SHY': { char: '\u00AD', name: 'SHY' },
-    'HAIR': { char: '\u200A', name: 'Hair Space' },
-    'LRM': { char: '\u200E', name: 'LRM' },
-    'RLM': { char: '\u200F', name: 'RLM' },
-    'ZWNBSP': { char: '\uFEFF', name: 'ZWNBSP' },
-    'LRE': { char: '\u202A', name: 'LRE' },
-    'RLE': { char: '\u202B', name: 'RLE' },
-    'PDF': { char: '\u202C', name: 'PDF' },
-    'LRI': { char: '\u2066', name: 'LRI' },
-    'RLI': { char: '\u2067', name: 'RLI' },
-    'PDI': { char: '\u2069', name: 'PDI' },
-    'CGJ': { char: '\u034F', name: 'CGJ' },
-    'SP_BS': { char: '\u0020\u0008', name: 'Space + Backspace' }
+    'ZWNJ': { char: '\u200C', length: 1, name: 'ZWNJ' },
+    'ZWSP': { char: '\u200B', length: 1, name: 'ZWSP' },
+    'ZWJ': { char: '\u200D', length: 1, name: 'ZWJ' },
+    'WJ': { char: '\u2060', length: 1, name: 'WJ' },
+    'SHY': { char: '\u00AD', length: 1, name: 'SHY' },
+    'HAIR': { char: '\u200A', length: 1, name: 'Hair Space' },
+    'LRM': { char: '\u200E', length: 1, name: 'LRM' },
+    'RLM': { char: '\u200F', length: 1, name: 'RLM' },
+    'ZWNBSP': { char: '\uFEFF', length: 1, name: 'ZWNBSP' },
+    'LRE': { char: '\u202A', length: 1, name: 'LRE' },
+    'RLE': { char: '\u202B', length: 1, name: 'RLE' },
+    'PDF': { char: '\u202C', length: 1, name: 'PDF' },
+    'LRI': { char: '\u2066', length: 1, name: 'LRI' },
+    'RLI': { char: '\u2067', length: 1, name: 'RLI' },
+    'PDI': { char: '\u2069', length: 1, name: 'PDI' },
+    'CGJ': { char: '\u034F', length: 1, name: 'CGJ' },
+    'SP_BS': { char: '\u0020\u0008', length: 2, name: 'Space + Backspace' }
 });
+
+// YENİ EKLENDİ: Satır Sonu Kontrol Karakterleri
+const LINE_BREAK_MAP = Object.freeze({
+    'none': { char: '', length: 0, name: 'Yok' },
+    'LF': { char: '\u000A', length: 1, name: 'Line Feed (LF)' }, // \n
+    'CRLF': { char: '\u000D\u000A', length: 2, name: 'CRLF (Win/HTTP)' }, // \r\n
+    'NEL': { char: '\u0085', length: 1, name: 'Next Line (NEL)' },
+    'LS': { char: '\u2028', length: 3, name: 'Line Separator (LS)' }, // YouTube'da 1 karakterden fazla yer kaplayabilir, 3 olarak ayarlandı (deneysel)
+    'PS': { char: '\u2029', length: 3, name: 'Paragraph Separator (PS)' }, // YouTube'da 1 karakterden fazla yer kaplayabilir, 3 olarak ayarlandı (deneysel)
+});
+window.LINE_BREAK_MAP = LINE_BREAK_MAP; // Diğer dosyalarda erişim için globalleştirme
+
 
 // Matris değişkenleri
 let currentMatrixWidth = DEFAULT_MATRIX_WIDTH;
@@ -108,6 +120,7 @@ function getDomElements() {
         currentBrushEmoji: document.getElementById('current-brush-emoji'),
         currentBrushName: document.getElementById('current-brush-name'),
         separatorSelect: document.getElementById('separator-select'),
+        lineBreakSelect: document.getElementById('line-break-select'), // YENİ EKLENDİ
 
         // Notification element
         notification: document.getElementById('notification'),
@@ -126,6 +139,8 @@ function getDomElements() {
 }
 
 // API Endpoints
+// ... (API_ENDPOINTS, GAME_CONSTANTS, SYSTEM_CONSTANTS, ERROR_MESSAGES kısımları değişmedi)
+
 const API_ENDPOINTS = Object.freeze({
     // User endpoints
     login: 'auth/login.php',

@@ -31,7 +31,7 @@
 </div>
 
 <div style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
-<label for="separator-select" style="color: var(--accent-color); white-space: nowrap;">Filtre Atlatma Yöntemi:</label>
+<label for="separator-select" style="color: var(--accent-color); white-space: nowrap;">Filtre Atlatma Yöntemi (Hücre Arası):</label>
 <select id="separator-select">
 <option value="none" selected>Hiçbiri</option>
 <option value="ZWNJ">ZWNJ (Zero Width Non-Joiner)</option>
@@ -51,6 +51,18 @@
 <option value="PDI">PDI (Bidi Pop Isolate)</option>
 <option value="CGJ">CGJ (Combining Grapheme Joiner)</option>
 <option value="SP_BS">DENEYSEL (Space + Backspace)</option>
+</select>
+</div>
+
+<div style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
+<label for="line-break-select" style="color: var(--accent-color); white-space: nowrap;">Satır Sonu (Line Break) Denemesi:</label>
+<select id="line-break-select">
+<option value="none" selected>Yok</option>
+<option value="LF">LF (\n)</option>
+<option value="CRLF">CRLF (\r\n)</option>
+<option value="NEL">NEL (\u0085)</option>
+<option value="LS">Line Separator (U+2028)</option>
+<option value="PS">Paragraph Separator (U+2029)</option>
 </select>
 </div>
 

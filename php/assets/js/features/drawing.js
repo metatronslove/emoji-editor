@@ -2,11 +2,11 @@
  * Karakter sayısını güncelle
  */
 function updateCharacterCount() {
-    const { matrixTable, currentCharsSpan, charWarningSpan, separatorSelect } = DOM_ELEMENTS;
+    const { matrixTable, currentCharsSpan, charWarningSpan, separatorSelect, lineBreakSelect } = DOM_ELEMENTS;
     if (!matrixTable) return;
 
     const allCells = matrixTable.querySelectorAll('td');
-    const stats = calculateAndClip(allCells);
+    const stats = calculateAndClip(allCells); // Satır Sonu maliyeti buradan geliyor
     const totalOutputCharCount = stats.totalOutputCharCount;
 
     if (currentCharsSpan) {
@@ -17,12 +17,21 @@ function updateCharacterCount() {
     // UYARI METNİ GÜNCELLEME
     let warningText = '';
     const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
+    const selectedLineBreak = window.LINE_BREAK_MAP[lineBreakSelect.value]; 
 
     if (selectedSeparator.length > 0 && stats.totalEmojis > 0) {
+        // Hücre ayırıcı maliyetini hesapla (sadece bilgi amaçlı)
         const totalSeparators = stats.totalEmojis > 0 ? stats.totalEmojis - 1 : 0;
         const separatorCharCost = totalSeparators * selectedSeparator.length;
 
         warningText += `${selectedSeparator.name} (${separatorCharCost} Karakter Maliyeti) kullanılıyor.`;
+    }
+    
+    // YENİ DÜZELTME: Satır Sonu Maliyeti Uyarısı
+    if (stats.lineBreakCharCost > 0) { 
+        if (warningText) warningText += ' | ';
+        // Maliyet, 'calculateAndClip'ten gelen doğru veriyle gösteriliyor:
+        warningText += `${selectedLineBreak.name} (${stats.lineBreakCharCost} Karakter Maliyeti) kullanılıyor.`;
     }
 
     if (stats.multiCharEmojisUsed > 0) {
@@ -50,13 +59,27 @@ function updateCharacterCount() {
  * Mevcut matris içeriğini düz metin olarak üretir
  */
 function getDrawingText(formatted = false) {
-    const { matrixTable, separatorSelect } = DOM_ELEMENTS;
+    const { matrixTable, separatorSelect, lineBreakSelect } = DOM_ELEMENTS; 
     if (!matrixTable) return '';
 
     let result = [];
     const rows = matrixTable.rows;
-    const separatorCode = SEPARATOR_MAP[separatorSelect.value].char;
-    const separator = formatted ? '' : separatorCode;
+    
+    // Hücreler arasına eklenen ayırıcı
+    const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
+    const separatorCode = selectedSeparator.char;
+    const cellSeparator = formatted ? '' : separatorCode;
+    
+    // Satırlar arasına eklenecek olan LB bloğu
+    const selectedLineBreak = window.LINE_BREAK_MAP[lineBreakSelect.value];
+    const lineBreakCode = selectedLineBreak.char;
+    
+    // KRİTİK DÜZELTME: LB öncesine eklenecek ayırıcı. Cost hesaplamasıyla eşleşmeli: [Separator][LineBreak]
+    const lbSeparatorCode = (selectedLineBreak.char.length > 0 && selectedSeparator.char.length > 0) 
+        ? selectedSeparator.char 
+        : '';
+        
+    const lineBreakBlock = lineBreakCode.length > 0 ? (lbSeparatorCode + lineBreakCode) : '';
 
     for (let i = 0; i < rows.length; i++) {
         let emojisInRow = [];
@@ -71,6 +94,7 @@ function getDrawingText(formatted = false) {
                 continue;
             }
 
+            // Kırpılan hücreleri yoksay
             if (cell.classList.contains('clipped')) {
                 isRowClipped = true;
                 break;
@@ -81,7 +105,7 @@ function getDrawingText(formatted = false) {
         }
 
         if (rowHasEmoji) {
-            let rowText = emojisInRow.join(separator);
+            let rowText = emojisInRow.join(cellSeparator); // Hücreler arasına ayırıcı ekle
             result.push(rowText);
         }
 
@@ -90,16 +114,41 @@ function getDrawingText(formatted = false) {
         }
     }
 
-    return formatted ? result.join('\n') : result.join('');
+    // YENİ JOIN MANTIĞI: Her satır metninin sonuna [S]LB bloğunu ekleyelim, sonuncuya hariç.
+    let finalOutput = [];
+    for (let i = 0; i < result.length; i++) {
+        finalOutput.push(result[i]);
+        
+        // Satır sonu bloğunu (S + LB) son satır hariç ekle
+        if (i < result.length - 1 && lineBreakBlock.length > 0) {
+            
+            if (formatted) {
+                // Sadece kopyalama için \n kullan
+                finalOutput.push('\n');
+            } else {
+                // Maliyeti hesaplanan [Separator][LineBreak] bloğunu ekle
+                finalOutput.push(lineBreakBlock); 
+            }
+        }
+    }
+
+    // Eğer hiç LB seçilmemişse veya formatted istenmişse ve LB seçiliyse, standart satır sonu kullan
+    if (lineBreakCode.length === 0 || formatted) {
+        return result.join('\n');
+    }
+
+    return finalOutput.join(''); // Tüm parçaları birleştir
 }
 
 /**
  * Metni matrise uygula
+ * NOT: Bu fonksiyon, içe aktarırken satır sonu karakterlerini şimdilik görmezden gelir.
  */
 function applyDrawingText(text) {
     const { matrixTable, separatorSelect } = DOM_ELEMENTS;
     if (!matrixTable) return false;
 
+    // \n, \r ve seçilen line break karakterlerini metinden temizle
     const textWithoutLineBreaks = text.replace(/[\n\r]/g, '');
 
     // 1. Ayırıcıyı tespit et
