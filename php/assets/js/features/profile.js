@@ -827,6 +827,70 @@ class ProfileSystem {
             showNotification('İstek yönetilirken hata oluştu.', 'error');
         }
     }
+	
+	    async loadFloodSets() {
+        if (!this.profileData.canViewContent) return;
+        
+        try {
+            const response = await fetch(`${SITE_BASE_URL}core/get_user_flood_sets.php?user_id=${this.profileData.userId}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                this.displayFloodSets(result.sets);
+            }
+        } catch (error) {
+            console.error('Flood set\'leri yüklenemedi:', error);
+        }
+    }
+    
+    displayFloodSets(sets) {
+        const container = document.getElementById('flood-sets-container');
+        if (!container || !sets || sets.length === 0) {
+            if (container) {
+                container.innerHTML = '<p style="text-align: center; opacity: 0.7;">Henüz flood set\'i bulunmuyor.</p>';
+            }
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        sets.forEach(set => {
+            const setCard = document.createElement('div');
+            setCard.className = 'drawing-card';
+            setCard.style.cursor = 'pointer';
+            
+            setCard.innerHTML = `
+                <div style="padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: var(--accent-color);">${set.name}</h4>
+                        <span class="badge">${set.message_count} mesaj</span>
+                    </div>
+                    
+                    ${set.description ? `<p style="font-size: 0.9em; opacity: 0.8; margin-bottom: 10px;">${set.description}</p>` : ''}
+                    
+                    <div style="font-size: 0.8em; opacity: 0.7; margin-bottom: 15px;">
+                        Oluşturulma: ${new Date(set.created_at).toLocaleDateString('tr-TR')}
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="floodSystem.openSet(${set.id})" class="btn-sm btn-primary">
+                            Aç
+                        </button>
+                        <button onclick="copyFloodSet(${set.id})" class="btn-sm btn-secondary">
+                            Kopyala
+                        </button>
+                        ${this.profileData.isProfileOwner ? `
+                            <button onclick="deleteFloodSet(${set.id})" class="btn-sm btn-danger">
+                                Sil
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(setCard);
+        });
+    }
 }
 
 // Global profile instance'ını güncelle (mevcut kodu koru)

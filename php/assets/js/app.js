@@ -15,8 +15,9 @@ class App {
             await this.initCoreSystems();
 
             // Feature modüllerini başlat
-            if (SITE_BASE_URL)
-            await this.initFeatureModules();
+            if (window.SITE_BASE_URL) {
+                await this.initFeatureModules();
+            }
 
             // Event listener'ları kur
             this.bindGlobalEvents();
@@ -31,10 +32,14 @@ class App {
 
     async initCoreSystems() {
         // Modal sistemi
-        this.modules.push(modalSystem);
+        if (typeof modalSystem !== 'undefined') {
+            this.modules.push(modalSystem);
+        }
 
         // Bildirim sistemi
-        this.modules.push(notificationSystem);
+        if (typeof notificationSystem !== 'undefined') {
+            this.modules.push(notificationSystem);
+        }
 
         console.log('🔧 Temel sistemler başlatıldı');
     }
@@ -89,7 +94,7 @@ class App {
 
         if (isVisible) {
             // Sayfa görünür oldu - çevrimiçi durumu güncelle
-            if (messagingSystem) {
+            if (typeof messagingSystem !== 'undefined' && messagingSystem.updateOnlineStatus) {
                 messagingSystem.updateOnlineStatus(true);
             }
 
@@ -103,11 +108,14 @@ class App {
 
     handleOnlineStatus(isOnline) {
         const status = isOnline ? '🟢 Çevrimiçi' : '🔴 Çevrimdışı';
-        showNotification(status, isOnline ? 'success' : 'warning');
+        
+        if (typeof showNotification === 'function') {
+            showNotification(status, isOnline ? 'success' : 'warning');
+        }
 
         // Tüm modüllere durumu bildir
         this.modules.forEach(module => {
-            if (module.handleOnlineStatus) {
+            if (module && typeof module.handleOnlineStatus === 'function') {
                 module.handleOnlineStatus(isOnline);
             }
         });
@@ -115,13 +123,13 @@ class App {
 
     handlePageUnload() {
         // Çevrimdışı durumu güncelle
-        if (messagingSystem) {
+        if (typeof messagingSystem !== 'undefined' && messagingSystem.updateOnlineStatus) {
             messagingSystem.updateOnlineStatus(false);
         }
 
         // Tüm Ably bağlantılarını kapat
         this.modules.forEach(module => {
-            if (module.ably) {
+            if (module && module.ably) {
                 module.ably.close();
             }
         });
@@ -136,6 +144,7 @@ class App {
 
     getModule(moduleName) {
         return this.modules.find(module =>
+            module && module.constructor && 
             module.constructor.name.toLowerCase() === moduleName.toLowerCase()
         );
     }
@@ -145,8 +154,8 @@ class App {
         return {
             initialized: this.isInitialized,
             modules: this.modules.map(module => ({
-                name: module.constructor.name,
-                ablyConnected: module.isAblyConnected || false,
+                name: module?.constructor?.name || 'Unknown',
+                ablyConnected: module?.isAblyConnected || false,
                 status: 'active'
             })),
             online: navigator.onLine,
@@ -154,3 +163,10 @@ class App {
         };
     }
 }
+
+// Global olarak kullanılabilir yap
+if (typeof window !== 'undefined') {
+    window.App = App;
+}
+
+console.log('✅ App.js yüklendi');

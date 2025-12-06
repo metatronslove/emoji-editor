@@ -68,6 +68,8 @@ function openModal(modalId) {
         if (modalId === 'messages-modal') {
             adjustMessageModalLayout();
         }
+		modal.style.zIndex  = 'initial';
+		modal.style.zIndex  = '10480';
     }
 }
 
@@ -129,6 +131,7 @@ function applyResponsiveModalSettings(modalId) {
         modalContent.style.transform = '';
         modalContent.style.margin = '';
     }
+	modalContent.style.zIndex  = '10010';
 }
 
 /**
@@ -380,7 +383,9 @@ class ConfirmModal {
             messageEl.innerHTML = message;
 
             const modalSystem = new ModalSystem();
-            modalSystem.openModal('confirm-modal');
+            modalSystem.openModal('confirm-modal');			
+			modal.style.zIndex  = 'initial';
+			modal.style.zIndex  = '10480';
 
             const cleanup = () => {
                 confirmBtn.removeEventListener('click', onConfirm);

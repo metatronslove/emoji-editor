@@ -473,3 +473,7 @@ max-width: 500px;
 .auth-links a:hover {
     text-decoration: none;
 }
+
+#confirm-modal {
+	z-index: 10480;
+}

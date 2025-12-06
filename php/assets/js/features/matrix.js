@@ -1,37 +1,54 @@
+// Hesaplanacak length değerleri (utils.js'de calculateChatChars ile)
+for (const key in window.SEPARATOR_MAP) {
+    if (key !== 'none') {
+         window.SEPARATOR_MAP[key].length = calculateChatChars(window.SEPARATOR_MAP[key].char);
+    }
+}
+
 /**
  * Matris oluşturma
  */
 function createMatrix() {
-	const { matrixTable, firstRowLengthInput, separatorSelect } = DOM_ELEMENTS;
+    const { matrixTable, firstRowLengthInput, separatorSelect } = DOM_ELEMENTS;
     if (!matrixTable) return;
 
-    // Matris genişliğini ayarla
-    currentMatrixWidth = (separatorSelect.value === 'SP_BS') ? SP_BS_MATRIX_WIDTH : DEFAULT_MATRIX_WIDTH;
+    // Mevcut input değerlerini al
+    const matrixWidthInput = document.getElementById('matrixWidth');
+    const maxCharsInput = document.getElementById('maxCharsInput');
+    
+    // Global değişkenleri güncelle
+    window.CUSTOM_MATRIX_WIDTH = parseInt(matrixWidthInput?.value) || 10;
+    window.MAX_CHARACTERS = parseInt(maxCharsInput?.value) || 200;
+    
+    // Genişliği sınırla (1-20)
+    window.CUSTOM_MATRIX_WIDTH = Math.max(1, Math.min(20, window.CUSTOM_MATRIX_WIDTH));
+    
+    // SP_BS için özel durum
+    window.currentMatrixWidth = (separatorSelect.value === 'SP_BS') ? 
+        Math.min(10, window.CUSTOM_MATRIX_WIDTH) : window.CUSTOM_MATRIX_WIDTH;
 
     matrixTable.innerHTML = '';
 
-    // V6.5 Düzeltmesi: Giriş değeri, çizilebilir piksel sayısıdır.
+    // İlk satır çizilebilir piksel sayısı (V6.5)
     const drawablePixelCount = parseInt(firstRowLengthInput.value) || 5;
-    let permanentFixedCount = currentMatrixWidth - drawablePixelCount;
-
-    if (drawablePixelCount > currentMatrixWidth) {
-        firstRowLengthInput.value = currentMatrixWidth;
-        permanentFixedCount = 0;
-    } else if (drawablePixelCount < 0) {
-        firstRowLengthInput.value = 0;
-        permanentFixedCount = currentMatrixWidth;
-    }
-
+    
+    // İlk satır için max değeri güncelle
     if (firstRowLengthInput) {
-        firstRowLengthInput.setAttribute('max', currentMatrixWidth.toString());
+        firstRowLengthInput.setAttribute('max', window.currentMatrixWidth.toString());
+        
+        // Eğer mevcut değer yeni max'tan büyükse, azalt
+        if (drawablePixelCount > window.currentMatrixWidth) {
+            firstRowLengthInput.value = window.currentMatrixWidth;
+        }
     }
 
+    const permanentFixedCount = Math.max(0, window.currentMatrixWidth - drawablePixelCount);
     const defaultHeartChars = selectedHeart.chars;
 
     for (let rowIndex = 0; rowIndex < MATRIX_HEIGHT; rowIndex++) {
         const row = matrixTable.insertRow();
 
-        for (let colIndex = 0; colIndex < currentMatrixWidth; colIndex++) {
+        for (let colIndex = 0; colIndex < window.currentMatrixWidth; colIndex++) {
             const cell = row.insertCell();
             cell.setAttribute('data-row', rowIndex);
             cell.setAttribute('data-col', colIndex);
@@ -65,8 +82,183 @@ function handleCellClick(cell) {
     cell.innerHTML = selectedHeart.emoji;
     cell.setAttribute('data-chars', newCost.toString());
 
-    updateCharacterCount();
+    updateCharacterCount(); // EKSİK OLAN ÇAĞRI
 }
+
+/**
+ * Karakter sayısını güncelle ve karakter limitini uygula
+ */
+function updateCharacterCount() {
+    const { matrixTable, currentCharsSpan, charWarningSpan } = DOM_ELEMENTS;
+    if (!matrixTable) return;
+
+    const allCells = matrixTable.querySelectorAll('td');
+    const stats = calculateAndClip(allCells);
+    const totalOutputCharCount = stats.totalOutputCharCount;
+
+    // YENİ: Karakter limitini güncelle (maxCharsInput varsa)
+    const maxCharsInput = document.getElementById('maxCharsInput');
+    const currentMaxChars = maxCharsInput ? parseInt(maxCharsInput.value) : window.MAX_CHARACTERS;
+    
+    // Karakter limitini matrise uygula
+    applyCharacterLimit(stats, currentMaxChars);
+
+    if (currentCharsSpan) {
+        currentCharsSpan.textContent = totalOutputCharCount;
+        currentCharsSpan.style.color = (totalOutputCharCount < currentMaxChars) ? 'var(--accent-color)' : '#28a745';
+    }
+
+    // UYARI METNİ GÜNCELLEME
+    let warningText = '';
+    const { separatorSelect, lineBreakSelect } = DOM_ELEMENTS;
+    const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
+    const selectedLineBreak = window.LINE_BREAK_MAP[lineBreakSelect.value]; 
+
+    if (selectedSeparator.length > 0 && stats.totalEmojis > 0) {
+        // Hücre ayırıcı maliyetini hesapla (sadece bilgi amaçlı)
+        const totalSeparators = stats.totalEmojis > 0 ? stats.totalEmojis - 1 : 0;
+        const separatorCharCost = totalSeparators * selectedSeparator.length;
+
+        warningText += `${selectedSeparator.name} (${separatorCharCost} Karakter Maliyeti) kullanılıyor.`;
+    }
+    
+    // YENİ DÜZELTME: Satır Sonu Maliyeti Uyarısı
+    if (stats.lineBreakCharCost > 0) { 
+        if (warningText) warningText += ' | ';
+        warningText += `${selectedLineBreak.name} (${stats.lineBreakCharCost} Karakter Maliyeti) kullanılıyor.`;
+    }
+
+    if (stats.multiCharEmojisUsed > 0) {
+        if (warningText) warningText += ' | ';
+        warningText += `${stats.multiCharEmojisUsed} adet çok karakterli emoji kullanılıyor.`;
+    }
+
+    if (stats.clippedCount > 0) {
+        if (warningText) warningText += ' | ';
+        warningText += `ÇIKTI LİMİTİ (${currentMaxChars}) NEDENİYLE SON ${stats.clippedCount} HÜCRE OTOMATİK KIRPILDI.`;
+    }
+
+    if (charWarningSpan) {
+        if (warningText) {
+            charWarningSpan.textContent = ` - ⚠️ ${warningText}`;
+            charWarningSpan.style.display = 'inline';
+            charWarningSpan.style.color = stats.clippedCount > 0 ? '#e0a800' : 'var(--main-text)';
+        } else {
+            charWarningSpan.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * Karakter limitini matrise uygula
+ */
+function applyCharacterLimit(stats, currentMaxChars) {
+    const { matrixTable } = DOM_ELEMENTS;
+    if (!matrixTable) return;
+
+    const allCells = matrixTable.querySelectorAll('td');
+    const editableCells = Array.from(allCells).filter(cell => !cell.classList.contains('fixed'));
+    const { separatorSelect } = DOM_ELEMENTS;
+    const selectedSeparator = SEPARATOR_MAP[separatorSelect.value];
+    
+    // Toplam karakter maliyetini hesapla
+    let totalCost = 0;
+    let lastEmojiIndex = -1;
+    
+    // Önce tüm clipped hücreleri temizle
+    editableCells.forEach(cell => {
+        cell.classList.remove('clipped');
+        if (cell.innerHTML === '✂️') {
+            cell.innerHTML = selectedHeart.emoji;
+            cell.setAttribute('data-chars', selectedHeart.chars.toString());
+        }
+    });
+    
+    // Hangi hücrelerin limit içinde kalacağını hesapla
+    for (let i = 0; i < editableCells.length; i++) {
+        const cell = editableCells[i];
+        const cellCost = parseInt(cell.getAttribute('data-chars') || '1');
+        const separatorCost = (i > 0 && lastEmojiIndex >= 0) ? selectedSeparator.length : 0;
+        
+        if (totalCost + cellCost + separatorCost <= currentMaxChars) {
+            totalCost += cellCost + separatorCost;
+            lastEmojiIndex = i;
+        } else {
+            // Limit aşıldı, bu hücreden itibaren kırp
+            for (let j = i; j < editableCells.length; j++) {
+                editableCells[j].classList.add('clipped');
+                editableCells[j].innerHTML = '✂️';
+                editableCells[j].setAttribute('data-chars', '0');
+            }
+            break;
+        }
+    }
+}
+
+/**
+ * Matrisi panoya kopyala (Emoji editörü için)
+ */
+function copyMatrixToClipboard() {
+    try {
+        const { matrixTable, separatorSelect } = DOM_ELEMENTS;
+        if (!matrixTable) {
+            showNotification('Matris bulunamadı', 'error');
+            return;
+        }
+
+        const selectedSeparator = SEPARATOR_MAP[separatorSelect?.value || 'none'];
+        const allCells = matrixTable.querySelectorAll('td:not(.fixed):not(.clipped)');
+        
+        let output = '';
+        let currentRow = -1;
+        
+        for (let i = 0; i < allCells.length; i++) {
+            const cell = allCells[i];
+            const cellRow = parseInt(cell.getAttribute('data-row'));
+            
+            // Satır sonu ekle
+            if (cellRow !== currentRow && currentRow !== -1) {
+                output += '\n';
+            }
+            
+            // Emoji ekle
+            output += cell.innerHTML;
+            
+            // Ayırıcı ekle (son hücre hariç)
+            if (selectedSeparator.length > 0 && i < allCells.length - 1) {
+                const nextCell = allCells[i + 1];
+                const nextRow = parseInt(nextCell.getAttribute('data-row'));
+                
+                if (nextRow === cellRow) {
+                    output += selectedSeparator.char;
+                }
+            }
+            
+            currentRow = cellRow;
+        }
+        
+        navigator.clipboard.writeText(output)
+            .then(() => {
+                showNotification('✅ Çizim panoya kopyalandı!', 'success');
+            })
+            .catch(err => {
+                console.error('Kopyalama hatası:', err);
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = output;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showNotification('✅ Çizim kopyalandı! (fallback)', 'success');
+            });
+            
+    } catch (error) {
+        console.error('Kopyalama hatası:', error);
+        showNotification('❌ Kopyalama başarısız', 'error');
+    }
+}
+
 /**
  * Mevcut matristeki karakter sayısını hesaplar ve MAX_CHARACTERS sınırına göre kırpma yapar.
  * KRİTİK DÜZELTME NOTLARI:
@@ -178,7 +370,7 @@ function calculateAndClip(allCells) {
         }
     }
 
-    // ... (Kırpma sonrası temizleme kodları)
+    // Kırpma sonrası temizleme
     if (clippedCount === 0) {
          for(let j = 0; j < totalEditableCount; j++) {
             editableCells[j].classList.remove('clipped');
@@ -197,3 +389,23 @@ function calculateAndClip(allCells) {
         totalSeparatorCharCost: totalSeparatorCharCost
     };
 }
+
+// Event listener ekleme
+document.addEventListener('DOMContentLoaded', function() {
+    const widthInput = document.getElementById('matrixWidth');
+    const maxCharsInput = document.getElementById('maxCharsInput');
+    
+    if (widthInput) {
+        widthInput.addEventListener('change', function() {
+            CUSTOM_MATRIX_WIDTH = parseInt(this.value);
+            createMatrix();
+        });
+    }
+    
+    if (maxCharsInput) {
+        maxCharsInput.addEventListener('change', function() {
+            MAX_CHARACTERS = parseInt(this.value);
+            updateCharacterCount();
+        });
+    }
+});

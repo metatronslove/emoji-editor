@@ -219,11 +219,48 @@ function applyDrawingText(text) {
         charIndex += emojiLength;
     }
 
+    // YENİ: Karakter limitini kontrol et
+    const stats = calculateAndClip(allCells);
+    
+    // YENİ: MAX_CHARACTERS kullanarak kırpma uygula
+    const maxCharsInput = document.getElementById('maxCharsInput');
+    const currentMaxChars = maxCharsInput ? parseInt(maxCharsInput.value) : window.MAX_CHARACTERS;
+    
+    // Eğer karakter limiti aşılıyorsa, kırp
+    if (stats.totalOutputCharCount > currentMaxChars) {
+        const allCellsArray = Array.from(allCells);
+        const editableCellsArray = allCellsArray.filter(cell => !cell.classList.contains('fixed'));
+        
+        // Kırpılacak hücre sayısını hesapla
+        let currentTotal = 0;
+        let cellsToKeep = [];
+        
+        for (let i = 0; i < editableCellsArray.length; i++) {
+            const cell = editableCellsArray[i];
+            const cellCost = parseInt(cell.getAttribute('data-chars') || '1');
+            const separatorCost = (i < editableCellsArray.length - 1) ? selectedSeparator.length : 0;
+            
+            if (currentTotal + cellCost + separatorCost <= currentMaxChars) {
+                currentTotal += cellCost + separatorCost;
+                cellsToKeep.push(i);
+            } else {
+                break;
+            }
+        }
+        
+        // Kırpılacak hücreleri işaretle
+        for (let i = 0; i < editableCellsArray.length; i++) {
+            if (!cellsToKeep.includes(i)) {
+                editableCellsArray[i].classList.add('clipped');
+                editableCellsArray[i].innerHTML = '✂️';
+            }
+        }
+    }
+
     updateCharacterCount();
 
-    const stats = calculateAndClip(allCells);
     if (stats.clippedCount > 0) {
-        showNotification(`⚠️ UYARI: İçe aktarılan metin 200 karakteri aşıyor. ${stats.clippedCount} hücre limit nedeniyle otomatik kırpıldı.`, 'warning', 7000);
+        showNotification(`⚠️ UYARI: İçe aktarılan metin ${currentMaxChars} karakteri aşıyor. ${stats.clippedCount} hücre limit nedeniyle otomatik kırpıldı.`, 'warning', 7000);
     } else if (charIndex < cleanText.length) {
         showNotification(`⚠️ UYARI: İçe aktarılan metin matristeki ${totalEditableCount} hücreden daha uzundu. Fazla kısım atıldı.`, 'warning', 7000);
     }

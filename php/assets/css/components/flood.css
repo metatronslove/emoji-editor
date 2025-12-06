@@ -1,0 +1,534 @@
+main {
+	width: 90vw;	
+}
+/* integrated-editor.css */
+.integrated-editor {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.editor-tabs {
+    display: flex;
+    background: var(--fixed-bg);
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    margin-bottom: 0;
+    border-bottom: 2px solid var(--accent-color);
+}
+
+.editor-tab {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    background: transparent;
+    color: var(--main-text);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.editor-tab:hover {
+    background: rgba(var(--accent-color-rgb), 0.1);
+}
+
+.editor-tab.active {
+    background: var(--accent-color);
+    color: white;
+    border-bottom-color: white;
+}
+
+.editor-section {
+    display: none;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.editor-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.choice-card {
+    padding: 25px 15px;
+    border: 2px solid var(--border-color);
+    background: var(--card-bg);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.choice-card:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.choice-card:active {
+    transform: translateY(-1px);
+}
+
+.quick-actions {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.quick-action-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s;
+}
+
+.quick-action-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+.floating-buttons {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+.floating-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s;
+    margin-bottom: 10px;
+}
+
+.floating-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+.segment-btn {
+    position: relative;
+    overflow: hidden;
+    padding: 8px 16px;
+    background: var(--fixed-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.segment-btn:hover {
+    background: var(--hover-bg);
+}
+
+.segment-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.segment-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--accent-color);
+    border-radius: 3px;
+}
+
+.segment-content {
+    animation: fadeIn 0.3s ease;
+}
+
+/* assets/css/flood_cards.css */
+.flood-set-card {
+    transition: all 0.3s ease;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.flood-set-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border-color: var(--accent-color);
+}
+
+.flood-set-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--accent-color), #6f42c1);
+    border-radius: 4px 0 0 4px;
+}
+
+.flood-message-item {
+    transition: all 0.2s;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flood-message-item:hover {
+    background: var(--fixed-bg);
+    border-color: var(--accent-color);
+    transform: translateX(2px);
+}
+
+.flood-category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 500;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.flood-sets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .flood-sets-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Kategori filtre butonları */
+.category-filter-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.category-filter-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    background: var(--fixed-bg);
+    color: var(--main-text);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.category-filter-btn:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+}
+
+.category-filter-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+/* Create choice modal */
+.choice-card {
+    padding: 25px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--card-bg);
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.choice-card:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.choice-card.selected {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px var(--accent-color);
+    background: var(--accent-color)10;
+}
+
+.flood-set-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.flood-set-name {
+    font-weight: bold;
+    color: var(--accent-color);
+    font-size: 1.1em;
+}
+
+.flood-set-stats {
+    display: flex;
+    gap: 10px;
+    font-size: 0.85em;
+    opacity: 0.8;
+    margin-bottom: 10px;
+}
+
+.flood-set-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.author-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Tab butonları için stil */
+.tab-btn {
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.tab-btn.active {
+    font-weight: bold;
+}
+
+/* Emoji butonları */
+.emoji-btn {
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.emoji-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Flood editör stilleri */
+.flood-quick-emoji {
+    transition: all 0.2s;
+}
+
+.flood-quick-emoji:hover {
+    background-color: var(--accent-color) !important;
+    color: white !important;
+}
+
+/* Uyarı mesajları */
+.warning {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Buton stilleri */
+.btn-primary {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        
+        .flood-set-item {
+            transition: all 0.2s ease;
+        }
+        
+        .flood-set-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+        
+        .emoji-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .emoji-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .dark-mode .flood-editor-initialized {
+            background: #1a1a1a;
+            color: #f0f0f0;
+        }
+        
+        .dark-mode textarea,
+        .dark-mode select,
+        .dark-mode input {
+            background: #2d2d2d;
+            color: #f0f0f0;
+            border-color: #444;
+        }
+		
+/* Entegre Editör Stilleri */
+.editor-tab-content {
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.tab-btn {
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--accent-color);
+    border-radius: 3px;
+}
+
+/* Flood mesaj item'ları */
+.flood-message-item-editable {
+    cursor: pointer;
+}
+
+.flood-message-item-editable:hover {
+    background-color: var(--fixed-bg);
+    border-color: var(--accent-color);
+    transform: translateX(3px);
+}
+
+/* Emoji grid */
+.emoji-item {
+    transition: all 0.2s;
+}
+
+.emoji-item:hover {
+    transform: scale(1.1);
+    border-color: var(--accent-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Set info */
+.set-info-card {
+    background: linear-gradient(135deg, var(--card-bg), var(--fixed-bg));
+    border-left: 4px solid var(--accent-color);
+}
+
+/* Responsive tasarım */
+@media (max-width: 992px) {
+    #flood-editor-tab > div {
+        flex-direction: column;
+    }
+    
+    #flood-editor-tab > div > div {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 98% !important;
+        height: 98% !important;
+        margin: 1%;
+    }
+    
+    .editor-tab-content {
+        flex-direction: column;
+    }
+}

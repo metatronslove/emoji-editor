@@ -20,6 +20,8 @@ async function loadEmojis() {
                 processedCategories[categoryName] = {};
             }
 
+            // KRİTİK: calculateChatChars fonksiyonunu kullan (utils.js'de var)
+            // text.length döndürüyor, bu da emoji karakter sayısıdır
             const charCost = calculateChatChars(item.emoji);
 
             processedCategories[categoryName][emojiName] = {
@@ -51,19 +53,34 @@ async function loadEmojis() {
             }
         }
 
-        showNotification(`✅ ${emojiArray.length} adet emoji başarıyla yüklendi ve maliyetleri hesaplandı!`, 'success');
+        console.log(`✅ ${emojiArray.length} adet emoji başarıyla yüklendi ve maliyetleri hesaplandı!`);
 
     } catch (error) {
         console.error("Emoji yükleme hatası:", error);
-        showNotification('❌ Emoji yüklenemedi. Emoji verisi endpointinin mevcut ve doğru formatta olduğundan emin olun.', 'error', 8000);
-
-        // Fallback emoji seti
+        
+        // Fallback emoji seti - calculateChatChars kullan
         emojiCategories = {
             'Kalpler': {
-                'Siyah Kalp': { emoji: '🖤', chars: 1, name: 'Siyah Kalp' },
-                'Kırmızı Kalp': { emoji: '❤️', chars: 1, name: 'Kırmızı Kalp' },
-                'Mavi Kalp': { emoji: '💙', chars: 1, name: 'Mavi Kalp' },
-                'Yeşil Kalp': { emoji: '💚', chars: 1, name: 'Yeşil Kalp' }
+                'Siyah Kalp': { 
+                    emoji: '🖤', 
+                    chars: calculateChatChars('🖤'), 
+                    name: 'Siyah Kalp' 
+                },
+                'Kırmızı Kalp': { 
+                    emoji: '❤️', 
+                    chars: calculateChatChars('❤️'), 
+                    name: 'Kırmızı Kalp' 
+                },
+                'Mavi Kalp': { 
+                    emoji: '💙', 
+                    chars: calculateChatChars('💙'), 
+                    name: 'Mavi Kalp' 
+                },
+                'Yeşil Kalp': { 
+                    emoji: '💚', 
+                    chars: calculateChatChars('💚'), 
+                    name: 'Yeşil Kalp' 
+                }
             }
         };
         currentCategory = 'Kalpler';

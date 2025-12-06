@@ -1,3 +1,5 @@
+// assets/js/features/community.js
+
 /**
  * SEPARATOR_MAP'teki tüm ayırıcı karakterleri metinden temizler
  */
@@ -304,7 +306,7 @@ async function fetchDrawings(page = 1) {
 }
 
 /**
- * Takip edilenler akışını getir
+ * Takip edilenler akışını getir (GÜNCELLENMİŞ)
  */
 async function fetchFollowingFeed() {
     const { FOLLOWING_FEED_ELEMENT } = DOM_ELEMENTS;
@@ -316,19 +318,269 @@ async function fetchFollowingFeed() {
         const response = await fetch(SITE_BASE_URL + 'core/fetch_following_feed.php');
         const result = await response.json();
 
-        if (result.success && result.drawings.length > 0) {
+        if (result.success) {
             FOLLOWING_FEED_ELEMENT.innerHTML = '';
-            result.drawings.forEach(drawing => {
-                const card = createDrawingCard(drawing);
-                FOLLOWING_FEED_ELEMENT.appendChild(card);
-            });
-        } else if (result.success) {
-            FOLLOWING_FEED_ELEMENT.innerHTML = '<p>Takip ettiğiniz çizerlerin henüz yeni çizimi yok.</p>';
+            
+            // 1. AKTİVİTELERİ GÖSTER (birleşik zaman çizelgesi)
+            if (result.activities && result.activities.length > 0) {
+                const activitiesHeader = document.createElement('h4');
+                activitiesHeader.textContent = '📅 Son Aktiviteler';
+                activitiesHeader.style.marginBottom = '15px';
+                FOLLOWING_FEED_ELEMENT.appendChild(activitiesHeader);
+                
+                result.activities.forEach(activity => {
+                    const activityElement = createActivityElement(activity);
+                    FOLLOWING_FEED_ELEMENT.appendChild(activityElement);
+                });
+            }
+            
+            // 2. ÇİZİMLERİ GÖSTER
+            if (result.drawings && result.drawings.length > 0) {
+                const drawingsHeader = document.createElement('h4');
+                drawingsHeader.textContent = '🎨 Son Çizimler';
+                drawingsHeader.style.margin = '25px 0 15px 0';
+                FOLLOWING_FEED_ELEMENT.appendChild(drawingsHeader);
+                
+                result.drawings.forEach(drawing => {
+                    const card = createDrawingCard(drawing);
+                    FOLLOWING_FEED_ELEMENT.appendChild(card);
+                });
+            }
+            
+            // 3. FLOOD SET'LERİNİ GÖSTER
+            if (result.flood_sets && result.flood_sets.length > 0) {
+                const floodHeader = document.createElement('h4');
+                floodHeader.textContent = '🌊 Yeni Flood Set\'leri';
+                floodHeader.style.margin = '25px 0 15px 0';
+                FOLLOWING_FEED_ELEMENT.appendChild(floodHeader);
+                
+                result.flood_sets.forEach(set => {
+                    const card = createFloodSetCard(set);
+                    FOLLOWING_FEED_ELEMENT.appendChild(card);
+                });
+            }
+            
+            // İçerik yoksa
+            if (result.activities.length === 0 && result.drawings.length === 0 && result.flood_sets.length === 0) {
+                FOLLOWING_FEED_ELEMENT.innerHTML = `
+                    <div style="text-align: center; padding: 40px; opacity: 0.7;">
+                        <div style="font-size: 3em;">📭</div>
+                        <p>Takip ettiğiniz çizerlerin henüz yeni içeriği yok.</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">
+                            Daha fazla çizer takip edin veya yeni içerik oluşturun!
+                        </p>
+                    </div>
+                `;
+            }
+            
         } else {
             FOLLOWING_FEED_ELEMENT.innerHTML = `<p style="color: red;">❌ Akış yüklenemedi: ${result.message}</p>`;
         }
     } catch (error) {
         console.error('Akış hatası:', error);
         FOLLOWING_FEED_ELEMENT.innerHTML = '<p style="color: red;">❌ Sunucu hatası.</p>';
+    }
+}
+
+/**
+ * Aktivite elementi oluştur
+ */
+function createActivityElement(activity) {
+    const element = document.createElement('div');
+    element.className = 'activity-item';
+    element.style.cssText = `
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: var(--fixed-bg);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        transition: all 0.2s;
+    `;
+    
+    element.onmouseover = () => {
+        element.style.transform = 'translateY(-2px)';
+        element.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+    };
+    
+    element.onmouseout = () => {
+        element.style.transform = 'translateY(0)';
+        element.style.boxShadow = 'none';
+    };
+    
+    const icon = document.createElement('div');
+    icon.style.cssText = `
+        font-size: 1.5em;
+        flex-shrink: 0;
+        padding: 8px;
+        border-radius: 50%;
+        background: ${activity.type === 'drawing' ? 'rgba(111, 66, 193, 0.1)' : 'rgba(0, 123, 255, 0.1)'};
+        color: ${activity.type === 'drawing' ? '#6f42c1' : '#007bff'};
+    `;
+    icon.textContent = activity.type === 'drawing' ? '🎨' : '🌊';
+    
+    const content = document.createElement('div');
+    content.style.flex = '1';
+    
+    const authorLink = `<a href="/${activity.author_username}/" style="color: var(--accent-color); font-weight: bold;">${activity.author_username}</a>`;
+    
+    if (activity.type === 'drawing') {
+        content.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 5px;">
+                ${authorLink} yeni bir çizim paylaştı
+            </div>
+            ${activity.category ? `<div style="font-size: 0.85em; opacity: 0.7; margin-bottom: 8px;">Kategori: ${activity.category}</div>` : ''}
+            <div style="font-size: 0.85em; opacity: 0.8;">
+                ${formatTimeAgo(activity.timestamp)}
+                ${activity.likes ? ` • ❤️ ${activity.likes}` : ''}
+                ${activity.views ? ` • 👁️ ${activity.views}` : ''}
+            </div>
+        `;
+        
+        element.onclick = () => {
+            loadDrawingToEditor(activity.content);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        element.style.cursor = 'pointer';
+        
+    } else { // flood_set
+        content.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 5px;">
+                ${authorLink} yeni bir flood set'i oluşturdu
+            </div>
+            <div style="margin: 5px 0; font-weight: 500; color: var(--accent-color);">
+                "${activity.name}"
+            </div>
+            ${activity.description ? `<div style="font-size: 0.9em; opacity: 0.8; margin-bottom: 5px;">${activity.description.substring(0, 80)}${activity.description.length > 80 ? '...' : ''}</div>` : ''}
+            <div style="font-size: 0.85em; opacity: 0.8;">
+                ${formatTimeAgo(activity.timestamp)}
+                ${activity.message_count ? ` • 📝 ${activity.message_count} mesaj` : ''}
+                ${activity.likes ? ` • ❤️ ${activity.likes}` : ''}
+                ${activity.views ? ` • 👁️ ${activity.views}` : ''}
+            </div>
+        `;
+        
+        element.onclick = () => {
+            openFloodSet(activity.id);
+        };
+        element.style.cursor = 'pointer';
+    }
+    
+    element.appendChild(icon);
+    element.appendChild(content);
+    
+    return element;
+}
+
+/**
+ * Flood set kartı oluştur
+ */
+function createFloodSetCard(set) {
+    const card = document.createElement('div');
+    card.className = 'flood-set-card';
+    card.style.cssText = `
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+    `;
+    
+    card.onclick = () => openFloodSet(set.id);
+    card.onmouseover = () => {
+        card.style.transform = 'translateY(-3px)';
+        card.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
+        card.style.borderColor = 'var(--accent-color)';
+    };
+    
+    card.onmouseout = () => {
+        card.style.transform = 'translateY(0)';
+        card.style.boxShadow = 'none';
+        card.style.borderColor = 'var(--border-color)';
+    };
+    
+    card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-weight: bold; color: var(--accent-color); font-size: 1.1em;">
+                ${set.name}
+            </div>
+            <span style="font-size: 0.8em; background: ${set.is_public ? '#28a745' : '#6c757d'}; 
+                  color: white; padding: 2px 8px; border-radius: 12px;">
+                ${set.is_public ? '🌍' : '🔒'}
+            </span>
+        </div>
+        
+        ${set.description ? `<p style="font-size: 0.9em; margin: 10px 0; opacity: 0.8;">${set.description.substring(0, 120)}${set.description.length > 120 ? '...' : ''}</p>` : ''}
+        
+        <div style="display: flex; gap: 15px; font-size: 0.85em; opacity: 0.8; margin-bottom: 10px;">
+            <span title="Mesaj sayısı">📝 ${set.message_count || 0}</span>
+            <span title="Görüntülenme">👁️ ${set.views || 0}</span>
+            <span title="Beğeni">❤️ ${set.likes || 0}</span>
+            <span title="Kopyalanma">📋 ${set.copy_count || 0}</span>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.9em;">
+            <img src="${set.author_profile_picture ? formatProfilePicture(set.author_profile_picture) : '/images/default.png'}" 
+                 alt="${set.author_username}" 
+                 style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+            <a href="/${set.author_username}/" style="color: var(--accent-color);">
+                ${set.author_username}
+            </a>
+            <span style="margin-left: auto; font-size: 0.8em; opacity: 0.7;">
+                ${formatTimeAgo(set.created_at)}
+            </span>
+        </div>
+    `;
+    
+    return card;
+}
+
+/**
+ * Zaman formatı (az önce, 5 dk önce, vb.)
+ */
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'az önce';
+    
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} dk önce`;
+    
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} sa önce`;
+    
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} gün önce`;
+    
+    return date.toLocaleDateString('tr-TR');
+}
+
+/**
+ * Flood set'i aç
+ */
+function openFloodSet(setId) {
+    // Yeni sekmede aç veya modal göster
+    window.open(`${SITE_BASE_URL}flood_set.php?id=${setId}`, '_blank');
+}
+
+/**
+ * Profil resmi formatlama
+ */
+function formatProfilePicture(profilePic) {
+    if (!profilePic) return '/images/default.png';
+    
+    if (profilePic.startsWith('data:image')) {
+        return profilePic;
+    } else if (profilePic === 'default.png') {
+        return '/images/default.png';
+    } else {
+        // Base64 veya yol
+        return profilePic.startsWith('/') ? profilePic : `data:image/jpeg;base64,${profilePic}`;
     }
 }

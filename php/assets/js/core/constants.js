@@ -30,16 +30,17 @@
 })();
 
 // SABİT DEĞERLER - Değiştirilemez
-const EMOJI_JSON_URL = SITE_BASE_URL + 'assets/json/emoji.json';
-const SAVE_DRAWING_URL = SITE_BASE_URL + 'core/save_drawing.php';
-const LOAD_DRAWING_URL = SITE_BASE_URL + 'core/load_drawing.php';
-const MAX_CHARACTERS = 200;
+const EMOJI_JSON_URL = window.SITE_BASE_URL + 'assets/json/emoji.json';
+const SAVE_DRAWING_URL = window.SITE_BASE_URL + 'core/save_drawing.php';
+const LOAD_DRAWING_URL = window.SITE_BASE_URL + 'core/load_drawing.php';
 const MATRIX_HEIGHT = 20;
 const DEFAULT_MATRIX_WIDTH = 11;
 const SP_BS_MATRIX_WIDTH = 10;
 const DEFAULT_HEART = '🖤';
 
 // Global uygulama değişkenleri - Dikkatli kullanılmalı
+let MAX_CHARACTERS = 200;
+let CUSTOM_MATRIX_WIDTH = 10;
 let matrix = [];
 let selectedEmoji = null;
 let emojiCategories = {};
@@ -48,7 +49,7 @@ let allConversations = [];
 let currentMessageReceiver = null;
 
 // Ayırıcı karakter sabitleri
-const SEPARATOR_MAP = Object.freeze({
+let SEPARATOR_MAP = Object.freeze({
     'none': { char: '', length: 0, name: 'Hiçbiri' },
     'ZWNJ': { char: '\u200C', length: 1, name: 'ZWNJ' },
     'ZWSP': { char: '\u200B', length: 1, name: 'ZWSP' },
@@ -68,9 +69,10 @@ const SEPARATOR_MAP = Object.freeze({
     'CGJ': { char: '\u034F', length: 1, name: 'CGJ' },
     'SP_BS': { char: '\u0020\u0008', length: 2, name: 'Space + Backspace' }
 });
+window.SEPARATOR_MAP = SEPARATOR_MAP; // Diğer dosyalarda erişim için globalleştirme
 
 // YENİ EKLENDİ: Satır Sonu Kontrol Karakterleri
-const LINE_BREAK_MAP = Object.freeze({
+let LINE_BREAK_MAP = Object.freeze({
     'none': { char: '', length: 0, name: 'Yok' },
     'LF': { char: '\u000A', length: 1, name: 'Line Feed (LF)' }, // \n
     'CRLF': { char: '\u000D\u000A', length: 2, name: 'CRLF (Win/HTTP)' }, // \r\n
@@ -104,6 +106,8 @@ function getDomElements() {
         modalMessage: document.getElementById('modal-message'),
         modalConfirm: document.getElementById('modal-confirm'),
         modalCancel: document.getElementById('modal-cancel'),
+		FOLLOWING_FEED_ELEMENT: document.getElementById('following-feed-list'),
+		FLOOD_SETS_GRID: document.getElementById('flood-sets-grid'),
 
         // Button elements
         updateMatrixButton: document.getElementById('updateMatrixButton'),
@@ -228,5 +232,35 @@ const ERROR_MESSAGES = Object.freeze({
     PERMISSION_DENIED: 'Bu işlemi yapmaya yetkiniz yok.',
     INVALID_FILE: 'Geçersiz dosya türü veya boyutu.'
 });
+
+// matrixWidth input'unu emoji editörüne ekleyin
+const widthInput = document.createElement('input');
+widthInput.type = 'number';
+widthInput.id = 'matrixWidth';
+widthInput.value = 10;
+widthInput.min = 1;
+widthInput.max = 20;
+
+// Global değişkenleri kontrol et ve tanımla
+(function() {
+    // EMOJI_JSON_URL tanımlı değilse tanımla
+    if (typeof window.EMOJI_JSON_URL === 'undefined') {
+        window.EMOJI_JSON_URL = window.SITE_BASE_URL + 'assets/json/emoji.json';
+        console.log('📦 EMOJI_JSON_URL otomatik tanımlandı:', window.EMOJI_JSON_URL);
+    }
+    
+    // calculateChatChars tanımlı değilse tanımla
+    if (typeof window.calculateChatChars === 'undefined') {
+        window.calculateChatChars = function(text) {
+            return text ? text.length : 1;
+        };
+        console.log('🔢 calculateChatChars otomatik tanımlandı');
+    }
+    
+    // DEFAULT_HEART tanımlı değilse tanımla
+    if (typeof window.DEFAULT_HEART === 'undefined') {
+        window.DEFAULT_HEART = '🖤';
+    }
+})();
 
 console.log('✅ Constants.js başarıyla yüklendi');
