@@ -169,3 +169,6 @@ style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8p
     <span id="theme-icon">🌙</span>
 </button>
 <script src="<?php echo $baseSiteUrl; ?>assets/js/ui/modals.js"></script>
+
+<!-- ENTEGRE EDİTÖR MODALI - HEM EMOJİ HEM FLOOD -->
+<?php require_once __DIR__ . '/integrated_editor_modal.php'; ?>

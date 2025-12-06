@@ -1,5 +1,3 @@
-<h2 id="main-title">KALP EMOJİ PİKSEL SANATI EDİTÖRÜ V.6.5 (Sezgisel Giriş Düzeltmesi)</h2>
-
 <div id="main-layout">
 <div id="left-panel">
 <div class="card" id="palette">
@@ -24,7 +22,7 @@
 <div id="right-panel">
 <div class="card" id="controls-panel">
 <div id="main-controls" style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
-<label for="firstRowLength" style="color: var(--accent-color);">İlk Satır Çizim Piksel Sayısı (0-11):</label>
+<label for="firstRowLength" style="color: var(--accent-color);">İlk Satır Çizim Piksel Sayısı (0-Matris Genişliği):</label>
 <input type="number" id="firstRowLength" value="6" min="0" max="11" style="width: 70px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--fixed-bg); color: var(--main-text);">
 <button id="updateMatrixButton" class="btn-success">Matrisi Güncelle</button>
 <button id="showGuideButton" class="btn-primary">Kılavuz</button>
@@ -65,6 +63,30 @@
 <option value="PS">Paragraph Separator (U+2029)</option>
 </select>
 </div>
+<!-- Matris Genişliği kontrolü -->
+<div style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
+    <label for="matrixWidth" style="color: var(--accent-color);">Matris Genişliği (1-20):</label>
+    <input type="number" id="matrixWidth" value="10" min="1" max="20" 
+           style="width: 70px; padding: 8px; border-radius: 4px; 
+                  border: 1px solid var(--border-color); 
+                  background-color: var(--fixed-bg); color: var(--main-text);">
+    <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">
+        Değişiklikler anında uygulanır • İlk satır piksel sayısı otomatik güncellenir
+    </div>
+</div>
+
+<!-- Maksimum Karakter Limiti -->
+<div style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
+    <label for="maxCharsInput" style="color: var(--accent-color);">Maksimum Karakter Limiti (50-1000):</label>
+    <input type="number" id="maxCharsInput" value="200" min="50" max="1000" 
+           style="width: 100px; padding: 8px; border-radius: 4px; 
+                  border: 1px solid var(--border-color); 
+                  background-color: var(--fixed-bg); color: var(--main-text);">
+    <span style="font-size: 0.9em; opacity: 0.8;">(YouTube sohbet limiti)</span>
+    <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">
+        Limit değişince otomatik kırpma uygulanır • Fazla hücreler ✂️ ile işaretlenir
+    </div>
+</div>
 
 <div id="auxiliary-controls" style="flex-direction: column; gap: 8px; width: 100%;">
 <button id="copyButton" class="btn-primary" style="width: 100%;">Panoya Kopyala</button>
@@ -90,3 +112,119 @@
 </div>
 </div>
 </div>
+<script>
+// Emoji editor entegrasyonu için
+document.addEventListener('DOMContentLoaded', function() {
+    // Entegre editor'den ayarları al
+    function loadIntegratedSettings() {
+        try {
+            const saved = localStorage.getItem('integratedEditorSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                
+                // Genişlik ayarını uygula
+                const widthInput = document.getElementById('matrixWidth');
+                if (widthInput) {
+                    widthInput.value = settings.defaultWidth || 10;
+                }
+                
+                // Karakter limitini uygula
+                if (typeof MAX_CHARACTERS !== 'undefined') {
+                    MAX_CHARACTERS = settings.maxChars || 200;
+                }
+                
+                // Ayırıcıyı uygula
+                const separatorSelect = document.getElementById('separator-select');
+                if (separatorSelect && settings.separator) {
+                    separatorSelect.value = settings.separator;
+                }
+                
+                console.log('✅ Emoji editor ayarları entegre sistemden yüklendi');
+            }
+        } catch (error) {
+            console.error('Entegre ayarlar yüklenemedi:', error);
+        }
+    }
+    
+    // Sayfa yüklendiğinde entegre ayarları yükle
+    setTimeout(loadIntegratedSettings, 500);
+    
+    // Genişlik input'u için event listener
+    const widthInput = document.getElementById('matrixWidth');
+    if (widthInput) {
+        widthInput.addEventListener('change', function() {
+            // Entegre sistemdeki genişlik ayarını güncelle
+            try {
+                const saved = localStorage.getItem('integratedEditorSettings');
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    settings.defaultWidth = parseInt(this.value) || 10;
+                    localStorage.setItem('integratedEditorSettings', JSON.stringify(settings));
+                }
+            } catch (error) {
+                console.error('Genişlik ayarı güncellenemedi:', error);
+            }
+            
+            // Matrisi yeniden oluştur
+            if (typeof createMatrix === 'function') {
+                createMatrix();
+            }
+        });
+    }
+	
+	    // Matris genişliği slider'ı için real-time feedback
+    const matrixWidthSlider = document.getElementById('matrixWidth');
+    const matrixWidthValue = document.getElementById('matrixWidthValue');
+    
+    if (matrixWidthSlider) {
+        matrixWidthSlider.addEventListener('input', function() {
+            if (matrixWidthValue) {
+                matrixWidthValue.textContent = this.value;
+            }
+        });
+        
+        matrixWidthSlider.addEventListener('change', function() {
+            // Matris genişliği değişti, matrisi yeniden oluştur
+            if (typeof createMatrix === 'function') {
+                createMatrix();
+            }
+        });
+    }
+    
+    // Karakter limiti slider'ı
+    const maxCharsSlider = document.getElementById('maxCharsInput');
+    const maxCharsValue = document.getElementById('maxCharsValue');
+    
+    if (maxCharsSlider) {
+        maxCharsSlider.addEventListener('input', function() {
+            if (maxCharsValue) {
+                maxCharsValue.textContent = this.value;
+            }
+        });
+        
+        maxCharsSlider.addEventListener('change', function() {
+            // Karakter limiti değişti, uygula
+            if (typeof updateCharacterCount === 'function') {
+                window.MAX_CHARACTERS = parseInt(this.value) || 200;
+                updateCharacterCount();
+            }
+        });
+    }
+    
+    // İlk satır piksel sayısı için max değeri dinamik güncelle
+    const firstRowLengthInput = document.getElementById('firstRowLength');
+    const matrixWidthInput = document.getElementById('matrixWidth');
+    
+    if (firstRowLengthInput && matrixWidthInput) {
+        matrixWidthInput.addEventListener('input', function() {
+            const newMax = parseInt(this.value) || 10;
+            firstRowLengthInput.setAttribute('max', newMax);
+            
+            // Mevcut değer yeni max'tan büyükse, azalt
+            if (parseInt(firstRowLengthInput.value) > newMax) {
+                firstRowLengthInput.value = newMax;
+            }
+        });
+    }
+});
+</script>

@@ -147,7 +147,7 @@ window.PROFILE_DATA = {
 const SITE_BASE_URL = '<?php echo $baseSiteUrl; ?>';
 </script>
 <?php require_once __DIR__ . '/templates/navbar.php';?>
-<div style="max-width: 1400px; margin: 0 auto; width: 100%;">
+<div style="max-width: 100%; margin: 0 auto; width: 100%;">
 <!-- PROFİL BAŞLIK BÖLÜMÜ -->
 <header class="card" style="margin-bottom: 20px; padding: 25px;">
 <div style="display: flex; align-items: center; gap: 20px;">
@@ -315,7 +315,7 @@ if (!empty($socialLinks)):
     <div id="add-social-link-form">
     <h4>Yeni Bağlantı Ekle</h4>
     <form id="social-link-form">
-    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px; max-width: 1400px; width:100%;">
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px; max-width: 100%; width:100%;">
     <select id="social-platform-select" required style="padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);">
     <option value="">Platform Seçin</option>
     </select>
@@ -337,15 +337,35 @@ if (!empty($socialLinks)):
 
     <?php if ($canViewContent): ?>
     <!-- ANA İÇERİK LAYOUT'U -->
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; max-width: 1400px; width: 100%;">
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; max-width: 100%; width: 100%;">
 
     <!-- SOL SÜTUN: Çizimler -->
     <div>
     <!-- KULLANICI DUVARI -->
-    <section class="card" style="margin-bottom: 20px;">
-    <h2 style="display: flex; align-items: center; gap: 10px;">📝 Aktivite Duvarı</h2>
-    <div id="user-activities"></div>
-    </section>
+<!-- profile.php dosyasında, aktivite duvarı bölümünü güncelleyin: -->
+<section class="card" style="margin-bottom: 20px;">
+    <h2 style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+        📅 Aktivite Duvarı
+        
+        <!-- Aktivite Filtreleri -->
+        <?php if ($canViewContent): ?>
+        <div id="activity-filters" style="
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+            flex-wrap: wrap;
+        "></div>
+        <?php endif; ?>
+    </h2>
+    
+    <div id="user-activities">
+        <!-- Aktiviteler JavaScript ile yüklenecek -->
+        <div style="text-align: center; padding: 40px; opacity: 0.7;">
+            <div style="font-size: 3em;">⏳</div>
+            <p>Aktiviteler yükleniyor...</p>
+        </div>
+    </div>
+</section>
 
     <section id="featured-drawing" class="card" style="margin-bottom: 20px;">
     <h2 style="display: flex; align-items: center; gap: 10px;">⭐ Öne Çıkan Çizim</h2>
@@ -357,6 +377,148 @@ if (!empty($socialLinks)):
     <div id="user-drawing-list"></div>
     </section>
     </div>
+	
+<!-- profile.php dosyasında, çizimler bölümünden sonra ekleyin: -->
+<?php if ($canViewContent): ?>
+<section id="user-flood-sets" class="card" style="margin-top: 30px;">
+    <h2 style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        🌊 Flood Set'leri
+        <?php if ($isProfileOwner): ?>
+            <button id="profile-flood-set-btn" class="btn-primary" style="margin-left: auto;">
+                + Yeni Flood Set'i
+            </button>
+        <?php endif; ?>
+    </h2>
+    
+    <!-- Kategori Filtreleri -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button class="category-filter-btn active" data-category="all">
+            Tümü
+        </button>
+        <?php
+        // Kategorileri göster
+        $categories = [
+            'genel' => ['name' => 'Genel', 'emoji' => '📁'],
+            'youtube' => ['name' => 'YouTube', 'emoji' => '📺'],
+            'twitch' => ['name' => 'Twitch', 'emoji' => '🔴'],
+            'eglence' => ['name' => 'Eğlence', 'emoji' => '😂'],
+            'oyun' => ['name' => 'Oyun', 'emoji' => '🎮'],
+            'sevgi' => ['name' => 'Sevgi', 'emoji' => '❤️'],
+            'sanat' => ['name' => 'Sanat', 'emoji' => '🎨'],
+            'gunluk' => ['name' => 'Günlük', 'emoji' => '📝']
+        ];
+        
+        foreach ($categories as $key => $cat): ?>
+            <button class="category-filter-btn" data-category="<?php echo $key; ?>">
+                <?php echo $cat['emoji']; ?> <?php echo $cat['name']; ?>
+            </button>
+        <?php endforeach; ?>
+    </div>
+    
+    <!-- Flood Set'leri Listesi -->
+    <div id="flood-sets-container" class="flood-sets-grid">
+        <!-- JavaScript ile doldurulacak -->
+    </div>
+    
+    <!-- Sayfalama -->
+    <div id="flood-pagination" style="margin-top: 20px; text-align: center;"></div>
+</section>
+
+<script>
+// Profil sayfası yüklendiğinde flood set'lerini yükle
+document.addEventListener('DOMContentLoaded', function() {
+    // Flood set butonu
+    const floodSetBtn = document.getElementById('profile-flood-set-btn');
+    if (floodSetBtn) {
+        floodSetBtn.addEventListener('click', function() {
+            if (window.integratedEditor) {
+                window.integratedEditor.openModal();
+                setTimeout(() => {
+                    window.integratedEditor.switchEditor('flood');
+                }, 100);
+            }
+        });
+    }
+    
+    // Kategori filtreleri
+    document.querySelectorAll('.category-filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Aktif butonu güncelle
+            document.querySelectorAll('.category-filter-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'var(--fixed-bg)';
+                b.style.color = 'var(--main-text)';
+            });
+            
+            this.classList.add('active');
+            this.style.background = 'var(--accent-color)';
+            this.style.color = 'white';
+            
+            // Flood set'lerini filtrele
+            const category = this.dataset.category;
+            filterFloodSetsByCategory(category);
+        });
+    });
+    
+    // Flood set'lerini yükle
+    if (window.floodCardSystem && window.PROFILE_DATA.userId) {
+        setTimeout(() => {
+            window.floodCardSystem.renderProfileFloodSets(
+                window.PROFILE_DATA.userId, 
+                'flood-sets-container'
+            );
+        }, 1000);
+    }
+});
+
+function filterFloodSetsByCategory(category) {
+    const cards = document.querySelectorAll('.flood-set-card');
+    
+    cards.forEach(card => {
+        if (category === 'all' || card.dataset.category === category) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>
+<style>
+.category-filter-btn {
+    padding: 8px 15px;
+    border: 1px solid var(--border-color);
+    background: var(--fixed-bg);
+    color: var(--main-text);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9em;
+}
+
+.category-filter-btn:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+}
+
+.category-filter-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.flood-sets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .flood-sets-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+<?php endif; ?>
 
     <!-- SAĞ SÜTUN: Profil Panosu -->
     <section id="profile-board" class="card" style="position: sticky; top: 20px;">
@@ -373,7 +535,7 @@ if (!empty($socialLinks)):
     <div id="boardFileInfo" style="font-size: 12px; color: var(--main-text); opacity: 0.7; display: none; padding: 8px; background: var(--fixed-bg); border-radius: 4px; border: 1px solid var(--accent-color);">
     <span>Seçilen dosya:</span>
     <span id="boardFileName" style="font-weight: bold; margin-left: 5px;"></span>
-    <button onclick="clearBoardFile()" style="margin-left: 10px; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 12px; cursor: pointer;">✖</button>
+    <button onclick="window.clearBoardFile()" style="margin-left: 10px; background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 12px; cursor: pointer;">✖</button>
     </div>
     </div>
 
@@ -401,7 +563,6 @@ if (!empty($socialLinks)):
     </div>
     <?php
     require_once __DIR__ . '/templates/messages_modal.php';
-    require_once __DIR__ . '/templates/emoji_editor_modal.php';
     require_once __DIR__ . '/templates/modals.php';
     ?>
     <script>
