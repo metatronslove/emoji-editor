@@ -10,7 +10,7 @@ $isLoggedIn = false;
 $userRole = 'user';
 $username = '';
 $site_url = BASE_SITE_URL;
-$baseSiteUrl = BASE_SITE_URL . '../';
+$baseSiteUrl = BASE_SITE_URL;
 
 if (class_exists('Auth') && method_exists('Auth', 'isLoggedIn')) {
     $isLoggedIn = Auth::isLoggedIn();
