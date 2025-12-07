@@ -999,82 +999,95 @@ renderEmojiGrid() {
     // YENİ: Gelişmiş kaydetme fonksiyonu
 async saveFloodMessage() {
     try {
-        console.log('💾 Flood mesajı kaydediliyor...');
+        // ÇİFT KAYDI ENGELLEMEK İÇİN KONTROL
+        if (this.isSaving) {
+            console.log('⚠️ Zaten kaydetme işlemi devam ediyor');
+            return;
+        }
+        
+        // Kaydetme kilidini aktif et
+        this.isSaving = true;
         
         const messageInput = document.getElementById('flood-message-input');
         const setSelect = document.getElementById('flood-set-select');
         
         if (!messageInput) {
-            this.showNotification('Mesaj alanı bulunamadı', 'error');
+            this.showNotification('Mesaj alanı bulunamadı.', 'error');
+            this.isSaving = false;
             return;
         }
         
         const message = messageInput.value.trim();
         if (!message) {
-            this.showNotification('Lütfen bir mesaj yazın', 'error');
+            this.showNotification('Lütfen bir mesaj yazın.', 'error');
+            this.isSaving = false;
             return;
         }
+        
+        console.log('💾 Mesaj kaydediliyor:', message.substring(0, 50) + '...');
         
         // Karakter kontrolü
         const cost = this.calculateMessageCost(message);
         if (cost.total > this.settings.maxChars) {
-            const confirm = window.confirm(
+            const confirmed = confirm(
                 `Mesajınız ${cost.total - this.settings.maxChars} karakter fazla!\n` +
                 `Yine de kaydetmek istiyor musunuz?`
             );
-            if (!confirm) return;
+            if (!confirmed) {
+                this.isSaving = false;
+                return;
+            }
         }
         
         // Set kontrolü
         let setId = setSelect?.value;
+        let isNewSet = false;
+        
         if (!setId || setId === '' || setId === 'new') {
-            // Yeni set oluştur
             const newSetName = prompt('Yeni flood set adı girin:', `Set_${new Date().getTime()}`);
             if (!newSetName || !newSetName.trim()) {
-                this.showNotification('Set adı gereklidir', 'error');
+                this.showNotification('Set adı gereklidir.', 'error');
+                this.isSaving = false;
                 return;
             }
             
-            try {
-                const response = await fetch(`${SITE_BASE_URL}core/create_flood_set.php`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: newSetName.trim(),
-                        category: 'genel',
-                        description: `Oluşturulma: ${new Date().toLocaleString()}`,
-                        is_public: true
-                    })
-                });
+            // Yeni set oluştur
+            console.log('🆕 Yeni set oluşturuluyor:', newSetName);
+            const response = await fetch(`${SITE_BASE_URL}core/create_flood_set.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: newSetName.trim(),
+                    category: 'genel',
+                    description: `Oluşturulma: ${new Date().toLocaleString()}`,
+                    is_public: true
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                setId = result.set_id;
+                isNewSet = true;
                 
-                const result = await response.json();
-                
-                if (result.success) {
-                    setId = result.set_id;
-                    this.currentSetId = result.set_id;
-                    
-                    // Dropdown'a ekle
-                    if (setSelect) {
-                        const option = document.createElement('option');
-                        option.value = result.set_id;
-                        option.textContent = newSetName.trim();
-                        setSelect.appendChild(option);
-                        setSelect.value = result.set_id;
-                    }
-                    
-                    this.showNotification('✅ Yeni set oluşturuldu', 'success');
-                } else {
-                    this.showNotification(`❌ ${result.message}`, 'error');
-                    return;
+                if (setSelect) {
+                    // Yeni seti dropdown'a ekle
+                    const option = document.createElement('option');
+                    option.value = result.set_id;
+                    option.textContent = newSetName.trim();
+                    setSelect.appendChild(option);
+                    setSelect.value = result.set_id;
                 }
-            } catch (error) {
-                console.error('Set oluşturma hatası:', error);
-                this.showNotification('❌ Set oluşturulamadı', 'error');
+                this.currentSetId = result.set_id;
+                this.showNotification('✅ Yeni set oluşturuldu!', 'success');
+            } else {
+                this.showNotification(`❌ ${result.message}`, 'error');
+                this.isSaving = false;
                 return;
             }
         }
         
         // Mesajı kaydet
+        console.log('📤 Mesaj sunucuya gönderiliyor, Set ID:', setId);
         const saveResponse = await fetch(`${SITE_BASE_URL}core/save_flood_message.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1090,7 +1103,10 @@ async saveFloodMessage() {
         const saveResult = await saveResponse.json();
         
         if (saveResult.success) {
-            this.showNotification('✅ Flood mesajı kaydedildi', 'success');
+            this.showNotification('✅ Flood mesajı kaydedildi!', 'success');
+            
+            // Kaydedilen mesajı logla
+            console.log('✅ Mesaj başarıyla kaydedildi, ID:', saveResult.message_id);
             
             // Otomatik temizleme
             if (this.settings.autoSave) {
@@ -1100,24 +1116,36 @@ async saveFloodMessage() {
             
             // Otomatik kopyalama
             if (this.settings.autoCopy) {
-                this.copyFloodMessage();
+                setTimeout(() => {
+                    this.copyFloodMessage();
+                }, 500);
             }
             
-            // Set mesajlarını güncelle
-            if (setId) {
-                this.loadSetMessages(setId);
+            // Yeni set oluşturulduysa set listesini yenile
+            if (isNewSet) {
+                await this.loadFloodSets();
+            }
+            
+            // Mevcut set'i yenile
+            if (this.currentSetId) {
+                setTimeout(() => {
+                    this.loadSet(this.currentSetId);
+                }, 1000);
             }
             
         } else {
             this.showNotification(`❌ ${saveResult.message}`, 'error');
         }
         
+        // Kaydetme kilidini kaldır
+        this.isSaving = false;
+        
     } catch (error) {
         console.error('❌ Flood mesaj kaydetme hatası:', error);
-        this.showNotification('❌ Kayıt sırasında hata oluştu', 'error');
+        this.showNotification('❌ Kayıt sırasında hata oluştu.', 'error');
+        this.isSaving = false;
     }
 }
-
 copyFloodMessage() {
     const messageInput = document.getElementById('flood-message-input');
     if (!messageInput || !messageInput.value.trim()) {
@@ -1452,89 +1480,64 @@ useFallbackEmojis() {
         }
     }
        
-bindEvents() {
+bindFloodTabEvents() {
     try {
-        console.log('🔗 Flood eventleri bağlanıyor...');
+        console.log('🔗 Flood tab eventleri bağlanıyor...');
         
-        // 1. Kaydet butonu
-        const saveBtn = document.getElementById('save-flood-message-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => {
-                console.log('💾 Kaydet butonu tıklandı');
+        // Event listener'ların zaten bağlı olup olmadığını kontrol et
+        const elements = {
+            saveBtn: document.getElementById('save-flood-message-btn'),
+            copyBtn: document.getElementById('copy-flood-message-btn'),
+            messageInput: document.getElementById('flood-message-input'),
+            setSelect: document.getElementById('flood-set-select')
+        };
+        
+        // Kaydet butonu - ÇOK ÖNEMLİ: Önceki listener'ları temizle
+        if (elements.saveBtn) {
+            // Önceki listener'ları kaldır
+            const newSaveBtn = elements.saveBtn.cloneNode(true);
+            elements.saveBtn.parentNode.replaceChild(newSaveBtn, elements.saveBtn);
+            
+            // Yeni listener ekle
+            newSaveBtn.addEventListener('click', () => {
+                console.log('💾 Kaydet butonuna tıklandı');
                 this.saveFloodMessage();
             });
+            newSaveBtn.id = 'save-flood-message-btn'; // ID'yi geri yükle
         }
         
-        // 2. Kopyala butonu
-        const copyBtn = document.getElementById('copy-flood-message-btn');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', () => {
-                console.log('📋 Kopyala butonu tıklandı');
+        // Kopyala butonu
+        if (elements.copyBtn) {
+            const newCopyBtn = elements.copyBtn.cloneNode(true);
+            elements.copyBtn.parentNode.replaceChild(newCopyBtn, elements.copyBtn);
+            
+            newCopyBtn.addEventListener('click', () => {
+                console.log('📋 Kopyala butonuna tıklandı');
                 this.copyFloodMessage();
             });
+            newCopyBtn.id = 'copy-flood-message-btn';
         }
         
-        // 3. Temizle butonu
-        const clearBtn = document.getElementById('clear-flood-editor-btn');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                console.log('🧹 Temizle butonu tıklandı');
-                this.clearEditor();
+        // Mesaj input değişikliği - throttle ekle
+        if (elements.messageInput) {
+            // Debounce ile güncelleme
+            let timeout;
+            elements.messageInput.addEventListener('input', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    this.updatePreview();
+                }, 300);
             });
         }
         
-        // 4. Rastgele emoji butonu
-        const randomBtn = document.getElementById('insert-random-emoji-btn');
-        if (randomBtn) {
-            randomBtn.addEventListener('click', () => {
-                console.log('🎲 Rastgele emoji butonu tıklandı');
-                this.insertRandomEmoji();
-            });
-        }
-        
-        // 5. Mesaj input değişikliği
-        const messageInput = document.getElementById('flood-message-input');
-        if (messageInput) {
-            messageInput.addEventListener('input', () => {
-                this.updatePreview();
-            });
-        }
-        
-        // 6. Otomatik kopyala checkbox
-        const autoCopyCheck = document.getElementById('auto-copy');
-        if (autoCopyCheck) {
-            autoCopyCheck.addEventListener('change', (e) => {
-                this.settings.autoCopy = e.target.checked;
-                this.saveSettings();
-                console.log('📋 Otomatik kopyala:', e.target.checked);
-            });
-        }
-        
-        // 7. Otomatik kaydet checkbox
-        const autoSaveCheck = document.getElementById('auto-save');
-        if (autoSaveCheck) {
-            autoSaveCheck.addEventListener('change', (e) => {
-                this.settings.autoSave = e.target.checked;
-                this.saveSettings();
-                console.log('💾 Otomatik kaydet:', e.target.checked);
-            });
-        }
-        
-        // 8. Maksimum karakter input
-        const maxCharsInput = document.getElementById('flood-max-chars-input');
-        if (maxCharsInput) {
-            maxCharsInput.addEventListener('change', (e) => {
-                this.settings.maxChars = parseInt(e.target.value) || 200;
-                this.saveSettings();
-                this.updatePreview();
-                console.log('🔢 Maks karakter:', this.settings.maxChars);
-            });
-        }
-        
-        // 9. Set seçimi değişikliği
-        const setSelect = document.getElementById('flood-set-select');
-        if (setSelect) {
-            setSelect.addEventListener('change', (e) => {
+        // Set seçimi değişikliği
+        if (elements.setSelect) {
+            // Önceki listener'ları temizle
+            const newSetSelect = elements.setSelect.cloneNode(true);
+            elements.setSelect.parentNode.replaceChild(newSetSelect, elements.setSelect);
+            
+            newSetSelect.addEventListener('change', (e) => {
+                console.log('📁 Set değiştirildi:', e.target.value);
                 if (e.target.value === 'new') {
                     this.showNewSetForm();
                 } else if (e.target.value) {
@@ -1542,15 +1545,21 @@ bindEvents() {
                     this.loadSet(e.target.value);
                 }
             });
+            newSetSelect.id = 'flood-set-select';
+            
+            // Options'ları geri yükle
+            if (elements.setSelect.options.length > 0) {
+                Array.from(elements.setSelect.options).forEach(option => {
+                    newSetSelect.appendChild(option.cloneNode(true));
+                });
+            }
         }
         
-        console.log('✅ Flood eventleri bağlandı');
-        
+        console.log('✅ Flood tab eventleri bağlandı (temiz)');
     } catch (error) {
-        console.error('❌ Flood event bağlama hatası:', error);
+        console.error('❌ Flood tab event bağlama hatası:', error);
     }
-}
-    
+}    
     switchTab(tabId) {
         // Tüm tab'ları gizle
         document.querySelectorAll('.tab-content').forEach(tab => {

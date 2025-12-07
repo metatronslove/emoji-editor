@@ -1268,6 +1268,7 @@ if (window.floodSystem && typeof window.floodSystem.init === 'function') {
                             const floodTab = document.getElementById('flood-tab');
                             if (floodTab && floodTab.style.display !== 'none') {
                                 window.floodSystem.init();
+								window.floodSystemInitialized = true;
                             }
                         }
                     }
@@ -1277,6 +1278,9 @@ if (window.floodSystem && typeof window.floodSystem.init === 'function') {
             observer.observe(integratedModal, { attributes: true });
         }
     }, 2000);
+    window.floodSystem.isSaving = false;
+} else {
+    console.log('⚠️ Flood sistemi zaten başlatılmış');
 }
 
         // 7. ENTEGRE EDITOR SİSTEMİNİ BAŞLAT
