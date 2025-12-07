@@ -1,7 +1,12 @@
 <?php
 // core/create_flood_set.php
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../classes/User.php';
 require_once __DIR__ . '/../classes/Auth.php';
+require_once __DIR__ . '/../core/functions.php';
+require_once __DIR__ . '/../core/counter_manager.php';
+require_once __DIR__ . '/../classes/Drawing.php';
+require_once __DIR__ . '/../classes/Router.php';
 
 header('Content-Type: application/json');
 
