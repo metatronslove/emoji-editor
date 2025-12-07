@@ -469,6 +469,7 @@ main {
     cursor: pointer;
     transition: all 0.3s;
     position: relative;
+	border-bottom: 2px solid var(--border-color);
 }
 
 .tab-btn.active::after {

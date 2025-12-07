@@ -68,8 +68,6 @@ function openModal(modalId) {
         if (modalId === 'messages-modal') {
             adjustMessageModalLayout();
         }
-		modal.style.zIndex  = 'initial';
-		modal.style.zIndex  = '10480';
     }
 }
 
@@ -131,7 +129,6 @@ function applyResponsiveModalSettings(modalId) {
         modalContent.style.transform = '';
         modalContent.style.margin = '';
     }
-	modalContent.style.zIndex  = '10010';
 }
 
 /**
@@ -383,9 +380,7 @@ class ConfirmModal {
             messageEl.innerHTML = message;
 
             const modalSystem = new ModalSystem();
-            modalSystem.openModal('confirm-modal');			
-			modal.style.zIndex  = 'initial';
-			modal.style.zIndex  = '10480';
+            modalSystem.openModal('confirm-modal');
 
             const cleanup = () => {
                 confirmBtn.removeEventListener('click', onConfirm);
@@ -415,4 +410,59 @@ const modalSystem = new ModalSystem();
 // Eski fonksiyonlar için compatibility
 function showConfirm(title, message) {
     return ConfirmModal.show(title, message);
+}
+
+// Bu script modal açıldığında çalışır
+function initIntegratedEditor() {
+    if (window.floodSystem) {
+        // Karakter sayacını başlat
+        const textarea = document.getElementById('flood-message-input');
+        if (textarea) {
+            textarea.addEventListener('input', function() {
+                const charCount = this.value.length;
+                const maxChars = parseInt(document.getElementById('shared-max-chars').value) || 200;
+                
+                const charCountElement = document.getElementById('char-count');
+                const maxCharsElement = document.getElementById('max-chars');
+                
+                if (charCountElement) charCountElement.textContent = charCount;
+                if (maxCharsElement) maxCharsElement.textContent = maxChars;
+                
+                // Önizlemeyi güncelle
+                const preview = document.getElementById('flood-preview');
+                if (preview) {
+                    preview.textContent = this.value || 'Mesajınız burada görünecek...';
+                    
+                    // Limit kontrolü
+                    if (charCount > maxChars) {
+                        preview.style.borderColor = '#dc3545';
+                    } else if (charCount > maxChars * 0.9) {
+                        preview.style.borderColor = '#ffc107';
+                    } else {
+                        preview.style.borderColor = '#28a745';
+                    }
+                }
+            });
+        }
+        
+        // Buton event'lerini bağla
+        const saveBtn = document.getElementById('save-flood-message-btn');
+        if (saveBtn && window.floodSystem.saveFloodMessage) {
+            saveBtn.onclick = () => window.floodSystem.saveFloodMessage();
+        }
+    }
+}
+
+// Modal kapatma fonksiyonu
+function closeIntegratedEditor() {
+    const modal = document.getElementById('integrated-editor-modal');
+    if (modal) {
+        modal.style.display = 'none';
+		document.body.style.overflow = "auto";
+        
+        // Ayarları kaydet
+        if (window.integratedEditor && window.integratedEditor.saveSettings) {
+            window.integratedEditor.saveSettings();
+        }
+    }
 }

@@ -168,7 +168,43 @@ style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8p
 <button class="theme-toggle-btn" onclick="toggleDarkMode()" title="Tema Değiştir">
     <span id="theme-icon">🌙</span>
 </button>
-<script src="<?php echo $baseSiteUrl; ?>assets/js/ui/modals.js"></script>
-
 <!-- ENTEGRE EDİTÖR MODALI - HEM EMOJİ HEM FLOOD -->
-<?php require_once __DIR__ . '/integrated_editor_modal.php'; ?>
+<div id="integrated-editor-modal" class="modal" style="display: none; background: transparent; flex-grow: 1;">
+    <div class="modal-content" style="
+		background: var(--fixed-bg);
+		color: var(--main-text);
+		width: 100%;
+		min-width: 100vw;
+		max-width: 100vw;
+		height: 100%;
+		min-height: 100vh;
+		max-height: 100vh;
+		overflow: hidden;
+		padding: 0px;">
+<!-- Tab Butonları -->
+<div style="display: flex;">	
+	<button class="modal-close" onclick="closeIntegratedEditor()"
+			style="flex: none; padding: 15px; background: transparent; color: white; border: none;">
+	❎
+	</button>
+    <button data-tab="emoji" class="tab-btn active" 
+            style="flex: 1; padding: 15px; background: var(--accent-color); color: white; border: none;">
+        🎨 Emoji Çizim
+    </button>
+    <button data-tab="flood" class="tab-btn" 
+            style="flex: 1; padding: 15px; background: var(--fixed-bg); color: var(--main-text); border: none;">
+        🌊 Flood Mesaj
+    </button>
+</div>        
+        <!-- Emoji Editör Tab'ı -->
+        <div id="emoji-tab" class="editor-tab-content" style="display: block; height: calc(100% - 45px); background: transparent; overflow: auto;">
+            <?php include __DIR__ . '/emoji_editor_modal.php'; ?>
+        </div>
+        
+        <!-- Flood Editör Tab'ı -->
+        <div id="flood-tab" class="editor-tab-content" style="display: none; height: calc(100% - 45px); background: transparent; overflow: auto;">
+			<?php include __DIR__ . '/flood_editor_modal.php'; ?>
+        </div>
+    </div>
+</div>
+<script src="<?php echo $baseSiteUrl; ?>assets/js/ui/modals.js"></script>

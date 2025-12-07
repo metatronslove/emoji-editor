@@ -578,78 +578,64 @@ async loadFavorites() {
         }
     }
     
-    // YENİ: Gelişmiş emoji grid'i render et
-// flood.js'de renderEmojiGrid fonksiyonunu basitleştirin:
-
 renderEmojiGrid() {
     try {
-        // FARKLI ID'LERİ DENEYELİM
-        let container = document.getElementById('flood-emoji-container');
-        
+        const container = document.getElementById('flood-emoji-container');
         if (!container) {
-            // Alternatif ID'leri deneyelim
-            container = document.getElementById('flood-emoji-palette');
-        }
-        
-        if (!container) {
-            console.warn('⚠️ Emoji container bulunamadı, entegre editor modalını kontrol edin');
+            console.warn('❌ flood-emoji-container bulunamadı');
             return;
         }
         
-        console.log('✅ Emoji container bulundu:', container.id);
-        
-        // Container'ı temizle
         container.innerHTML = '';
         
-        // Emoji kategorisi kontrolü
         if (!this.emojiCategories || !this.emojiCategories[this.currentCategory]) {
-            container.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.7;">Emoji bulunamadı</div>';
+            container.innerHTML = '<div style="padding: 20px; text-align: center; opacity: 0.7;">Emoji bulunamadı</div>';
             return;
         }
         
         const category = this.emojiCategories[this.currentCategory];
-        const emojiList = Object.values(category.emojis);
+        const emojis = Object.values(category.emojis);
         
-        if (emojiList.length === 0) {
-            container.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.7;">Bu kategoride emoji yok</div>';
+        if (emojis.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; opacity: 0.7;">Bu kategoride emoji yok</div>';
             return;
         }
         
-        // Emoji butonlarını oluştur
-        emojiList.forEach(emojiData => {
-            const emojiButton = document.createElement('button');
-            emojiButton.className = 'emoji-btn';
-            emojiButton.style.cssText = `
-                width: 40px; 
-                height: 40px; 
-                border: 1px solid var(--border-color); 
-                background: var(--fixed-bg); 
-                border-radius: 6px; 
-                cursor: pointer; 
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
+        emojis.forEach(emojiData => {
+            const emojiBtn = document.createElement('button');
+            emojiBtn.className = 'emoji-btn';
+            emojiBtn.style.cssText = `
+                width: 40px;
+                height: 40px;
+                border: 1px solid var(--border-color);
+                background: var(--fixed-bg);
+                border-radius: 6px;
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
                 justify-content: center;
                 font-size: 1.2em;
+                transition: all 0.2s;
             `;
             
-            emojiButton.innerHTML = `
+            emojiBtn.innerHTML = `
                 <div>${emojiData.emoji}</div>
-                <div style="font-size: 0.6em; color: ${emojiData.chars > 1 ? '#ffc107' : '#28a745'};">
+                <div style="font-size: 0.6em; color: ${emojiData.chars > 1 ? '#ffc107' : '#28a745'}">
                     ${emojiData.chars}
                 </div>
             `;
             
-            emojiButton.title = `${emojiData.name} (${emojiData.chars} karakter)`;
+            emojiBtn.title = `${emojiData.name} (${emojiData.chars} karakter)`;
             
-            emojiButton.onclick = () => {
+            emojiBtn.addEventListener('click', () => {
                 this.insertQuickEmoji(emojiData.emoji);
-            };
+            });
             
-            container.appendChild(emojiButton);
+            container.appendChild(emojiBtn);
         });
         
-        console.log(`✅ ${emojiList.length} emoji render edildi`);
+        console.log(`✅ ${emojis.length} emoji render edildi (${this.currentCategory})`);
         
     } catch (error) {
         console.error('❌ Emoji grid render hatası:', error);
@@ -1011,133 +997,146 @@ renderEmojiGrid() {
     }
     
     // YENİ: Gelişmiş kaydetme fonksiyonu
-    async saveFloodMessage() {
+async saveFloodMessage() {
+    try {
+        console.log('💾 Flood mesajı kaydediliyor...');
+        
         const messageInput = document.getElementById('flood-message-input');
         const setSelect = document.getElementById('flood-set-select');
-        const categorySelect = document.getElementById('flood-category-select');
         
         if (!messageInput) {
-            this.showNotification('Mesaj alanı bulunamadı.', 'error');
+            this.showNotification('Mesaj alanı bulunamadı', 'error');
             return;
         }
         
         const message = messageInput.value.trim();
         if (!message) {
-            this.showNotification('Lütfen bir mesaj yazın.', 'error');
+            this.showNotification('Lütfen bir mesaj yazın', 'error');
             return;
         }
         
+        // Karakter kontrolü
         const cost = this.calculateMessageCost(message);
-        
-        // Limit kontrolü
         if (cost.total > this.settings.maxChars) {
             const confirm = window.confirm(
                 `Mesajınız ${cost.total - this.settings.maxChars} karakter fazla!\n` +
                 `Yine de kaydetmek istiyor musunuz?`
             );
-            
             if (!confirm) return;
-        }
-        
-        // Kategori kontrolü
-        let category = this.currentCategory;
-        if (categorySelect && categorySelect.value !== 'new') {
-            category = categorySelect.value;
         }
         
         // Set kontrolü
         let setId = setSelect?.value;
-        if (!setId || setId === 'new') {
+        if (!setId || setId === '' || setId === 'new') {
             // Yeni set oluştur
             const newSetName = prompt('Yeni flood set adı girin:', `Set_${new Date().getTime()}`);
             if (!newSetName || !newSetName.trim()) {
-                this.showNotification('Set adı gereklidir.', 'error');
+                this.showNotification('Set adı gereklidir', 'error');
                 return;
             }
             
             try {
-                const createResponse = await fetch(`${SITE_BASE_URL}core/create_flood_set.php`, {
+                const response = await fetch(`${SITE_BASE_URL}core/create_flood_set.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         name: newSetName.trim(),
-                        category: category,
-                        description: `Oluşturulma: ${new Date().toLocaleString()}`
+                        category: 'genel',
+                        description: `Oluşturulma: ${new Date().toLocaleString()}`,
+                        is_public: true
                     })
                 });
                 
-                const createResult = await createResponse.json();
+                const result = await response.json();
                 
-                if (createResult.success) {
-                    setId = createResult.set_id;
-                    if (setSelect) setSelect.value = setId;
-                    this.currentSetId = setId;
+                if (result.success) {
+                    setId = result.set_id;
+                    this.currentSetId = result.set_id;
                     
-                    // Set listesini yenile
-                    await this.loadFloodSets();
+                    // Dropdown'a ekle
+                    if (setSelect) {
+                        const option = document.createElement('option');
+                        option.value = result.set_id;
+                        option.textContent = newSetName.trim();
+                        setSelect.appendChild(option);
+                        setSelect.value = result.set_id;
+                    }
                     
-                    this.showNotification('✅ Yeni set oluşturuldu!', 'success');
+                    this.showNotification('✅ Yeni set oluşturuldu', 'success');
                 } else {
-                    this.showNotification(`❌ ${createResult.message}`, 'error');
+                    this.showNotification(`❌ ${result.message}`, 'error');
                     return;
                 }
             } catch (error) {
                 console.error('Set oluşturma hatası:', error);
-                this.showNotification('❌ Set oluşturulamadı.', 'error');
+                this.showNotification('❌ Set oluşturulamadı', 'error');
                 return;
             }
         }
         
         // Mesajı kaydet
-        try {
-            const response = await fetch(`${SITE_BASE_URL}core/save_flood_message.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    set_id: setId,
-                    content: message,
-                    char_count: cost.chars,
-                    emoji_cost: cost.emojiCost,
-                    total_cost: cost.total,
-                    order_index: Date.now(),
-                    category: category
-                })
-            });
+        const saveResponse = await fetch(`${SITE_BASE_URL}core/save_flood_message.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                set_id: setId,
+                content: message,
+                char_count: cost.chars,
+                emoji_count: cost.emojiCount,
+                order_index: Date.now()
+            })
+        });
+        
+        const saveResult = await saveResponse.json();
+        
+        if (saveResult.success) {
+            this.showNotification('✅ Flood mesajı kaydedildi', 'success');
             
-            const result = await response.json();
-            
-            if (result.success) {
-                this.showNotification('✅ Flood mesajı kaydedildi!', 'success');
-                
-                // Otomatik işlemler
-                if (this.settings.autoSave) {
-                    messageInput.value = '';
-                    this.updatePreview();
-                }
-                
-                if (this.settings.autoCopy) {
-                    this.copyFloodMessage();
-                }
-                
-                // Set listesini güncelle
-                await this.loadFloodSets();
-                
-                // Aktivite kaydet
-                this.recordActivity('flood_message_saved', {
-                    set_id: setId,
-                    message_id: result.message_id,
-                    char_count: cost.chars,
-                    emoji_count: cost.emojiCount
-                });
-                
-            } else {
-                this.showNotification(`❌ ${result.message}`, 'error');
+            // Otomatik temizleme
+            if (this.settings.autoSave) {
+                messageInput.value = '';
+                this.updatePreview();
             }
-        } catch (error) {
-            console.error('Mesaj kaydetme hatası:', error);
-            this.showNotification('❌ Kayıt sırasında hata oluştu.', 'error');
+            
+            // Otomatik kopyalama
+            if (this.settings.autoCopy) {
+                this.copyFloodMessage();
+            }
+            
+            // Set mesajlarını güncelle
+            if (setId) {
+                this.loadSetMessages(setId);
+            }
+            
+        } else {
+            this.showNotification(`❌ ${saveResult.message}`, 'error');
         }
+        
+    } catch (error) {
+        console.error('❌ Flood mesaj kaydetme hatası:', error);
+        this.showNotification('❌ Kayıt sırasında hata oluştu', 'error');
     }
+}
+
+copyFloodMessage() {
+    const messageInput = document.getElementById('flood-message-input');
+    if (!messageInput || !messageInput.value.trim()) {
+        this.showNotification('Kopyalanacak mesaj yok', 'error');
+        return;
+    }
+    
+    navigator.clipboard.writeText(messageInput.value.trim())
+        .then(() => {
+            this.showNotification('📋 Mesaj panoya kopyalandı', 'success');
+        })
+        .catch(err => {
+            console.error('Kopyalama hatası:', err);
+            // Fallback
+            messageInput.select();
+            document.execCommand('copy');
+            this.showNotification('📋 Mesaj kopyalandı (fallback)', 'success');
+        });
+}
     
     // YENİ: Set'i çoğalt
     async duplicateSet(setId) {
@@ -1453,58 +1452,104 @@ useFallbackEmojis() {
         }
     }
        
-    bindEvents() {
-        try {
-            // Mesaj input'u dinle
-            const messageInput = document.getElementById('flood-message-input');
-            if (messageInput) {
-                messageInput.addEventListener('input', () => this.updatePreview());
-            }
-            
-            // Tab değiştirme
-            document.querySelectorAll('.flood-tab-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const tabId = e.target.dataset.tab;
-                    this.switchTab(tabId);
-                });
+bindEvents() {
+    try {
+        console.log('🔗 Flood eventleri bağlanıyor...');
+        
+        // 1. Kaydet butonu
+        const saveBtn = document.getElementById('save-flood-message-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                console.log('💾 Kaydet butonu tıklandı');
+                this.saveFloodMessage();
             });
-            
-            // Maksimum karakter değişikliği
-            const maxCharsInput = document.getElementById('flood-max-chars-input');
-            if (maxCharsInput) {
-                maxCharsInput.addEventListener('change', (e) => {
-                    this.settings.maxChars = parseInt(e.target.value) || 200;
-                    this.saveSettings();
-                    this.updatePreview();
-                });
-            }
-            
-            // Set seçimi değişikliği
-            const setSelect = document.getElementById('flood-set-select');
-            if (setSelect) {
-                setSelect.addEventListener('change', (e) => {
-                    if (e.target.value === 'new') {
-                        this.showNewSetForm();
-                    } else {
-                        this.currentSetId = e.target.value;
-                    }
-                });
-            }
-            
-            // ESC ile modal kapatma
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    const modal = document.getElementById('flood-editor-modal');
-                    if (modal && modal.style.display !== 'none') {
-                        this.closeEditor();
-                    }
+        }
+        
+        // 2. Kopyala butonu
+        const copyBtn = document.getElementById('copy-flood-message-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                console.log('📋 Kopyala butonu tıklandı');
+                this.copyFloodMessage();
+            });
+        }
+        
+        // 3. Temizle butonu
+        const clearBtn = document.getElementById('clear-flood-editor-btn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                console.log('🧹 Temizle butonu tıklandı');
+                this.clearEditor();
+            });
+        }
+        
+        // 4. Rastgele emoji butonu
+        const randomBtn = document.getElementById('insert-random-emoji-btn');
+        if (randomBtn) {
+            randomBtn.addEventListener('click', () => {
+                console.log('🎲 Rastgele emoji butonu tıklandı');
+                this.insertRandomEmoji();
+            });
+        }
+        
+        // 5. Mesaj input değişikliği
+        const messageInput = document.getElementById('flood-message-input');
+        if (messageInput) {
+            messageInput.addEventListener('input', () => {
+                this.updatePreview();
+            });
+        }
+        
+        // 6. Otomatik kopyala checkbox
+        const autoCopyCheck = document.getElementById('auto-copy');
+        if (autoCopyCheck) {
+            autoCopyCheck.addEventListener('change', (e) => {
+                this.settings.autoCopy = e.target.checked;
+                this.saveSettings();
+                console.log('📋 Otomatik kopyala:', e.target.checked);
+            });
+        }
+        
+        // 7. Otomatik kaydet checkbox
+        const autoSaveCheck = document.getElementById('auto-save');
+        if (autoSaveCheck) {
+            autoSaveCheck.addEventListener('change', (e) => {
+                this.settings.autoSave = e.target.checked;
+                this.saveSettings();
+                console.log('💾 Otomatik kaydet:', e.target.checked);
+            });
+        }
+        
+        // 8. Maksimum karakter input
+        const maxCharsInput = document.getElementById('flood-max-chars-input');
+        if (maxCharsInput) {
+            maxCharsInput.addEventListener('change', (e) => {
+                this.settings.maxChars = parseInt(e.target.value) || 200;
+                this.saveSettings();
+                this.updatePreview();
+                console.log('🔢 Maks karakter:', this.settings.maxChars);
+            });
+        }
+        
+        // 9. Set seçimi değişikliği
+        const setSelect = document.getElementById('flood-set-select');
+        if (setSelect) {
+            setSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'new') {
+                    this.showNewSetForm();
+                } else if (e.target.value) {
+                    this.currentSetId = e.target.value;
+                    this.loadSet(e.target.value);
                 }
             });
-            
-        } catch (error) {
-            console.error('Flood event bağlama hatası:', error);
         }
+        
+        console.log('✅ Flood eventleri bağlandı');
+        
+    } catch (error) {
+        console.error('❌ Flood event bağlama hatası:', error);
     }
+}
     
     switchTab(tabId) {
         // Tüm tab'ları gizle
@@ -1532,37 +1577,59 @@ useFallbackEmojis() {
     
     // EMOJI PALETI FONKSİYONLARI
 renderEmojiTabs() {
-    const container = document.getElementById('flood-emoji-tabs');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    if (!this.emojiCategories || Object.keys(this.emojiCategories).length === 0) return;
-    
-    Object.keys(this.emojiCategories).forEach(categoryKey => {
-        const category = this.emojiCategories[categoryKey];
-        const button = document.createElement('button');
-        
-        button.className = 'btn-sm';
-        button.style.cssText = 'padding: 6px 12px; margin: 2px;';
-        
-        // Aktif kategoriyi göster
-        if (categoryKey === this.currentCategory) {
-            button.style.background = 'var(--accent-color)';
-            button.style.color = 'white';
-        } else {
-            button.style.background = 'var(--fixed-bg)';
-            button.style.color = 'var(--main-text)';
+    try {
+        const container = document.getElementById('flood-emoji-tabs');
+        if (!container) {
+            console.warn('❌ flood-emoji-tabs container bulunamadı');
+            return;
         }
         
-        button.textContent = category.name;
-        button.onclick = () => {
-            this.currentCategory = categoryKey;
-            this.renderEmojiGrid(); // Sadece grid'i yenile
-        };
+        container.innerHTML = '';
         
-        container.appendChild(button);
-    });
+        if (!this.emojiCategories || Object.keys(this.emojiCategories).length === 0) {
+            container.innerHTML = '<div style="padding: 10px; text-align: center; opacity: 0.7;">Kategoriler yükleniyor...</div>';
+            return;
+        }
+        
+        Object.keys(this.emojiCategories).forEach(categoryKey => {
+            const category = this.emojiCategories[categoryKey];
+            const button = document.createElement('button');
+            
+            // EMOJİ EDITÖRÜNDEKİ STİLİ KULLAN
+            button.className = 'category-tab';
+            button.textContent = category.name;
+            button.title = category.name;
+            
+            // Aktif kategoriyi belirle
+            if (categoryKey === this.currentCategory) {
+                button.classList.add('active');
+            }
+            
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Tüm butonlardan active class'ını kaldır
+                container.querySelectorAll('.category-tab').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Tıklanan butonu aktif yap
+                button.classList.add('active');
+                
+                // Kategoriyi değiştir
+                this.currentCategory = categoryKey;
+                console.log(`📁 Emoji kategorisi değişti: ${categoryKey}`);
+                this.renderEmojiGrid();
+            });
+            
+            container.appendChild(button);
+        });
+        
+        console.log(`✅ ${Object.keys(this.emojiCategories).length} emoji kategorisi render edildi`);
+        
+    } catch (error) {
+        console.error('❌ Emoji tabları render hatası:', error);
+    }
 }
 
 // insertQuickEmoji fonksiyonu zaten var, kontrol edin:
@@ -2104,6 +2171,89 @@ setupTabSwitching() {
 	}
 }
 
+// index.php'nin JavaScript kısmına ekleyin
+async function loadFloodCategories() {
+    try {
+        const response = await fetch(`${SITE_BASE_URL}core/get_flood_categories.php`);
+        const result = await response.json();
+        
+        if (result.success && result.categories) {
+            const filterSelect = document.getElementById('flood-filter');
+            if (filterSelect) {
+                // Mevcut seçenekleri koru
+                const existingOptions = Array.from(filterSelect.options);
+                
+                // Kategori seçeneklerini ekle
+                Object.values(result.categories).forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.slug || category.id;
+                    option.textContent = `${category.emoji || '📁'} ${category.name}`;
+                    filterSelect.appendChild(option);
+                });
+                
+                console.log(`✅ ${Object.keys(result.categories).length} flood kategorisi yüklendi`);
+            }
+        }
+    } catch (error) {
+        console.error('Flood kategorileri yüklenemedi:', error);
+    }
+}
+
+// profile.php'deki mevcut kodu bu şekilde düzeltin
+async function loadProfileFloodSets() {
+    try {
+        const container = document.getElementById('flood-sets-container');
+        if (!container || !window.PROFILE_DATA?.userId) return;
+        
+        const response = await fetch(`${SITE_BASE_URL}core/get_user_flood_sets.php?user_id=${window.PROFILE_DATA.userId}`);
+        const result = await response.json();
+        
+        if (result.success && result.sets.length > 0) {
+            container.innerHTML = '';
+            
+            result.sets.forEach(set => {
+                const card = document.createElement('div');
+                card.className = 'flood-set-card';
+                card.dataset.setId = set.id;
+                card.dataset.category = set.category || 'genel';
+                
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: var(--accent-color);">${set.name}</h4>
+                        <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 12px;">
+                            ${set.message_count || 0} mesaj
+                        </span>
+                    </div>
+                    ${set.description ? `<p style="font-size: 0.9em; opacity: 0.8; margin-bottom: 10px;">${set.description}</p>` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; opacity: 0.7;">
+                        <span>${new Date(set.created_at).toLocaleDateString('tr-TR')}</span>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="window.floodSystem.loadSet(${set.id})" class="btn-sm btn-primary">
+                                Aç
+                            </button>
+                            <button onclick="window.floodSystem.copySetToClipboard(${set.id})" class="btn-sm btn-secondary">
+                                Kopyala
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        } else {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; opacity: 0.7;">
+                    <div style="font-size: 3em;">📭</div>
+                    <p>Henüz flood set'i bulunmuyor.</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Profil flood setleri yüklenemedi:', error);
+        container.innerHTML = '<div style="color: #dc3545; text-align: center;">Yüklenirken hata oluştu.</div>';
+    }
+}
+
 /**
  * Global fonksiyonları tanımla (main.js ile uyumluluk için)
  */
@@ -2135,4 +2285,9 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
         console.error('FloodSystem oluşturma hatası:', error);
     }
+	
+	// Sayfa yüklendiğinde çalıştır
+	if (document.getElementById('flood-filter')) {
+		setTimeout(loadFloodCategories, 1000);
+	}
 });

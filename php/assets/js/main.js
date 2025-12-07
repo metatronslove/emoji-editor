@@ -1171,12 +1171,15 @@ setTimeout(() => {
 				const content = integratedModal.querySelector('.modal-content');
 				if (content) {
 					content.style.cssText = `
+						padding: 0px;
+						margin: 0px;
 						position: relative !important;
 						border-radius: 12px !important;
-						max-width: 100% !important;
-						width: 100vw !important;
+						max-width: 100vw !important;
+						width: 100% !important;
 						max-height: 100vh !important;
-						overflow: auto !important;
+						height: 100%;						
+						overflow: hidden !important;
 						visibility: visible;
 						opacity: 1;
 					`;
@@ -1185,6 +1188,7 @@ setTimeout(() => {
                 // Entegre editor'ü başlat
                 if (window.integratedEditor && window.integratedEditor.openModal) {
                     window.integratedEditor.openModal();
+					document.body.style.overflow = "hidden";
                     
                     // Aktif segmente göre editor seç
                     const activeSegment = document.querySelector('.segment-btn.active');
@@ -1249,6 +1253,31 @@ setTimeout(() => {
     console.log('✅ Buton sistemi başlatıldı');
     
 }, 400);
+
+if (window.floodSystem && typeof window.floodSystem.init === 'function') {
+    setTimeout(() => {
+        // Flood editör modalı açıldığında sistemi başlat
+        const integratedModal = document.getElementById('integrated-editor-modal');
+        if (integratedModal) {
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        const display = integratedModal.style.display;
+                        if (display === 'flex' || display === 'block') {
+                            // Flood sekmesi aktifse flood sistemini başlat
+                            const floodTab = document.getElementById('flood-tab');
+                            if (floodTab && floodTab.style.display !== 'none') {
+                                window.floodSystem.init();
+                            }
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(integratedModal, { attributes: true });
+        }
+    }, 2000);
+}
 
         // 7. ENTEGRE EDITOR SİSTEMİNİ BAŞLAT
         setTimeout(() => {

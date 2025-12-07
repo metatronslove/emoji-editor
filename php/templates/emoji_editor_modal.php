@@ -1,5 +1,5 @@
-<div id="main-layout">
-<div id="left-panel">
+<div id="main-layout" style="display: inline-flex; flex-grow: 1;">
+<div id="left-panel" style="display: inline-flex; align-items: flex-start;">
 <div class="card" id="palette">
 <strong>Fırça Rengi Seçin:</strong>
 
@@ -19,7 +19,7 @@
 </div>
 </div>
 
-<div id="right-panel">
+<div id="right-panel" style="display: inline-flex;">
 <div class="card" id="controls-panel">
 <div id="main-controls" style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
 <label for="firstRowLength" style="color: var(--accent-color);">İlk Satır Çizim Piksel Sayısı (0-Matris Genişliği):</label>
@@ -100,13 +100,14 @@
 <button id="clearButton" class="btn-danger" style="width: 100%;">Temizle</button>
 </div>
 </div>
-
-<div id="info-panel">
+</div>
+<div id="flex-content" style="max-width: min-content;">
+<div id="info-panel" style="max-width: 100%;">
 <span class="char-count">Toplam Çıktı Karakteri (Emoji + Ayırıcı): <span id="currentChars">0</span>/200</span>
 <span id="charWarning" class="warning" style="display: none;"> - ⚠️ Ekstra karakter maliyeti!</span>
 </div>
 
-<div id="matrix-container" style="max-width: 100%;">
+<div id="matrix-container" style="max-width: min-content;">
 <table id="matrix">
 </table>
 </div>
