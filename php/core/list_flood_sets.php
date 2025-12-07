@@ -6,69 +6,98 @@ require_once __DIR__ . '/../core/functions.php';
 require_once __DIR__ . '/../core/counter_manager.php';
 require_once __DIR__ . '/../classes/Drawing.php';
 require_once __DIR__ . '/../classes/Router.php';
-
 header('Content-Type: application/json');
 
-$page = $_GET['page'] ?? 1;
-$filter = $_GET['filter'] ?? 'all';
-$sort = $_GET['sort'] ?? 'newest';
-$itemsPerPage = 12;
-
 try {
-    $db = getDbConnection();
+    $db = Database::getConnection();
     
-    // BASE QUERY
-    $sql = "SELECT fs.*, u.username as author_username, u.profile_picture as author_profile_picture 
-            FROM flood_sets fs 
-            JOIN users u ON fs.user_id = u.id 
-            WHERE fs.is_public = 1";
+    // Sayfalama parametreleri
+    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $limit = 12;
+    $offset = ($page - 1) * $limit;
     
-    // FILTRELER
-    if ($filter === 'following' && Auth::isLoggedIn()) {
-        $userId = $_SESSION['user_id'];
-        $sql .= " AND fs.user_id IN (SELECT following_id FROM follows WHERE follower_id = $userId)";
+    // Filtre parametreleri
+    $category = isset($_GET['category']) ? $_GET['category'] : 'all';
+    $sort = isset($_GET['sort']) ? $_GET['sort'] : 'newest';
+    
+    // Sorgu oluştur
+    $query = "SELECT fs.*, 
+                     u.username as author_username,
+                     u.profile_picture as author_profile_picture,
+                     COUNT(fm.id) as message_count,
+                     fc.name as category_name,
+                     fc.emoji as category_emoji
+              FROM flood_sets fs
+              LEFT JOIN users u ON fs.user_id = u.id
+              LEFT JOIN flood_messages fm ON fs.id = fm.set_id
+              LEFT JOIN flood_categories fc ON fs.category = fc.slug
+              WHERE fs.is_public = 1 AND fs.is_active = 1";
+    
+    // Kategori filtresi
+    if ($category !== 'all') {
+        $query .= " AND fs.category = :category";
     }
     
-    // SIRALAMA
-    $orderBy = "ORDER BY fs.created_at DESC"; // default
+    $query .= " GROUP BY fs.id";
+    
+    // Sıralama
     switch ($sort) {
         case 'popular':
-            $orderBy = "ORDER BY fs.views DESC, fs.likes DESC";
+            $query .= " ORDER BY fs.views DESC, fs.likes DESC";
             break;
         case 'most_messages':
-            $orderBy = "ORDER BY fs.message_count DESC";
+            $query .= " ORDER BY message_count DESC";
             break;
         case 'newest':
         default:
-            $orderBy = "ORDER BY fs.created_at DESC";
+            $query .= " ORDER BY fs.created_at DESC";
+            break;
     }
     
-    // TOPLAM SAYI
-    $countSql = str_replace("SELECT fs.*, u.username", "SELECT COUNT(*) as total", $sql);
-    $stmt = $db->query($countSql);
-    $totalItems = $stmt->fetchColumn();
-    $totalPages = ceil($totalItems / $itemsPerPage);
+    // Toplam sayfa için count
+    $countQuery = "SELECT COUNT(DISTINCT fs.id) as total 
+                   FROM flood_sets fs 
+                   WHERE fs.is_public = 1 AND fs.is_active = 1";
     
-    // SAYFALAMA
-    $offset = ($page - 1) * $itemsPerPage;
-    $sql .= " $orderBy LIMIT $itemsPerPage OFFSET $offset";
+    if ($category !== 'all') {
+        $countQuery .= " AND fs.category = :category";
+    }
     
-    // ÇALIŞTIR
-    $stmt = $db->query($sql);
+    $stmt = $db->prepare($countQuery);
+    if ($category !== 'all') {
+        $stmt->bindValue(':category', $category);
+    }
+    $stmt->execute();
+    $total = $stmt->fetchColumn();
+    $totalPages = ceil($total / $limit);
+    
+    // Verileri getir
+    $query .= " LIMIT :limit OFFSET :offset";
+    $stmt = $db->prepare($query);
+    
+    if ($category !== 'all') {
+        $stmt->bindValue(':category', $category);
+    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    
     $sets = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     echo json_encode([
         'success' => true,
         'sets' => $sets,
-        'currentPage' => (int)$page,
-        'totalPages' => $totalPages,
-        'totalItems' => $totalItems
+        'total_pages' => $totalPages,
+        'current_page' => $page,
+        'total_sets' => $total
     ]);
     
 } catch (Exception $e) {
+    error_log("Flood set listeleme hatası: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Veriler getirilemedi: ' . $e->getMessage()
+        'message' => 'Flood set\'leri yüklenirken hata oluştu.'
     ]);
 }
+
 ?>

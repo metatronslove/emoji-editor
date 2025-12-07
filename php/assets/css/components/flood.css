@@ -511,6 +511,40 @@ main {
     border-left: 4px solid var(--accent-color);
 }
 
+.category-filter-btn {
+    padding: 8px 15px;
+    border: 1px solid var(--border-color);
+    background: var(--fixed-bg);
+    color: var(--main-text);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9em;
+}
+
+.category-filter-btn:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+}
+
+.category-filter-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.flood-sets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .flood-sets-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Responsive tasarım */
 @media (max-width: 992px) {
     #flood-editor-tab > div {

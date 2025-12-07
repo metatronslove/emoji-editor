@@ -1833,23 +1833,333 @@ calculateMessageCost(message) {
         if (select) select.value = '';
     }
     
-    async loadSet(setId) {
-        try {
-            const response = await fetch(`${SITE_BASE_URL}core/get_flood_messages.php?set_id=${setId}`);
-            const result = await response.json();
+async loadSet(setId) {
+    try {
+        console.log(`📂 Set yükleniyor: ${setId}`);
+        
+        const response = await fetch(`${SITE_BASE_URL}core/get_flood_messages.php?set_id=${setId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            this.currentSetId = setId;
+            this.floodMessages = result.messages || [];
             
-            if (result.success) {
-                this.currentSetId = setId;
-                this.floodMessages = result.messages || [];
-                this.showSetMessages();
-            }
-        } catch (error) {
-            console.error('Set yüklenemedi:', error);
-            if (typeof showNotification === 'function') {
-                showNotification('❌ Set yüklenirken hata oluştu.', 'error');
-            }
+            // Set bilgilerini göster
+            this.showSetInfo(setId, result.set);
+            
+            // Mesajları listeleyen yeni bölüm oluştur
+            this.showSetMessagesList();
+            
+            // Dropdown'da seçili yap
+            const setSelect = document.getElementById('flood-set-select');
+            if (setSelect) setSelect.value = setId;
+            
+            showNotification(`✅ "${result.set?.name || 'Set'}" yüklendi (${this.floodMessages.length} mesaj)`, 'success');
+        } else {
+            showNotification('❌ Set yüklenemedi', 'error');
+        }
+    } catch (error) {
+        console.error('Set yüklenemedi:', error);
+        showNotification('❌ Set yüklenirken hata oluştu.', 'error');
+    }
+}
+
+/**
+ * Set bilgilerini göster
+ */
+showSetInfo(setId, setData) {
+    const container = document.getElementById('set-info');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div style="background: var(--fixed-bg); padding: 12px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <strong style="color: var(--accent-color);">${setData?.name || 'Set'}</strong>
+                <span style="font-size: 0.85em; opacity: 0.7;">
+                    ${setData?.is_public ? '🌍 Herkese Açık' : '🔒 Gizli'}
+                </span>
+            </div>
+            ${setData?.description ? `<p style="font-size: 0.9em; margin: 8px 0; opacity: 0.8;">${setData.description}</p>` : ''}
+            <div style="display: flex; gap: 15px; font-size: 0.85em; opacity: 0.7;">
+                <span>📝 ${setData?.message_count || 0} mesaj</span>
+                <span>👁️ ${setData?.views || 0} görüntülenme</span>
+                <span>❤️ ${setData?.likes || 0} beğeni</span>
+            </div>
+            <div style="margin-top: 8px; font-size: 0.8em; opacity: 0.6;">
+                Oluşturulma: ${setData?.created_at ? new Date(setData.created_at).toLocaleDateString('tr-TR') : 'Bilinmiyor'}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Set mesajlarını liste olarak göster
+ */
+showSetMessagesList() {
+    // Mevcut liste container'ını bul veya oluştur
+    let messagesContainer = document.getElementById('flood-messages-list');
+    
+    if (!messagesContainer) {
+        // Set seçiminin altına mesaj listesi container'ı ekle
+        const setInfo = document.getElementById('set-info');
+        if (setInfo && setInfo.parentNode) {
+            messagesContainer = document.createElement('div');
+            messagesContainer.id = 'flood-messages-list';
+            messagesContainer.style.cssText = `
+                margin-top: 15px;
+                max-height: 300px;
+                overflow-y: auto;
+                background: var(--fixed-bg);
+                border-radius: 8px;
+                border: 1px solid var(--border-color);
+            `;
+            
+            setInfo.parentNode.insertBefore(messagesContainer, setInfo.nextSibling);
+        } else {
+            console.error('Set info container bulunamadı');
+            return;
         }
     }
+    
+    if (this.floodMessages.length === 0) {
+        messagesContainer.innerHTML = `
+            <div style="text-align: center; padding: 30px; opacity: 0.7;">
+                <div style="font-size: 2em;">📭</div>
+                <p>Henüz mesaj eklenmemiş</p>
+                <button onclick="window.floodSystem.addSampleMessages()" class="btn-sm btn-secondary" style="margin-top: 10px;">
+                    Örnek Mesajlar Ekle
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    messagesContainer.innerHTML = `
+        <div style="padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong style="color: var(--accent-color);">Mesaj Listesi (${this.floodMessages.length})</strong>
+                <button onclick="window.floodSystem.exportSetMessages(${this.currentSetId})" class="btn-sm btn-secondary">
+                    📤 Tümünü Dışa Aktar
+                </button>
+            </div>
+            ${this.floodMessages.map((message, index) => `
+                <div class="flood-message-item" data-message-id="${message.id}" style="
+                    padding: 10px;
+                    margin-bottom: 8px;
+                    background: var(--card-bg);
+                    border: 1px solid var(--border-color);
+                    border-radius: 6px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                ">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span style="
+                                background: var(--accent-color);
+                                color: white;
+                                width: 24px;
+                                height: 24px;
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 0.8em;
+                            ">
+                                ${index + 1}
+                            </span>
+                            <div style="flex: 1; overflow: hidden;">
+                                <div style="
+                                    white-space: nowrap;
+                                    overflow: hidden;
+                                    text-overflow: ellipsis;
+                                    font-size: 0.9em;
+                                ">
+                                    ${escapeHtml(message.content)}
+                                </div>
+                                <div style="font-size: 0.75em; opacity: 0.6; margin-top: 2px;">
+                                    ${message.char_count || message.content.length} karakter
+                                    • ${new Date(message.created_at).toLocaleDateString('tr-TR')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-left: 10px;">
+                        <button onclick="event.stopPropagation(); window.floodSystem.editMessage(${message.id})" 
+                                class="btn-sm btn-secondary" title="Düzenle">
+                            ✏️
+                        </button>
+                        <button onclick="event.stopPropagation(); window.floodSystem.copyMessage(${message.id})" 
+                                class="btn-sm btn-secondary" title="Kopyala">
+                            📋
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    // Mesaj item'larına tıklama event'i ekle
+    messagesContainer.querySelectorAll('.flood-message-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (!e.target.closest('button')) {
+                const messageId = item.dataset.messageId;
+                const message = this.floodMessages.find(m => m.id == messageId);
+                if (message) {
+                    // Mesajı editöre yükle
+                    const messageInput = document.getElementById('flood-message-input');
+                    if (messageInput) {
+                        messageInput.value = message.content;
+                        this.updatePreview();
+                        messageInput.focus();
+                        
+                        // İpucu göster
+                        showNotification(`✏️ Mesaj #${item.querySelector('span').textContent} editöre yüklendi`, 'info');
+                    }
+                }
+            }
+        });
+    });
+}
+
+/**
+ * Mesajı kopyala
+ */
+async copyMessage(messageId) {
+    try {
+        const message = this.floodMessages.find(m => m.id == messageId);
+        if (!message) return;
+        
+        await navigator.clipboard.writeText(message.content);
+        showNotification('📋 Mesaj kopyalandı!', 'success');
+    } catch (error) {
+        console.error('Mesaj kopyalanamadı:', error);
+        showNotification('Mesaj kopyalanamadı', 'error');
+    }
+}
+
+/**
+ * Mesajı düzenle
+ */
+editMessage(messageId) {
+    const message = this.floodMessages.find(m => m.id == messageId);
+    if (!message) return;
+    
+    // Mesajı editöre yükle
+    const messageInput = document.getElementById('flood-message-input');
+    if (messageInput) {
+        messageInput.value = message.content;
+        this.updatePreview();
+        messageInput.focus();
+        
+        // Kaydet butonunu güncelle butonuna çevir
+        const saveBtn = document.getElementById('save-flood-message-btn');
+        const updateBtn = document.getElementById('update-flood-message-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        
+        if (saveBtn) saveBtn.style.display = 'none';
+        if (updateBtn) updateBtn.style.display = 'block';
+        if (cancelBtn) cancelBtn.style.display = 'block';
+        
+        // Update butonuna event ekle
+        updateBtn.onclick = () => this.updateMessage(messageId);
+        cancelBtn.onclick = () => this.cancelEdit();
+        
+        showNotification(`✏️ Mesaj #${this.floodMessages.findIndex(m => m.id == messageId) + 1} düzenlemeye hazır`, 'info');
+    }
+}
+
+/**
+ * Mesajı güncelle
+ */
+async updateMessage(messageId) {
+    const messageInput = document.getElementById('flood-message-input');
+    if (!messageInput) return;
+    
+    const newContent = messageInput.value.trim();
+    if (!newContent) {
+        showNotification('Mesaj boş olamaz', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${SITE_BASE_URL}core/update_flood_message.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message_id: messageId,
+                content: newContent,
+                char_count: newContent.length
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('✅ Mesaj güncellendi!', 'success');
+            
+            // Listeyi yenile
+            this.loadSet(this.currentSetId);
+            
+            // Editörü sıfırla
+            messageInput.value = '';
+            this.cancelEdit();
+            this.updatePreview();
+        } else {
+            showNotification(`❌ ${result.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('Mesaj güncelleme hatası:', error);
+        showNotification('❌ Güncelleme sırasında hata oluştu.', 'error');
+    }
+}
+
+/**
+ * Düzenlemeyi iptal et
+ */
+cancelEdit() {
+    const messageInput = document.getElementById('flood-message-input');
+    const saveBtn = document.getElementById('save-flood-message-btn');
+    const updateBtn = document.getElementById('update-flood-message-btn');
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    
+    if (messageInput) messageInput.value = '';
+    if (saveBtn) saveBtn.style.display = 'block';
+    if (updateBtn) updateBtn.style.display = 'none';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    
+    this.updatePreview();
+}
+
+/**
+ * Set mesajlarını dışa aktar
+ */
+exportSetMessages(setId) {
+    if (!this.floodMessages.length) return;
+    
+    let exportText = `Flood Seti Mesajları\n`;
+    exportText += `========================\n\n`;
+    
+    this.floodMessages.forEach((message, index) => {
+        exportText += `${index + 1}. ${message.content}\n`;
+    });
+    
+    exportText += `\n========================\n`;
+    exportText += `Toplam: ${this.floodMessages.length} mesaj\n`;
+    exportText += `Oluşturulma: ${new Date().toLocaleString('tr-TR')}\n`;
+    
+    const blob = new Blob([exportText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flood_set_${setId}_${new Date().getTime()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification('📤 Mesajlar dışa aktarıldı!', 'success');
+}
     
     showSetMessages() {
         alert(`Set'te ${this.floodMessages.length} mesaj bulunuyor. Bu özellik geliştirme aşamasında.`);
@@ -2199,60 +2509,354 @@ async function loadFloodCategories() {
     }
 }
 
-// profile.php'deki mevcut kodu bu şekilde düzeltin
+/**
+ * Profil flood set'lerini yükle
+ */
 async function loadProfileFloodSets() {
     try {
         const container = document.getElementById('flood-sets-container');
         if (!container || !window.PROFILE_DATA?.userId) return;
         
+        container.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.7;">Yükleniyor...</div>';
+        
         const response = await fetch(`${SITE_BASE_URL}core/get_user_flood_sets.php?user_id=${window.PROFILE_DATA.userId}`);
         const result = await response.json();
         
-        if (result.success && result.sets.length > 0) {
-            container.innerHTML = '';
-            
-            result.sets.forEach(set => {
-                const card = document.createElement('div');
-                card.className = 'flood-set-card';
-                card.dataset.setId = set.id;
-                card.dataset.category = set.category || 'genel';
-                
-                card.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h4 style="margin: 0; color: var(--accent-color);">${set.name}</h4>
-                        <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 12px;">
-                            ${set.message_count || 0} mesaj
-                        </span>
-                    </div>
-                    ${set.description ? `<p style="font-size: 0.9em; opacity: 0.8; margin-bottom: 10px;">${set.description}</p>` : ''}
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; opacity: 0.7;">
-                        <span>${new Date(set.created_at).toLocaleDateString('tr-TR')}</span>
-                        <div style="display: flex; gap: 5px;">
-                            <button onclick="window.floodSystem.loadSet(${set.id})" class="btn-sm btn-primary">
-                                Aç
-                            </button>
-                            <button onclick="window.floodSystem.copySetToClipboard(${set.id})" class="btn-sm btn-secondary">
-                                Kopyala
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                container.appendChild(card);
-            });
+        if (result.success) {
+            displayProfileFloodSets(result.sets);
         } else {
             container.innerHTML = `
                 <div style="text-align: center; padding: 40px; opacity: 0.7;">
                     <div style="font-size: 3em;">📭</div>
                     <p>Henüz flood set'i bulunmuyor.</p>
+                    ${window.PROFILE_DATA.isProfileOwner ? `
+                        <button onclick="window.openIntegratedEditor('flood')" class="btn-primary" style="margin-top: 15px;">
+                            🌊 İlk Flood Set'ini Oluştur
+                        </button>
+                    ` : ''}
                 </div>
             `;
         }
     } catch (error) {
-        console.error('Profil flood setleri yüklenemedi:', error);
-        container.innerHTML = '<div style="color: #dc3545; text-align: center;">Yüklenirken hata oluştu.</div>';
+        console.error('❌ Profil flood setleri yüklenemedi:', error);
+        const container = document.getElementById('flood-sets-container');
+        if (container) {
+            container.innerHTML = '<div style="color: #dc3545; text-align: center;">Yüklenirken hata oluştu.</div>';
+        }
     }
 }
+
+/**
+ * Profil flood set'lerini göster
+ */
+function displayProfileFloodSets(sets) {
+    const container = document.getElementById('flood-sets-container');
+    if (!container) return;
+    
+    if (!sets || sets.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; opacity: 0.7;">
+                <div style="font-size: 3em;">📭</div>
+                <p>Henüz flood set'i bulunmuyor.</p>
+                ${window.PROFILE_DATA.isProfileOwner ? `
+                    <button onclick="window.openIntegratedEditor('flood')" class="btn-primary" style="margin-top: 15px;">
+                        🌊 İlk Flood Set'ini Oluştur
+                    </button>
+                ` : ''}
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    // Kategorilere göre grupla
+    const categories = {};
+    sets.forEach(set => {
+        const category = set.category || 'genel';
+        const categoryName = set.category_name || category;
+        const categoryEmoji = set.category_emoji || '📁';
+        
+        if (!categories[category]) {
+            categories[category] = {
+                name: categoryName,
+                emoji: categoryEmoji,
+                sets: []
+            };
+        }
+        categories[category].sets.push(set);
+    });
+    
+    // Her kategori için bölüm oluştur
+    Object.entries(categories).forEach(([categoryKey, categoryData]) => {
+        const categorySection = document.createElement('div');
+        categorySection.className = 'category-section';
+        categorySection.style.marginBottom = '30px';
+        
+        // Kategori başlığı
+        categorySection.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <div style="
+                    background: var(--accent-color)20;
+                    color: var(--accent-color);
+                    padding: 6px 15px;
+                    border-radius: 20px;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 1.1em;
+                ">
+                    ${categoryData.emoji} ${categoryData.name}
+                    <span style="font-size: 0.8em; opacity: 0.8;">
+                        (${categoryData.sets.length})
+                    </span>
+                </div>
+            </div>
+            
+            <div class="flood-sets-grid" style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 15px;
+            "></div>
+        `;
+        
+        // Grid içine set'leri ekle
+        const grid = categorySection.querySelector('.flood-sets-grid');
+        categoryData.sets.forEach(set => {
+            const card = createFloodSetCard(set);
+            grid.appendChild(card);
+        });
+        
+        container.appendChild(categorySection);
+    });
+}
+
+/**
+ * Flood set kartı oluştur (index.php'dekiyle aynı)
+ */
+function createFloodSetCard(set) {
+    const card = document.createElement('div');
+    card.className = 'flood-set-card';
+    card.dataset.setId = set.id;
+    card.dataset.category = set.category || 'genel';
+    
+    // Kategori rengi
+    const categoryColors = {
+        'genel': '#007bff',
+        'komik': '#ffc107',
+        'spor': '#28a745',
+        'müzik': '#dc3545',
+        'oyun': '#6f42c1',
+        'teknoloji': '#17a2b8',
+        'youtube': '#FF0000',
+        'twitch': '#9146FF'
+    };
+    
+    const categoryColor = categoryColors[set.category] || '#6c757d';
+    
+    card.innerHTML = `
+        <!-- Kategori Başlığı -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="
+                background: ${categoryColor}20;
+                color: ${categoryColor};
+                padding: 4px 10px;
+                border-radius: 20px;
+                font-size: 0.8em;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            ">
+                ${set.category_emoji || '📁'} ${set.category_name || set.category || 'Genel'}
+            </span>
+            
+            <span style="margin-left: auto; display: flex; gap: 5px;">
+                ${set.is_public ? '<span title="Herkese Açık" style="color: #28a745;">🌍</span>' : '<span title="Gizli" style="color: #6c757d;">🔒</span>'}
+            </span>
+        </div>
+        
+        <!-- Set Başlığı -->
+        <div style="margin-bottom: 10px;">
+            <h4 style="margin: 0; font-size: 1.2em; color: var(--accent-color); cursor: pointer;">
+                ${escapeHtml(set.name)}
+            </h4>
+            ${set.description ? `
+                <p style="margin: 8px 0; font-size: 0.9em; opacity: 0.8; line-height: 1.4;">
+                    ${escapeHtml(set.description.substring(0, 120))}
+                    ${set.description.length > 120 ? '...' : ''}
+                </p>
+            ` : ''}
+        </div>
+        
+        <!-- İstatistikler -->
+        <div style="display: flex; gap: 15px; font-size: 0.85em; margin-bottom: 15px; opacity: 0.7;">
+            <span title="Mesaj sayısı">📝 ${set.message_count || 0}</span>
+            <span title="Görüntülenme">👁️ ${set.views || 0}</span>
+            <span title="Beğeni">❤️ ${set.likes || 0}</span>
+            <span title="Oluşturulma" style="margin-left: auto;">
+                ${formatTimeAgo(set.created_at)}
+            </span>
+        </div>
+        
+        <!-- Sahip Bilgisi (Profil sayfasında gerek yok) -->
+        
+        <!-- Aksiyon Butonları -->
+        <div style="display: flex; gap: 8px; margin-top: 15px;">
+            <button onclick="openFloodSetEditor(${set.id})" 
+                    class="btn-sm btn-primary" style="flex: 1;">
+                ✏️ Aç
+            </button>
+            <button onclick="copyFloodSetToClipboard(${set.id})" 
+                    class="btn-sm btn-secondary" style="flex: 1;">
+                📋 Kopyala
+            </button>
+        </div>
+    `;
+    
+    // Set başlığına tıklanınca da açılabilir
+    card.querySelector('h4').addEventListener('click', () => {
+        openFloodSetEditor(set.id);
+    });
+    
+    // Hover efektleri
+    card.style.cssText = `
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    `;
+    
+    card.onmouseover = () => {
+        card.style.transform = 'translateY(-3px)';
+        card.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
+        card.style.borderColor = categoryColor;
+    };
+    
+    card.onmouseout = () => {
+        card.style.transform = 'translateY(0)';
+        card.style.boxShadow = 'none';
+        card.style.borderColor = 'var(--border-color)';
+    };
+    
+    return card;
+}
+
+/**
+ * Kategoriye göre filtrele
+ */
+function filterFloodSetsByCategory(category) {
+    const cards = document.querySelectorAll('.flood-set-card');
+    
+    cards.forEach(card => {
+        if (category === 'all' || card.dataset.category === category) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+/**
+ * Flood set editörünü aç
+ */
+function openFloodSetEditor(setId) {
+    if (window.integratedEditor) {
+        window.integratedEditor.openModal();
+        setTimeout(() => {
+            window.integratedEditor.switchEditor('flood');
+            
+            // Set'i yükle
+            setTimeout(() => {
+                if (window.floodSystem && window.floodSystem.loadSet) {
+                    window.floodSystem.loadSet(setId);
+                }
+            }, 200);
+        }, 100);
+    }
+}
+
+/**
+ * Flood set'i panoya kopyala
+ */
+async function copyFloodSetToClipboard(setId) {
+    try {
+        const response = await fetch(`${SITE_BASE_URL}core/get_flood_messages.php?set_id=${setId}`);
+        const result = await response.json();
+        
+        if (result.success && result.messages.length > 0) {
+            let output = '';
+            result.messages.forEach((message, index) => {
+                output += `${index + 1}. ${message.content}\n`;
+            });
+            
+            await navigator.clipboard.writeText(output);
+            showNotification('📋 Tüm set kopyalandı!', 'success');
+        }
+    } catch (error) {
+        console.error('Set kopyalanamadı:', error);
+        showNotification('Kopyalama başarısız', 'error');
+    }
+}
+
+/**
+ * HTML escape
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Flood segmentini aktif et
+function switchToFloodSegment() {
+    const segmentBtn = document.getElementById('show-floods');
+    if (segmentBtn) segmentBtn.click();
+    
+    // Flood set'lerini yükle
+    setTimeout(() => {
+        fetchFloodSets(1);
+        
+        // Filtre event'lerini bağla
+        const filterSelect = document.getElementById('flood-filter');
+        const sortSelect = document.getElementById('flood-sort');
+        
+        if (filterSelect) {
+            filterSelect.addEventListener('change', () => {
+                fetchFloodSets(1, filterSelect.value, sortSelect?.value || 'newest');
+            });
+        }
+        
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                fetchFloodSets(1, filterSelect?.value || 'all', sortSelect.value);
+            });
+        }
+    }, 100);
+}
+
+// Sayfa yüklendiğinde flood sistemi hazırla
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        // Flood segment butonuna event ekle
+        const floodSegmentBtn = document.getElementById('show-floods');
+        if (floodSegmentBtn) {
+            floodSegmentBtn.addEventListener('click', () => {
+                setTimeout(() => {
+                    fetchFloodSets(1);
+                }, 300);
+            });
+        }
+        
+        // Eğer flood segmenti aktifse hemen yükle
+        if (document.querySelector('#show-floods.active')) {
+            switchToFloodSegment();
+        }
+    }, 2000);
+});
 
 /**
  * Global fonksiyonları tanımla (main.js ile uyumluluk için)
@@ -2266,8 +2870,34 @@ FloodSystem.prototype.registerGlobalFunctions = function() {
     window.insertRandomEmoji = () => this.insertRandomEmoji();
 };
 
+// Global fonksiyonları tanımla
+window.loadProfileFloodSets = loadProfileFloodSets;
+window.displayProfileFloodSets = displayProfileFloodSets;
+window.createFloodSetCard = createFloodSetCard;
+window.filterFloodSetsByCategory = filterFloodSetsByCategory;
+window.openFloodSetEditor = openFloodSetEditor;
+window.copyFloodSetToClipboard = copyFloodSetToClipboard;
+window.escapeHtml = escapeHtml;
+window.formatTimeAgo = formatTimeAgo;
+
 // Global instance - değişmeden kalacak
 document.addEventListener('DOMContentLoaded', function() {
+	setTimeout(() => {
+        // Flood segment butonuna event ekle
+        const floodSegmentBtn = document.getElementById('show-floods');
+        if (floodSegmentBtn) {
+            floodSegmentBtn.addEventListener('click', () => {
+                setTimeout(() => {
+                    fetchFloodSets(1);
+                }, 300);
+            });
+        }
+        
+        // Eğer flood segmenti aktifse hemen yükle
+        if (document.querySelector('#show-floods.active')) {
+            switchToFloodSegment();
+        }
+    }, 2000);
 	try {
         if (typeof window.floodSystem === 'undefined') {
             if (typeof FloodSystem !== 'undefined') {
@@ -2289,5 +2919,45 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Sayfa yüklendiğinde çalıştır
 	if (document.getElementById('flood-filter')) {
 		setTimeout(loadFloodCategories, 1000);
+		// Flood set'lerini yükle
+		setTimeout(() => {
+			    // Flood set butonu
+    const floodSetBtn = document.getElementById('profile-flood-set-btn');
+    if (floodSetBtn) {
+        floodSetBtn.addEventListener('click', function() {
+            if (window.integratedEditor) {
+                window.integratedEditor.openModal();
+                setTimeout(() => {
+                    window.integratedEditor.switchEditor('flood');
+                }, 100);
+            }
+        });
+    }
+    
+    // Kategori filtreleri
+    document.querySelectorAll('.category-filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Aktif butonu güncelle
+            document.querySelectorAll('.category-filter-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'var(--fixed-bg)';
+                b.style.color = 'var(--main-text)';
+            });
+            
+            this.classList.add('active');
+            this.style.background = 'var(--accent-color)';
+            this.style.color = 'white';
+            
+            // Flood set'lerini filtrele
+            const category = this.dataset.category;
+            filterFloodSetsByCategory(category);
+        });
+    });
+			
+			if (window.PROFILE_DATA && window.PROFILE_DATA.userId) {
+				console.log('📥 Profil flood set\'leri yükleniyor...');
+				loadProfileFloodSets();
+			}
+		}, 2000);
 	}
 });

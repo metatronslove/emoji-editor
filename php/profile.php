@@ -418,6 +418,10 @@ if (!empty($socialLinks)):
     <!-- Flood Set'leri Listesi -->
     <div id="flood-sets-container" class="flood-sets-grid">
         <!-- JavaScript ile doldurulacak -->
+        <div style="text-align: center; padding: 40px; opacity: 0.7;">
+            <div style="font-size: 3em;">⏳</div>
+            <p>Flood set'leri yükleniyor...</p>
+        </div>
     </div>
     
     <!-- Sayfalama -->
