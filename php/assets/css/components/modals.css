@@ -160,8 +160,6 @@ opacity: 0.9;
 
 .modal-close {
     width: min-content;
-	transform: scale(3);
-    transition: transform 0.3s ease;
 }
 
 .modal-content {
