@@ -207,4 +207,3 @@ style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8p
         </div>
     </div>
 </div>
-<script src="<?php echo $baseSiteUrl; ?>assets/js/ui/modals.js"></script>

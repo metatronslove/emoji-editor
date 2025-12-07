@@ -41,6 +41,7 @@ $totalViews = $counters['total_views'] ?? 0;
 </div>
 
 <!-- 1. ÖNCE Core kütüphaneler -->
+<script src="<?php echo $baseSiteUrl; ?>assets/js/ui/modals.js"></script>
 <script src="<?php echo $baseSiteUrl; ?>assets/js/core/utils.js"></script>
 <script src="<?php echo $baseSiteUrl; ?>assets/js/core/theme.js"></script>
 <script src="<?php echo $baseSiteUrl; ?>assets/js/core/online.js"></script>
