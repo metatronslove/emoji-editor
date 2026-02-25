@@ -163,8 +163,6 @@ Bu proje MIT lisansı altında lisanslanmıştır - detaylar için [LICENSE](htt
 
 *YouTube sohbetinde sanatınızı sergileyin\! 🎨✨*
 
-```
-
 ## ☕ Destek Olun / Support
 
 Projemi beğendiyseniz, bana bir kahve ısmarlayarak destek olabilirsiniz!
