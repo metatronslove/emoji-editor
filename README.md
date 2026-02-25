@@ -164,3 +164,11 @@ Bu proje MIT lisansı altında lisanslanmıştır - detaylar için [LICENSE](htt
 *YouTube sohbetinde sanatınızı sergileyin\! 🎨✨*
 
 ```
+
+## ☕ Destek Olun / Support
+
+Projemi beğendiyseniz, bana bir kahve ısmarlayarak destek olabilirsiniz!
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/metatronslove)
+
+Teşekkürler! 🙏
